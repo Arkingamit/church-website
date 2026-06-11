@@ -5,27 +5,31 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Church, Mail, Lock, ArrowRight, LogIn } from 'lucide-react';
+import { Church, ArrowRight } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleGoogleSuccess = async (credentialResponse: any) => {
     setError('');
-    const result = await login(email, password);
+    if (!credentialResponse.credential) {
+      setError('Google authentication failed. No credential received.');
+      return;
+    }
+
+    const result = await login(credentialResponse.credential);
     if (result.success) {
       router.push('/');
     } else {
       setError(result.error || 'Login failed');
     }
+  };
+
+  const handleGoogleError = () => {
+    setError('Google authentication failed. Please try again.');
   };
 
   return (
@@ -50,49 +54,24 @@ export default function LoginPage() {
 
         <Card className="border-border/50 shadow-elevated">
           <CardContent className="p-6">
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    placeholder="your@email.com"
-                    className="pl-9"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="pl-9"
-                    required
-                  />
-                </div>
-              </div>
-
+            <div className="space-y-6 flex flex-col items-center">
               {error && (
-                <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm flex items-center gap-2">
+                <div className="w-full p-3 rounded-lg bg-destructive/10 text-destructive text-sm flex items-center gap-2">
                   <span>⚠️</span> {error}
                 </div>
               )}
 
-              <Button type="submit" className="w-full gap-2" disabled={!email || !password}>
-                <LogIn className="w-4 h-4" /> Sign In
-              </Button>
-            </form>
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                useOneTap
+                theme="outline"
+                size="large"
+                shape="rectangular"
+                text="signin_with"
+                width="100%"
+              />
+            </div>
           </CardContent>
         </Card>
 

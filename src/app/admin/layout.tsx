@@ -31,10 +31,12 @@ import {
   UserPlus,
   QrCode,
   Music,
+  UserCheck,
 } from 'lucide-react';
 
 const roleIcons: Record<UserRole, React.ElementType> = {
   member: User,
+  group_leader: UserCheck,
   campus_leader: Shield,
   admin: ShieldCheck,
   super_admin: Crown,
@@ -42,6 +44,7 @@ const roleIcons: Record<UserRole, React.ElementType> = {
 
 const roleColors: Record<UserRole, string> = {
   member: 'text-muted-foreground border-muted-foreground/30',
+  group_leader: 'text-emerald-500 border-emerald-500/30',
   campus_leader: 'text-blue-500 border-blue-500/30',
   admin: 'text-amber-500 border-amber-500/30',
   super_admin: 'text-purple-500 border-purple-500/30',
@@ -61,17 +64,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   // Build sidebar items based on role
   const sidebarItems = [
-    { label: 'Dashboard', href: '/admin', icon: LayoutDashboard, minRole: 'campus_leader' as UserRole },
-    { label: 'Events', href: '/admin/events', icon: Calendar, minRole: 'campus_leader' as UserRole },
-    { label: 'Announcements', href: '/admin/announcements', icon: Megaphone, minRole: 'campus_leader' as UserRole },
+    { label: 'Dashboard', href: '/admin', icon: LayoutDashboard, minRole: 'group_leader' as UserRole },
+    { label: 'Events', href: '/admin/events', icon: Calendar, minRole: 'group_leader' as UserRole },
+    { label: 'Announcements', href: '/admin/announcements', icon: Megaphone, minRole: 'group_leader' as UserRole },
     { label: 'Worship Videos', href: '/admin/worship', icon: Music, minRole: 'admin' as UserRole },
     { label: 'Requests', href: '/admin/requests', icon: UserPlus, minRole: 'campus_leader' as UserRole, badge: pendingCount },
     { label: 'QR Codes', href: '/admin/qr-codes', icon: QrCode, minRole: 'campus_leader' as UserRole },
-    { label: 'Users', href: '/admin/users', icon: Users, minRole: 'admin' as UserRole },
+    { label: 'Users', href: '/admin/users', icon: Users, minRole: 'campus_leader' as UserRole },
     { label: 'Settings', href: '/admin/settings', icon: Settings, minRole: 'super_admin' as UserRole },
   ];
 
-  const roleHierarchy: Record<UserRole, number> = { member: 0, campus_leader: 1, admin: 2, super_admin: 3 };
+  const roleHierarchy: Record<UserRole, number> = { member: 0, group_leader: 1, campus_leader: 2, admin: 3, super_admin: 4 };
   const visibleItems = sidebarItems.filter(item => roleHierarchy[currentUser.role] >= roleHierarchy[item.minRole]);
 
 
@@ -86,7 +89,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
           <h1 className="text-2xl font-bold">Access Denied</h1>
           <p className="text-muted-foreground">
-            You need at least Campus Leader access to view the admin dashboard.
+            You need at least Group Leader access to view the admin dashboard.
           </p>
           <Button onClick={() => router.push('/')} variant="outline">
             <ArrowLeft className="w-4 h-4 mr-2" /> Back to Home

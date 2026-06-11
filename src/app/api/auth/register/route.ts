@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/db';
 import User from '@/models/User';
-import bcrypt from 'bcryptjs';
+import { OAuth2Client } from 'google-auth-library';
 import { registerSchema } from '@/lib/validations';
 
 export async function POST(req: Request) {
@@ -11,27 +11,44 @@ export async function POST(req: Request) {
     if (!parseResult.success) {
       return NextResponse.json({ error: parseResult.error.errors[0].message }, { status: 400 });
     }
-    const { firstName, lastName, email, password, phone, campusId } = parseResult.data;
+    const { credential, firstName, middleName, lastName, gender, birthday, maritalStatus, marriageDate, campusId, phone, whatsapp, familyMemberId } = parseResult.data;
+
+    // Verify Google token
+    const client = new OAuth2Client(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+    });
+    
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) {
+      return NextResponse.json({ error: 'Invalid Google token or missing email' }, { status: 400 });
+    }
+
+    const email = payload.email.toLowerCase();
 
     await connectToDatabase();
     
     // Check if user exists
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return NextResponse.json({ error: 'Email already registered' }, { status: 400 });
-    }
-
-    // Passwords will be hashed in the User API or here.
-    // For direct registration, it's pending status. No password required for initial pending.
-    // Wait, the form includes a password field, we should hash it.
-    const bcrypt = require('bcryptjs');
-    if (body.password) {
-      const salt = await bcrypt.genSalt(10);
-      body.password = await bcrypt.hash(body.password, salt);
+      return NextResponse.json({ error: 'This Google account is already registered' }, { status: 400 });
     }
 
     const newUser = await User.create({
-      ...body,
+      firstName,
+      middleName,
+      lastName,
+      name: `${firstName} ${lastName}`,
+      gender,
+      birthday,
+      maritalStatus,
+      marriageDate,
+      campusId,
+      email,
+      phone,
+      whatsapp,
+      familyMemberId,
       status: 'pending',
       role: 'member',
       groups: [],

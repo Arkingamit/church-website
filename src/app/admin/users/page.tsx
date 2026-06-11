@@ -6,6 +6,7 @@ import {
   canManageUsers,
   canAppointRole,
   getAssignableRoles,
+  getGroupsForCampus,
   ROLE_LABELS,
   type UserProfile,
   type UserRole,
@@ -41,10 +42,12 @@ import {
   Crown,
   Building2,
   UserPlus,
+  UserCheck,
 } from 'lucide-react';
 
 const roleIcons: Record<UserRole, React.ElementType> = {
   member: User,
+  group_leader: UserCheck,
   campus_leader: Shield,
   admin: ShieldCheck,
   super_admin: Crown,
@@ -52,6 +55,7 @@ const roleIcons: Record<UserRole, React.ElementType> = {
 
 const roleColors: Record<UserRole, string> = {
   member: 'bg-muted/50 text-muted-foreground',
+  group_leader: 'bg-emerald-500/10 text-emerald-600',
   campus_leader: 'bg-blue-500/10 text-blue-600',
   admin: 'bg-amber-500/10 text-amber-600',
   super_admin: 'bg-purple-500/10 text-purple-600',
@@ -66,7 +70,7 @@ const emptyForm = {
 };
 
 export default function UsersPage() {
-  const { users, campuses, groups, currentUser, addUser, updateUser, deleteUser } = useAdminData();
+  const { users, campuses, groupScopes, currentUser, addUser, updateUser, deleteUser } = useAdminData();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -79,14 +83,19 @@ export default function UsersPage() {
       <div className="text-center py-16">
         <Shield className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
         <p className="text-lg font-semibold">Access Restricted</p>
-        <p className="text-muted-foreground mt-1">You need Admin access to manage users.</p>
+        <p className="text-muted-foreground mt-1">You need Campus Leader access to manage users.</p>
       </div>
     );
   }
 
+  const isCampusLeader = currentUser.role === 'campus_leader';
   const assignableRoles = getAssignableRoles(currentUser.role);
 
   const filtered = users.filter(u => {
+    // Campus leaders only see users in their campus
+    if (isCampusLeader && u.campusId !== currentUser.campusId) {
+      return false;
+    }
     const matchesSearch = u.name.toLowerCase().includes(search.toLowerCase()) ||
       u.email.toLowerCase().includes(search.toLowerCase());
     const matchesRole = roleFilter === 'all' || u.role === roleFilter;
@@ -95,7 +104,11 @@ export default function UsersPage() {
 
   const openCreate = () => {
     setEditingId(null);
-    setForm({ ...emptyForm, role: assignableRoles[0] || 'member' });
+    setForm({ 
+      ...emptyForm, 
+      role: assignableRoles[0] || 'member',
+      campusId: isCampusLeader ? currentUser.campusId : 'main',
+    });
     setDialogOpen(true);
   };
 
@@ -157,8 +170,8 @@ export default function UsersPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {(['super_admin', 'admin', 'campus_leader', 'member'] as UserRole[]).map(role => {
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {(['super_admin', 'admin', 'campus_leader', 'group_leader', 'member'] as UserRole[]).map(role => {
           const Icon = roleIcons[role];
           return (
             <Card key={role} className="border-border/50">
@@ -188,7 +201,7 @@ export default function UsersPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Roles</SelectItem>
-            {(['super_admin', 'admin', 'campus_leader', 'member'] as UserRole[]).map(r => (
+            {(['super_admin', 'admin', 'campus_leader', 'group_leader', 'member'] as UserRole[]).map(r => (
               <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
             ))}
           </SelectContent>
@@ -289,7 +302,11 @@ export default function UsersPage() {
               </div>
               <div className="space-y-2">
                 <Label>Campus</Label>
-                <Select value={form.campusId} onValueChange={(v) => setForm({ ...form, campusId: v })}>
+                <Select 
+                  value={form.campusId} 
+                  onValueChange={(v) => setForm({ ...form, campusId: v, groups: [] })} // Reset groups when campus changes
+                  disabled={isCampusLeader}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {campuses.map(c => (
@@ -299,22 +316,26 @@ export default function UsersPage() {
                 </Select>
               </div>
             </div>
-            {form.role === 'member' && (
+            {['member', 'group_leader'].includes(form.role) && (
               <div className="space-y-2">
                 <Label>Groups</Label>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {groups.map(g => (
-                    <label key={g} className="flex items-center gap-2 text-sm cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={form.groups.includes(g)}
-                        onChange={() => toggleGroup(g)}
-                        className="rounded"
-                      />
-                      {g}
-                    </label>
-                  ))}
-                </div>
+                {getGroupsForCampus(groupScopes, form.campusId).length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No groups available for this campus.</p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {getGroupsForCampus(groupScopes, form.campusId).map(g => (
+                      <label key={g} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={form.groups.includes(g)}
+                          onChange={() => toggleGroup(g)}
+                          className="rounded"
+                        />
+                        {g}
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

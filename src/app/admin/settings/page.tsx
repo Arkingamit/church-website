@@ -18,6 +18,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Building2,
   Users,
@@ -30,7 +31,7 @@ import {
 } from 'lucide-react';
 
 export default function SettingsPage() {
-  const { campuses, groups, currentUser, addCampus, updateCampus, deleteCampus, addGroup, deleteGroup, users } = useAdminData();
+  const { campuses, groupScopes, groups, currentUser, addCampus, updateCampus, deleteCampus, addGroup, deleteGroup, users } = useAdminData();
 
   // Campus form state
   const [campusDialogOpen, setCampusDialogOpen] = useState(false);
@@ -41,6 +42,7 @@ export default function SettingsPage() {
   // Group form state
   const [groupDialogOpen, setGroupDialogOpen] = useState(false);
   const [newGroup, setNewGroup] = useState('');
+  const [newGroupScope, setNewGroupScope] = useState('global');
   const [deleteGroupConfirm, setDeleteGroupConfirm] = useState<string | null>(null);
 
   if (!canManageCampusesAndGroups(currentUser.role)) {
@@ -85,8 +87,9 @@ export default function SettingsPage() {
 
   const handleAddGroup = () => {
     if (!newGroup.trim()) return;
-    addGroup(newGroup.trim());
+    addGroup(newGroup.trim(), newGroupScope);
     setNewGroup('');
+    setNewGroupScope('global');
     setGroupDialogOpen(false);
   };
 
@@ -166,7 +169,7 @@ export default function SettingsPage() {
               <Users className="w-5 h-5 text-primary" />
               Group Management
             </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">{groups.length} groups</p>
+            <p className="text-sm text-muted-foreground mt-1">{groupScopes.length} groups</p>
           </div>
           <Button onClick={() => setGroupDialogOpen(true)} size="sm" className="gap-2">
             <Plus className="w-4 h-4" /> Add Group
@@ -174,20 +177,23 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
-            {groups.map(group => {
-              const memberCount = users.filter(u => u.groups.includes(group)).length;
+            {groupScopes.map(group => {
+              const memberCount = users.filter(u => u.groups.includes(group.name)).length;
               return (
                 <div
-                  key={group}
+                  key={group.name}
                   className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors group/item"
                 >
                   <Tag className="w-3.5 h-3.5 text-primary" />
-                  <span className="text-sm font-medium">{group}</span>
+                  <span className="text-sm font-medium">{group.name}</span>
+                  <Badge variant="secondary" className="text-[10px] ml-1 bg-background">
+                    {group.scope === 'global' ? 'Global' : campuses.find(c => c.id === group.scope)?.name || group.scope}
+                  </Badge>
                   <Badge variant="outline" className="text-[9px]">{memberCount}</Badge>
                   <Button
                     variant="ghost" size="icon"
                     className="h-6 w-6 opacity-0 group-hover/item:opacity-100 transition-opacity text-destructive hover:text-destructive"
-                    onClick={() => setDeleteGroupConfirm(group)}
+                    onClick={() => setDeleteGroupConfirm(group.name)}
                   >
                     <Trash2 className="w-3 h-3" />
                   </Button>
@@ -227,11 +233,25 @@ export default function SettingsPage() {
       <Dialog open={groupDialogOpen} onOpenChange={setGroupDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>New Group</DialogTitle></DialogHeader>
-          <div className="space-y-2 py-2">
-            <Label>Group Name *</Label>
-            <Input value={newGroup} onChange={(e) => setNewGroup(e.target.value)} placeholder="e.g. College Students"
-              onKeyDown={(e) => e.key === 'Enter' && handleAddGroup()}
-            />
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Group Name *</Label>
+              <Input value={newGroup} onChange={(e) => setNewGroup(e.target.value)} placeholder="e.g. College Students"
+                onKeyDown={(e) => e.key === 'Enter' && handleAddGroup()}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Scope</Label>
+              <Select value={newGroupScope} onValueChange={setNewGroupScope}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="global">Global (All Campuses)</SelectItem>
+                  {campuses.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setGroupDialogOpen(false)}>Cancel</Button>

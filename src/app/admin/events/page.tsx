@@ -54,19 +54,29 @@ export default function EventsPage() {
   const { getEventRegistrations } = useAdminData();
 
   const isCampusLeader = currentUser.role === 'campus_leader';
+  const isGroupLeader = currentUser.role === 'group_leader';
   const canAllCampuses = canPublishAllCampuses(currentUser.role);
 
-  const filtered = events.filter(e =>
-    e.title.toLowerCase().includes(search.toLowerCase()) ||
-    e.category.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = events.filter(e => {
+    const matchesSearch = e.title.toLowerCase().includes(search.toLowerCase()) ||
+      e.category.toLowerCase().includes(search.toLowerCase());
+    
+    // Group leaders only see events targeted at their groups
+    if (isGroupLeader) {
+      const eGroups = e.targetGroups ?? ['all'];
+      if (!eGroups.includes('all') && !eGroups.some(g => currentUser.groups.includes(g))) {
+        return false;
+      }
+    }
+    return matchesSearch;
+  });
 
   const openCreate = () => {
     setEditingId(null);
     setForm({
       ...emptyForm,
-      targetCampuses: isCampusLeader ? [currentUser.campusId] : ['all'],
-      targetGroups: ['all'],
+      targetCampuses: (isCampusLeader || isGroupLeader) ? [currentUser.campusId] : ['all'],
+      targetGroups: isGroupLeader ? currentUser.groups : ['all'],
     });
     setDialogOpen(true);
   };
@@ -112,19 +122,23 @@ export default function EventsPage() {
   const isAllGroups = form.targetGroups.includes('all');
 
   const toggleCampusMode = (all: boolean) => {
-    if (isCampusLeader) return;
+    if (isCampusLeader || isGroupLeader) return;
     setForm(f => ({ ...f, targetCampuses: all ? ['all'] : [] }));
   };
   const toggleCampus = (id: string) => {
-    if (isCampusLeader) return;
+    if (isCampusLeader || isGroupLeader) return;
     setForm(f => {
       const has = f.targetCampuses.includes(id);
       const next = has ? f.targetCampuses.filter(c => c !== id) : [...f.targetCampuses.filter(c => c !== 'all'), id];
       return { ...f, targetCampuses: next.length === 0 ? ['all'] : next };
     });
   };
-  const toggleGroupMode = (all: boolean) => setForm(f => ({ ...f, targetGroups: all ? ['all'] : [] }));
+  const toggleGroupMode = (all: boolean) => {
+    if (isGroupLeader) return;
+    setForm(f => ({ ...f, targetGroups: all ? ['all'] : [] }));
+  };
   const toggleGroup = (g: string) => {
+    if (isGroupLeader) return;
     setForm(f => {
       const has = f.targetGroups.includes(g);
       const next = has ? f.targetGroups.filter(x => x !== g) : [...f.targetGroups.filter(x => x !== 'all'), g];
@@ -359,12 +373,15 @@ export default function EventsPage() {
                   {isCampusLeader && (
                     <p className="text-[10px] text-amber-500">Campus Leader: restricted to {campuses.find(c => c.id === currentUser.campusId)?.name}</p>
                   )}
+                  {isGroupLeader && (
+                    <p className="text-[10px] text-emerald-500">Group Leader: restricted to {campuses.find(c => c.id === currentUser.campusId)?.name}</p>
+                  )}
                   <div className="flex items-center gap-4">
                     <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <Checkbox checked={isAllCampuses} onCheckedChange={() => toggleCampusMode(true)} disabled={isCampusLeader} /> All
+                      <Checkbox checked={isAllCampuses} onCheckedChange={() => toggleCampusMode(true)} disabled={isCampusLeader || isGroupLeader} /> All
                     </label>
                     <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <Checkbox checked={!isAllCampuses} onCheckedChange={() => toggleCampusMode(false)} disabled={isCampusLeader} /> Specific
+                      <Checkbox checked={!isAllCampuses} onCheckedChange={() => toggleCampusMode(false)} disabled={isCampusLeader || isGroupLeader} /> Specific
                     </label>
                   </div>
                   {!isAllCampuses && (
@@ -374,7 +391,7 @@ export default function EventsPage() {
                           <Checkbox
                             checked={form.targetCampuses.includes(c.id)}
                             onCheckedChange={() => toggleCampus(c.id)}
-                            disabled={isCampusLeader && c.id !== currentUser.campusId}
+                            disabled={(isCampusLeader || isGroupLeader) && c.id !== currentUser.campusId}
                           />
                           {c.name}
                         </label>
@@ -385,19 +402,26 @@ export default function EventsPage() {
                 {/* Groups */}
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground">Visible to Groups</Label>
+                  {isGroupLeader && (
+                    <p className="text-[10px] text-emerald-500">Group Leader: restricted to your assigned groups</p>
+                  )}
                   <div className="flex items-center gap-4">
                     <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <Checkbox checked={isAllGroups} onCheckedChange={() => toggleGroupMode(true)} /> All
+                      <Checkbox checked={isAllGroups} onCheckedChange={() => toggleGroupMode(true)} disabled={isGroupLeader} /> All
                     </label>
                     <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <Checkbox checked={!isAllGroups} onCheckedChange={() => toggleGroupMode(false)} /> Specific
+                      <Checkbox checked={!isAllGroups} onCheckedChange={() => toggleGroupMode(false)} disabled={isGroupLeader} /> Specific
                     </label>
                   </div>
                   {!isAllGroups && (
                     <div className="grid grid-cols-2 gap-1.5 pl-2">
                       {groups.map(g => (
                         <label key={g} className="flex items-center gap-2 text-sm cursor-pointer">
-                          <Checkbox checked={form.targetGroups.includes(g)} onCheckedChange={() => toggleGroup(g)} />
+                          <Checkbox 
+                            checked={form.targetGroups.includes(g)} 
+                            onCheckedChange={() => toggleGroup(g)} 
+                            disabled={isGroupLeader && !currentUser.groups.includes(g)}
+                          />
                           {g}
                         </label>
                       ))}

@@ -14,9 +14,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Church, User, Heart, Mail, Phone, Lock, ArrowRight, ArrowLeft, Check, Clock, Building2, ScanLine, Globe, QrCode as QrIcon, Users, Search, X,
+  Church, User, Heart, Phone, Lock, ArrowRight, ArrowLeft, Check, Clock, Building2, ScanLine, Globe, QrCode as QrIcon, Users, Search, X,
 } from 'lucide-react';
 import { QRScanner } from '@/components/ui/qr-scanner';
+import { GoogleLogin } from '@react-oauth/google';
 
 interface RegistrationFormProps {
   /** When set, the campus is pre-selected and cannot be changed (QR flow) */
@@ -40,11 +41,8 @@ export function RegistrationForm({ lockedCampusId }: RegistrationFormProps) {
     maritalStatus: '' as 'single' | 'married' | '',
     marriageDate: '',
     campusId: lockedCampusId || '',
-    email: '',
     phone: '',
     whatsapp: '',
-    password: '',
-    confirmPassword: '',
   });
 
   const [whatsappSame, setWhatsappSame] = useState(false);
@@ -81,20 +79,17 @@ export function RegistrationForm({ lockedCampusId }: RegistrationFormProps) {
 
   const canProceedStep1 = form.firstName && form.lastName && form.gender && form.birthday;
   const canProceedStep2 = form.maritalStatus && form.campusId;
-  const canProceedStep3 = form.email && form.phone && (form.whatsapp || whatsappSame) && form.password && form.password === form.confirmPassword;
+  const canProceedStep3 = form.phone && (form.whatsapp || whatsappSame);
 
-  const handleSubmit = async () => {
+  const handleGoogleRegister = async (credentialResponse: any) => {
     setError('');
-    if (form.password !== form.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-    if (form.password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (!credentialResponse.credential) {
+      setError('Google authentication failed. No credential received.');
       return;
     }
 
     const result = await register({
+      credential: credentialResponse.credential,
       firstName: form.firstName,
       middleName: form.middleName,
       lastName: form.lastName,
@@ -103,10 +98,8 @@ export function RegistrationForm({ lockedCampusId }: RegistrationFormProps) {
       maritalStatus: form.maritalStatus as 'single' | 'married',
       marriageDate: form.marriageDate,
       campusId: form.campusId,
-      email: form.email,
       phone: form.phone,
       whatsapp: whatsappSame ? form.phone : form.whatsapp,
-      password: form.password,
       ...(selectedFamily ? { familyMemberId: selectedFamily.id } : {}),
     });
 
@@ -115,6 +108,10 @@ export function RegistrationForm({ lockedCampusId }: RegistrationFormProps) {
     } else {
       setError(result.error || 'Registration failed');
     }
+  };
+
+  const handleGoogleError = () => {
+    setError('Google authentication failed. Please try again.');
   };
 
   // ── Block access if no campus is locked (QR flow) ──
@@ -215,7 +212,6 @@ export function RegistrationForm({ lockedCampusId }: RegistrationFormProps) {
               <div className="bg-muted/30 rounded-lg p-4 text-left space-y-1">
                 <p className="text-xs text-muted-foreground">Submitted as:</p>
                 <p className="text-sm font-medium">{form.firstName} {form.lastName}</p>
-                <p className="text-xs text-muted-foreground">{form.email}</p>
                 <p className="text-xs text-muted-foreground">
                   Campus: {campuses.find(c => c.id === form.campusId)?.name}
                 </p>
@@ -489,19 +485,6 @@ export function RegistrationForm({ lockedCampusId }: RegistrationFormProps) {
             {step === 3 && (
               <>
                 <div className="space-y-2">
-                  <Label>Email *</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      type="email"
-                      value={form.email}
-                      onChange={e => updateField('email', e.target.value)}
-                      placeholder="john@example.com"
-                      className="pl-9"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
                   <Label>Phone Number *</Label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -535,50 +518,34 @@ export function RegistrationForm({ lockedCampusId }: RegistrationFormProps) {
                     />
                   </div>
                 )}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Password *</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        type="password"
-                        value={form.password}
-                        onChange={e => updateField('password', e.target.value)}
-                        placeholder="••••••"
-                        className="pl-9"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Confirm Password *</Label>
-                    <Input
-                      type="password"
-                      value={form.confirmPassword}
-                      onChange={e => updateField('confirmPassword', e.target.value)}
-                      placeholder="••••••"
-                    />
-                  </div>
-                </div>
-                {form.password && form.confirmPassword && form.password !== form.confirmPassword && (
-                  <p className="text-xs text-destructive">Passwords do not match</p>
-                )}
+                
                 {error && (
                   <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
                     {error}
                   </div>
                 )}
-                <div className="flex gap-3">
+                
+                <div className="flex gap-3 pt-4">
                   <Button variant="outline" className="flex-1 gap-2" onClick={() => setStep(2)}>
                     <ArrowLeft className="w-4 h-4" /> Back
                   </Button>
-                  <Button
-                    className="flex-1 gap-2"
-                    disabled={!canProceedStep3}
-                    onClick={handleSubmit}
-                  >
-                    Create Account <Check className="w-4 h-4" />
-                  </Button>
                 </div>
+                
+                {canProceedStep3 && (
+                  <div className="mt-6 pt-6 border-t border-border/50 animate-in fade-in flex flex-col items-center space-y-4">
+                    <p className="text-sm font-medium">Verify & Register</p>
+                    <GoogleLogin
+                      onSuccess={handleGoogleRegister}
+                      onError={handleGoogleError}
+                      useOneTap={false}
+                      theme="outline"
+                      size="large"
+                      shape="rectangular"
+                      text="signup_with"
+                      width="100%"
+                    />
+                  </div>
+                )}
               </>
             )}
           </CardContent>

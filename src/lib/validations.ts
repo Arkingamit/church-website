@@ -2,17 +2,22 @@ import { z } from 'zod';
 
 // Authentication Schemas
 export const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  credential: z.string().min(1, 'Google credential is required'),
 });
 
 export const registerSchema = z.object({
+  credential: z.string().min(1, 'Google credential is required'),
   firstName: z.string().min(2, 'First name is required'),
+  middleName: z.string().optional(),
   lastName: z.string().min(2, 'Last name is required'),
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  phone: z.string().optional(),
+  gender: z.enum(['male', 'female']),
+  birthday: z.string().optional(),
+  maritalStatus: z.enum(['single', 'married']).optional(),
+  marriageDate: z.string().optional(),
   campusId: z.string().min(1, 'Campus is required'),
+  phone: z.string().optional(),
+  whatsapp: z.string().optional(),
+  familyMemberId: z.string().optional(),
 });
 
 // Event Schema

@@ -37,8 +37,8 @@ interface AuthContextType {
   session: AuthSession | null;
   members: ChurchMember[];
   isLoading: boolean;
-  register: (data: Partial<ChurchMember>) => Promise<{ success: boolean; error?: string }>;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (data: Partial<ChurchMember> & { credential?: string }) => Promise<{ success: boolean; error?: string }>;
+  login: (credential: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   getMember: (id: string) => ChurchMember | undefined;
   getSessionMember: () => ChurchMember | undefined;
@@ -95,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     fetchSessionAndMembers();
   }, []);
 
-  const register = useCallback(async (data: Partial<ChurchMember>) => {
+  const register = useCallback(async (data: Partial<ChurchMember> & { credential?: string }) => {
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
@@ -112,12 +112,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (credential: string) => {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ credential }),
       });
       const result = await res.json();
       if (!res.ok) return { success: false, error: result.error || 'Login failed' };

@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { AdminDataProvider } from "@/lib/admin-data-context";
 import { AuthProvider } from "@/lib/auth-context";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import "@/index.css";
 
 const inter = Inter({
@@ -18,17 +19,21 @@ const inter = Inter({
 const queryClient = new QueryClient();
 
 export default function Providers({ children }: { children: React.ReactNode }) {
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "replace_with_your_google_client_id.apps.googleusercontent.com";
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <AdminDataProvider>
-        <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            {children}
-          </TooltipProvider>
-        </AuthProvider>
-      </AdminDataProvider>
-    </QueryClientProvider>
+    <GoogleOAuthProvider clientId={clientId}>
+      <QueryClientProvider client={queryClient}>
+        <AdminDataProvider>
+          <AuthProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              {children}
+            </TooltipProvider>
+          </AuthProvider>
+        </AdminDataProvider>
+      </QueryClientProvider>
+    </GoogleOAuthProvider>
   );
 }

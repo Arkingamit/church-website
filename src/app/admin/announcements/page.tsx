@@ -70,21 +70,30 @@ export default function AnnouncementsPage() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const isCampusLeader = currentUser.role === 'campus_leader';
+  const isGroupLeader = currentUser.role === 'group_leader';
 
-  const filtered = announcements.filter(a =>
-    a.title.toLowerCase().includes(search.toLowerCase()) ||
-    a.category.toLowerCase().includes(search.toLowerCase()) ||
-    a.author.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = announcements.filter(a => {
+    const matchesSearch = a.title.toLowerCase().includes(search.toLowerCase()) ||
+      a.category.toLowerCase().includes(search.toLowerCase()) ||
+      a.author.toLowerCase().includes(search.toLowerCase());
+      
+    if (isGroupLeader) {
+      const aGroups = a.targetGroups ?? ['all'];
+      if (!aGroups.includes('all') && !aGroups.some(g => currentUser.groups.includes(g))) {
+        return false;
+      }
+    }
+    return matchesSearch;
+  });
 
   const openCreate = () => {
     setEditingId(null);
     setForm({
       ...emptyForm,
       date: new Date().toISOString().split('T')[0],
-      // Campus leaders: lock to their campus
-      targetCampuses: isCampusLeader ? [currentUser.campusId] : ['all'],
-      targetGroups: ['all'],
+      // Campus leaders & group leaders: lock to their campus
+      targetCampuses: (isCampusLeader || isGroupLeader) ? [currentUser.campusId] : ['all'],
+      targetGroups: isGroupLeader ? currentUser.groups : ['all'],
     });
     setDialogOpen(true);
   };
@@ -128,7 +137,7 @@ export default function AnnouncementsPage() {
   const isAllGroups = form.targetGroups.includes('all');
 
   const toggleCampusMode = (all: boolean) => {
-    if (isCampusLeader) return; // locked
+    if (isCampusLeader || isGroupLeader) return; // locked
     setForm(f => ({
       ...f,
       targetCampuses: all ? ['all'] : [],
@@ -136,7 +145,7 @@ export default function AnnouncementsPage() {
   };
 
   const toggleCampus = (campusId: string) => {
-    if (isCampusLeader) return;
+    if (isCampusLeader || isGroupLeader) return;
     setForm(f => {
       const has = f.targetCampuses.includes(campusId);
       const next = has
@@ -147,10 +156,12 @@ export default function AnnouncementsPage() {
   };
 
   const toggleGroupMode = (all: boolean) => {
+    if (isGroupLeader) return;
     setForm(f => ({ ...f, targetGroups: all ? ['all'] : [] }));
   };
 
   const toggleGroup = (group: string) => {
+    if (isGroupLeader) return;
     setForm(f => {
       const has = f.targetGroups.includes(group);
       const next = has
@@ -340,12 +351,17 @@ export default function AnnouncementsPage() {
                     As a Campus Leader, you can only broadcast to your campus: {campuses.find(c => c.id === currentUser.campusId)?.name}
                   </p>
                 )}
+                {isGroupLeader && (
+                  <p className="text-[10px] text-emerald-500">
+                    As a Group Leader, you can only broadcast to your campus: {campuses.find(c => c.id === currentUser.campusId)?.name}
+                  </p>
+                )}
                 <div className="flex items-center gap-4">
                   <label className="flex items-center gap-2 text-sm cursor-pointer">
                     <Checkbox
                       checked={isAllCampuses}
                       onCheckedChange={() => toggleCampusMode(true)}
-                      disabled={isCampusLeader}
+                      disabled={isCampusLeader || isGroupLeader}
                     />
                     All Campuses
                   </label>
@@ -353,7 +369,7 @@ export default function AnnouncementsPage() {
                     <Checkbox
                       checked={!isAllCampuses}
                       onCheckedChange={() => toggleCampusMode(false)}
-                      disabled={isCampusLeader}
+                      disabled={isCampusLeader || isGroupLeader}
                     />
                     Specific
                   </label>
@@ -365,10 +381,10 @@ export default function AnnouncementsPage() {
                         <Checkbox
                           checked={form.targetCampuses.includes(campus.id)}
                           onCheckedChange={() => toggleCampus(campus.id)}
-                          disabled={isCampusLeader && campus.id !== currentUser.campusId}
+                          disabled={(isCampusLeader || isGroupLeader) && campus.id !== currentUser.campusId}
                         />
                         {campus.name}
-                        {isCampusLeader && campus.id !== currentUser.campusId && (
+                        {(isCampusLeader || isGroupLeader) && campus.id !== currentUser.campusId && (
                           <span className="text-[10px] text-muted-foreground">(restricted)</span>
                         )}
                       </label>
@@ -380,13 +396,18 @@ export default function AnnouncementsPage() {
               {/* Group Targeting */}
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Visible to Groups</Label>
+                {isGroupLeader && (
+                  <p className="text-[10px] text-emerald-500">
+                    As a Group Leader, you can only broadcast to your assigned groups.
+                  </p>
+                )}
                 <div className="flex items-center gap-4">
                   <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <Checkbox checked={isAllGroups} onCheckedChange={() => toggleGroupMode(true)} />
+                    <Checkbox checked={isAllGroups} onCheckedChange={() => toggleGroupMode(true)} disabled={isGroupLeader} />
                     All Groups
                   </label>
                   <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <Checkbox checked={!isAllGroups} onCheckedChange={() => toggleGroupMode(false)} />
+                    <Checkbox checked={!isAllGroups} onCheckedChange={() => toggleGroupMode(false)} disabled={isGroupLeader} />
                     Specific
                   </label>
                 </div>
@@ -397,6 +418,7 @@ export default function AnnouncementsPage() {
                         <Checkbox
                           checked={form.targetGroups.includes(group)}
                           onCheckedChange={() => toggleGroup(group)}
+                          disabled={isGroupLeader && !currentUser.groups.includes(group)}
                         />
                         {group}
                       </label>

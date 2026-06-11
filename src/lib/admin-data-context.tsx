@@ -3,7 +3,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 // ── Types ──────────────────────────────────────────────────────────────
-export type UserRole = 'member' | 'campus_leader' | 'admin' | 'super_admin';
+export type UserRole = 'member' | 'group_leader' | 'campus_leader' | 'admin' | 'super_admin';
+
+// Group scope: 'global' means visible everywhere; a campusId means campus-specific
+export interface Group {
+  name: string;
+  scope: 'global' | string; // 'global' or a campusId
+}
 
 export interface Campus {
   id: string;
@@ -146,6 +152,7 @@ export interface UserProfile {
 // ── Permissions ────────────────────────────────────────────────────────
 export const ROLE_LABELS: Record<UserRole, string> = {
   member: 'Member',
+  group_leader: 'Group Leader',
   campus_leader: 'Campus Leader',
   admin: 'Admin',
   super_admin: 'Super Admin',
@@ -153,17 +160,18 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
   member: 0,
-  campus_leader: 1,
-  admin: 2,
-  super_admin: 3,
+  group_leader: 1,
+  campus_leader: 2,
+  admin: 3,
+  super_admin: 4,
 };
 
 export function canAccessAdmin(role: UserRole): boolean {
-  return ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.campus_leader;
+  return ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.group_leader;
 }
 
 export function canPublish(role: UserRole): boolean {
-  return ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.campus_leader;
+  return ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.group_leader;
 }
 
 export function canPublishAllCampuses(role: UserRole): boolean {
@@ -171,7 +179,7 @@ export function canPublishAllCampuses(role: UserRole): boolean {
 }
 
 export function canManageUsers(role: UserRole): boolean {
-  return ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.admin;
+  return ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.campus_leader;
 }
 
 export function canManageCampusesAndGroups(role: UserRole): boolean {
@@ -180,15 +188,23 @@ export function canManageCampusesAndGroups(role: UserRole): boolean {
 
 export function canAppointRole(appointerRole: UserRole, targetRole: UserRole): boolean {
   if (appointerRole === 'super_admin') return true;
-  if (appointerRole === 'admin' && targetRole === 'campus_leader') return true;
-  if (appointerRole === 'admin' && targetRole === 'member') return true;
+  if (appointerRole === 'admin' && ROLE_HIERARCHY[targetRole] <= ROLE_HIERARCHY.campus_leader) return true;
+  if (appointerRole === 'campus_leader' && (targetRole === 'group_leader' || targetRole === 'member')) return true;
   return false;
 }
 
 export function getAssignableRoles(role: UserRole): UserRole[] {
-  if (role === 'super_admin') return ['member', 'campus_leader', 'admin', 'super_admin'];
-  if (role === 'admin') return ['member', 'campus_leader'];
+  if (role === 'super_admin') return ['member', 'group_leader', 'campus_leader', 'admin', 'super_admin'];
+  if (role === 'admin') return ['member', 'group_leader', 'campus_leader'];
+  if (role === 'campus_leader') return ['member', 'group_leader'];
   return [];
+}
+
+/** Get group names visible for a given campus (global + campus-specific) */
+export function getGroupsForCampus(groupScopes: Group[], campusId: string): string[] {
+  return groupScopes
+    .filter(g => g.scope === 'global' || g.scope === campusId)
+    .map(g => g.name);
 }
 
 // ── Default Groups (kept client-side for now) ──────────────────────────
@@ -196,6 +212,8 @@ const defaultGroups: string[] = [
   'Young Adults', 'Families', 'Men', 'Women',
   'Seniors', 'New Members', 'Couples', 'Youth',
 ];
+
+const defaultGroupScopes: Group[] = defaultGroups.map(name => ({ name, scope: 'global' }));
 
 const defaultCurrentUser: UserProfile = {
   id: '1', name: 'Super Admin', email: 'superadmin@grace.org',
@@ -216,6 +234,7 @@ interface AdminDataContextType {
   // Data
   campuses: Campus[];
   groups: string[];
+  groupScopes: Group[];
   events: Event[];
   eventRegistrations: EventRegistration[];
   announcements: Announcement[];
@@ -278,8 +297,9 @@ interface AdminDataContextType {
   addCampus: (campus: Omit<Campus, 'id'>) => void;
   updateCampus: (id: string, updates: Partial<Campus>) => void;
   deleteCampus: (id: string) => void;
-  addGroup: (name: string) => void;
+  addGroup: (name: string, scope?: string) => void;
   deleteGroup: (name: string) => void;
+  updateGroupScope: (name: string, scope: string) => void;
 
   // Filtering
   getVisibleAnnouncements: (campusId: string, groups: string[]) => Announcement[];
@@ -291,6 +311,7 @@ const AdminDataContext = createContext<AdminDataContextType | null>(null);
 export function AdminDataProvider({ children }: { children: React.ReactNode }) {
   const [campuses, setCampuses] = useState<Campus[]>([]);
   const [groups, setGroups] = useState<string[]>(defaultGroups);
+  const [groupScopes, setGroupScopes] = useState<Group[]>(defaultGroupScopes);
   const [events, setEvents] = useState<Event[]>([]);
   const [eventRegistrations, setEventRegistrations] = useState<EventRegistration[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -633,11 +654,16 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // ── Groups CRUD (client-side only for now) ────────────────────────────
-  const addGroup = useCallback((name: string) => {
+  const addGroup = useCallback((name: string, scope: string = 'global') => {
     setGroups(prev => prev.includes(name) ? prev : [...prev, name]);
+    setGroupScopes(prev => prev.some(g => g.name === name) ? prev : [...prev, { name, scope }]);
   }, []);
   const deleteGroup = useCallback((name: string) => {
     setGroups(prev => prev.filter(g => g !== name));
+    setGroupScopes(prev => prev.filter(g => g.name !== name));
+  }, []);
+  const updateGroupScope = useCallback((name: string, scope: string) => {
+    setGroupScopes(prev => prev.map(g => g.name === name ? { ...g, scope } : g));
   }, []);
 
   // ── Filtering ─────────────────────────────────────────────────────────
@@ -663,11 +689,11 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AdminDataContext.Provider value={{
-      campuses, groups, events, eventRegistrations, announcements, users, currentUser, setCurrentUser,
+      campuses, groups, groupScopes, events, eventRegistrations, announcements, users, currentUser, setCurrentUser,
       addEvent, updateEvent, deleteEvent, addEventRegistration, getEventRegistrations,
       addAnnouncement, updateAnnouncement, deleteAnnouncement,
       addUser, updateUser, deleteUser,
-      addCampus, updateCampus, deleteCampus, addGroup, deleteGroup,
+      addCampus, updateCampus, deleteCampus, addGroup, deleteGroup, updateGroupScope,
       getVisibleAnnouncements, getVisibleEvents,
       galleryAlbumUrl, setGalleryAlbumUrl,
       worshipVideos, addWorshipVideo, updateWorshipVideo, deleteWorshipVideo,

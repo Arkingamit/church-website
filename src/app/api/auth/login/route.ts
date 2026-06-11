@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/db';
 import User from '@/models/User';
-import bcrypt from 'bcryptjs';
+import { OAuth2Client } from 'google-auth-library';
 import { createSession } from '@/lib/auth-utils';
 import { loginSchema } from '@/lib/validations';
 
@@ -13,12 +13,26 @@ export async function POST(req: Request) {
     if (!parseResult.success) {
       return NextResponse.json({ error: parseResult.error.errors[0].message }, { status: 400 });
     }
-    const { email, password } = parseResult.data;
+    const { credential } = parseResult.data;
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    // Verify Google token
+    const client = new OAuth2Client(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+    });
+    
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) {
+      return NextResponse.json({ error: 'Invalid Google token or missing email' }, { status: 400 });
+    }
+
+    const email = payload.email.toLowerCase();
+
+    const user = await User.findOne({ email });
     
     if (!user) {
-      return NextResponse.json({ error: 'No account found with this email' }, { status: 404 });
+      return NextResponse.json({ error: 'No account found with this Google account. Please register first.' }, { status: 404 });
     }
 
     if (user.status === 'pending') {
@@ -27,11 +41,6 @@ export async function POST(req: Request) {
 
     if (user.status === 'rejected') {
       return NextResponse.json({ error: 'Your registration was not approved. Please contact your campus leader.' }, { status: 403 });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password || '');
-    if (!isMatch) {
-      return NextResponse.json({ error: 'Incorrect password' }, { status: 401 });
     }
 
     // Create session cookie
