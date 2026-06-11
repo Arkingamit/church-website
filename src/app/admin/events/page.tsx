@@ -1,0 +1,606 @@
+"use client";
+
+import React, { useState } from 'react';
+import { useAdminData, canPublishAllCampuses, type Event, type FormField, type FormFieldType } from '@/lib/admin-data-context';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
+  Calendar, Clock, MapPin, Users, Plus, Pencil, Trash2, Search, X,
+  Megaphone, Globe, Building2, Image as ImageIcon, Link2, ListPlus, AlignLeft, CheckSquare, ChevronDown, Trash, ListEnd, Download
+} from 'lucide-react';
+
+const EVENT_CATEGORIES = ['Worship', 'Prayer', 'Youth', 'Study', 'Outreach', 'Fellowship'];
+
+const categoryColors: Record<string, string> = {
+  Worship: 'bg-primary/10 text-primary',
+  Prayer: 'bg-amber-500/10 text-amber-600',
+  Youth: 'bg-emerald-500/10 text-emerald-600',
+  Study: 'bg-blue-500/10 text-blue-600',
+  Outreach: 'bg-rose-500/10 text-rose-600',
+  Fellowship: 'bg-purple-500/10 text-purple-600',
+};
+
+const emptyForm = {
+  title: '', description: '', date: '', time: '', endTime: '',
+  location: '', category: 'Worship', capacity: 100, registered: 0,
+  image: null as string | null, recurring: false, host: '',
+  targetCampuses: ['all'] as string[],
+  targetGroups: ['all'] as string[],
+  googlePhotosUrl: '',
+  formFields: [] as FormField[],
+};
+
+export default function EventsPage() {
+  const { events, campuses, groups, currentUser, addEvent, updateEvent, deleteEvent } = useAdminData();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState(emptyForm);
+  const [search, setSearch] = useState('');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [selectedEventForResponses, setSelectedEventForResponses] = useState<Event | null>(null);
+
+  const { getEventRegistrations } = useAdminData();
+
+  const isCampusLeader = currentUser.role === 'campus_leader';
+  const canAllCampuses = canPublishAllCampuses(currentUser.role);
+
+  const filtered = events.filter(e =>
+    e.title.toLowerCase().includes(search.toLowerCase()) ||
+    e.category.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const openCreate = () => {
+    setEditingId(null);
+    setForm({
+      ...emptyForm,
+      targetCampuses: isCampusLeader ? [currentUser.campusId] : ['all'],
+      targetGroups: ['all'],
+    });
+    setDialogOpen(true);
+  };
+
+  const openEdit = (event: Event) => {
+    setEditingId(event.id);
+    setForm({
+      title: event.title, description: event.description, date: event.date,
+      time: event.time, endTime: event.endTime, location: event.location,
+      category: event.category, capacity: event.capacity, registered: event.registered,
+      image: event.image, recurring: event.recurring, host: event.host,
+      targetCampuses: event.targetCampuses ?? ['all'],
+      targetGroups: event.targetGroups ?? ['all'],
+      googlePhotosUrl: event.googlePhotosUrl || '',
+      formFields: event.formFields || [],
+    });
+    setDialogOpen(true);
+  };
+
+  const handleSubmit = () => {
+    if (!form.title || !form.date || !form.time) return;
+    if (editingId !== null) {
+      updateEvent(editingId, form);
+    } else {
+      addEvent(form);
+    }
+    setDialogOpen(false);
+    setForm(emptyForm);
+    setEditingId(null);
+  };
+
+  const handleDelete = (id: string) => { deleteEvent(id); setDeleteConfirmId(null); };
+
+  const formatTime = (time: string) => {
+    if (!time) return '';
+    const [h, m] = time.split(':');
+    const hour = parseInt(h);
+    return `${hour % 12 || 12}:${m} ${hour >= 12 ? 'PM' : 'AM'}`;
+  };
+
+  // Audience helpers
+  const isAllCampuses = form.targetCampuses.includes('all');
+  const isAllGroups = form.targetGroups.includes('all');
+
+  const toggleCampusMode = (all: boolean) => {
+    if (isCampusLeader) return;
+    setForm(f => ({ ...f, targetCampuses: all ? ['all'] : [] }));
+  };
+  const toggleCampus = (id: string) => {
+    if (isCampusLeader) return;
+    setForm(f => {
+      const has = f.targetCampuses.includes(id);
+      const next = has ? f.targetCampuses.filter(c => c !== id) : [...f.targetCampuses.filter(c => c !== 'all'), id];
+      return { ...f, targetCampuses: next.length === 0 ? ['all'] : next };
+    });
+  };
+  const toggleGroupMode = (all: boolean) => setForm(f => ({ ...f, targetGroups: all ? ['all'] : [] }));
+  const toggleGroup = (g: string) => {
+    setForm(f => {
+      const has = f.targetGroups.includes(g);
+      const next = has ? f.targetGroups.filter(x => x !== g) : [...f.targetGroups.filter(x => x !== 'all'), g];
+      return { ...f, targetGroups: next.length === 0 ? ['all'] : next };
+    });
+  };
+
+  // Form Builder Helpers
+  const addField = () => {
+    const newField: FormField = { id: `field_${Date.now()}`, type: 'text', label: '', required: true };
+    setForm(f => ({ ...f, formFields: [...(f.formFields || []), newField] }));
+  };
+  const updateField = (id: string, updates: Partial<FormField>) => {
+    setForm(f => ({
+      ...f,
+      formFields: (f.formFields || []).map(field => field.id === id ? { ...field, ...updates } : field)
+    }));
+  };
+  const removeField = (id: string) => {
+    setForm(f => ({ ...f, formFields: (f.formFields || []).filter(field => field.id !== id) }));
+  };
+  const addFieldOption = (fieldId: string) => {
+    setForm(f => ({
+      ...f,
+      formFields: (f.formFields || []).map(field => {
+        if (field.id === fieldId) {
+          const opts = field.options || [];
+          return { ...field, options: [...opts, { id: `opt_${Date.now()}`, label: `Option ${opts.length + 1}` }] };
+        }
+        return field;
+      })
+    }));
+  };
+  const updateFieldOption = (fieldId: string, optId: string, label: string) => {
+    setForm(f => ({
+      ...f,
+      formFields: (f.formFields || []).map(field => {
+        if (field.id === fieldId) {
+          return { ...field, options: (field.options || []).map(o => o.id === optId ? { ...o, label } : o) };
+        }
+        return field;
+      })
+    }));
+  };
+  const removeFieldOption = (fieldId: string, optId: string) => {
+    setForm(f => ({
+      ...f,
+      formFields: (f.formFields || []).map(field => {
+        if (field.id === fieldId) {
+          return { ...field, options: (field.options || []).filter(o => o.id !== optId) };
+        }
+        return field;
+      })
+    }));
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Events</h1>
+          <p className="text-muted-foreground mt-1">Manage upcoming events and registration forms</p>
+        </div>
+        <Button onClick={openCreate} className="gap-2 shrink-0">
+          <Plus className="w-4 h-4" /> Create Event
+        </Button>
+      </div>
+
+      {/* Search */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input placeholder="Search events..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+      </div>
+
+      {/* Events Grid */}
+      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {filtered.map((event) => (
+          <Card key={event.id} className="border-border/50 hover:shadow-md transition-shadow group">
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="space-y-2 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge className={`text-[10px] ${categoryColors[event.category] || 'bg-muted text-muted-foreground'}`}>
+                      {event.category}
+                    </Badge>
+                    {event.recurring && <Badge variant="outline" className="text-[10px]">Recurring</Badge>}
+                  </div>
+                  <h3 className="text-base font-semibold leading-tight">{event.title}</h3>
+                  {/* Audience tags */}
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {(event.targetCampuses ?? ['all']).includes('all') ? (
+                      <Badge variant="outline" className="text-[9px] gap-0.5 border-amber-500/30 text-amber-600">
+                        <Globe className="w-2.5 h-2.5" /> All
+                      </Badge>
+                    ) : (
+                      (event.targetCampuses ?? []).map(id => (
+                        <Badge key={id} variant="outline" className="text-[9px] gap-0.5 border-blue-500/30 text-blue-600">
+                          <Building2 className="w-2.5 h-2.5" /> {campuses.find(c => c.id === id)?.name || id}
+                        </Badge>
+                      ))
+                    )}
+                    {!(event.targetGroups ?? ['all']).includes('all') && (
+                      (event.targetGroups ?? []).map(g => (
+                        <Badge key={g} variant="outline" className="text-[9px] gap-0.5 border-purple-500/30 text-purple-600">
+                          <Users className="w-2.5 h-2.5" /> {g}
+                        </Badge>
+                      ))
+                    )}
+                  </div>
+                </div>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => setSelectedEventForResponses(event)} title="View Responses">
+                    <ListEnd className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(event)}>
+                    <Pencil className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteConfirmId(event.id)}>
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground line-clamp-2">{event.description}</p>
+              <div className="space-y-1.5 text-sm">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-3.5 h-3.5 text-primary" />
+                  <span>{new Date(event.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-3.5 h-3.5 text-primary" />
+                  <span>{formatTime(event.time)} – {formatTime(event.endTime)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-3.5 h-3.5 text-primary" />
+                  <span>{event.location}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="w-3.5 h-3.5 text-primary" />
+                  <span>{event.registered}/{event.capacity} registered</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {filtered.length === 0 && (
+        <div className="text-center py-16">
+          <Calendar className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
+          <p className="text-muted-foreground">No events found</p>
+          <Button onClick={openCreate} variant="outline" className="mt-4 gap-2">
+            <Plus className="w-4 h-4" /> Create your first event
+          </Button>
+        </div>
+      )}
+
+      {/* Create/Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingId ? 'Edit Event' : 'Create Event'}</DialogTitle>
+          </DialogHeader>
+          <div className="grid md:grid-cols-2 gap-8 py-2">
+            
+            {/* Left Column: Basic Details */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Title *</Label>
+                <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Event title" />
+              </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Describe the event..." rows={3} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Date *</Label>
+                  <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Category</Label>
+                  <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {EVENT_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Start Time *</Label>
+                  <Input type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>End Time</Label>
+                  <Input type="time" value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Location</Label>
+                  <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="e.g. Grace Central" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Host</Label>
+                  <Input value={form.host} onChange={(e) => setForm({ ...form, host: e.target.value })} placeholder="e.g. Pastoral Team" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Capacity</Label>
+                  <Input type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: parseInt(e.target.value) || 0 })} />
+                </div>
+                <div className="flex items-center gap-3 pt-6">
+                  <Switch checked={form.recurring} onCheckedChange={(c) => setForm({ ...form, recurring: c })} />
+                  <Label>Recurring event</Label>
+                </div>
+              </div>
+
+              {/* Audience Targeting */}
+              <div className="border-t border-border/50 pt-4 space-y-4">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <Megaphone className="w-4 h-4 text-primary" /> Audience Targeting
+                </h4>
+                {/* Campus */}
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Broadcast to Campuses</Label>
+                  {isCampusLeader && (
+                    <p className="text-[10px] text-amber-500">Campus Leader: restricted to {campuses.find(c => c.id === currentUser.campusId)?.name}</p>
+                  )}
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox checked={isAllCampuses} onCheckedChange={() => toggleCampusMode(true)} disabled={isCampusLeader} /> All
+                    </label>
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox checked={!isAllCampuses} onCheckedChange={() => toggleCampusMode(false)} disabled={isCampusLeader} /> Specific
+                    </label>
+                  </div>
+                  {!isAllCampuses && (
+                    <div className="grid grid-cols-1 gap-1.5 pl-2">
+                      {campuses.map(c => (
+                        <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={form.targetCampuses.includes(c.id)}
+                            onCheckedChange={() => toggleCampus(c.id)}
+                            disabled={isCampusLeader && c.id !== currentUser.campusId}
+                          />
+                          {c.name}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {/* Groups */}
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Visible to Groups</Label>
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox checked={isAllGroups} onCheckedChange={() => toggleGroupMode(true)} /> All
+                    </label>
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox checked={!isAllGroups} onCheckedChange={() => toggleGroupMode(false)} /> Specific
+                    </label>
+                  </div>
+                  {!isAllGroups && (
+                    <div className="grid grid-cols-2 gap-1.5 pl-2">
+                      {groups.map(g => (
+                        <label key={g} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox checked={form.targetGroups.includes(g)} onCheckedChange={() => toggleGroup(g)} />
+                          {g}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {/* Preview */}
+                <div className="bg-muted/30 rounded-lg p-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">Audience Preview</p>
+                  <p className="text-xs">
+                    {isAllCampuses ? '🌐 All Campuses' : `🏢 ${form.targetCampuses.map(id => campuses.find(c => c.id === id)?.name || id).join(', ') || 'None'}`}
+                    {' · '}
+                    {isAllGroups ? '👥 All Groups' : `👤 ${form.targetGroups.join(', ') || 'None'}`}
+                  </p>
+                </div>
+              </div>
+
+              {/* Google Photos Album */}
+              <div className="border-t border-border/50 pt-4 space-y-2">
+                <Label className="flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4 text-primary" />
+                  Event Photo Album
+                </Label>
+                <div className="relative">
+                  <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    value={form.googlePhotosUrl}
+                    onChange={(e) => setForm({ ...form, googlePhotosUrl: e.target.value })}
+                    placeholder="https://photos.app.goo.gl/..."
+                    className="pl-9"
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground">Paste a public Google Photos album URL. Members will see a 5-photo preview on the event card.</p>
+              </div>
+            </div>
+
+            {/* Right Column: Form Builder */}
+            <div className="border-l border-border/50 pl-8 space-y-6">
+              <div>
+                <h4 className="font-bold flex items-center gap-2">
+                  <ListPlus className="w-4 h-4 text-primary" />
+                  Custom Registration Form
+                </h4>
+                <p className="text-xs text-muted-foreground mt-1">Design a poll or questionnaire for attendees answering your RSVP.</p>
+              </div>
+
+              <div className="space-y-6">
+                {(form.formFields || []).map((field, index) => (
+                  <div key={field.id} className="p-4 bg-muted/30 rounded-xl relative group border border-border/30">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="absolute -top-3 -right-3 h-6 w-6 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removeField(field.id)}
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-2">
+                        <Input 
+                          placeholder={`Question ${index + 1}`} 
+                          value={field.label} 
+                          onChange={(e) => updateField(field.id, { label: e.target.value })}
+                          className="font-medium bg-background"
+                        />
+                        <Select value={field.type} onValueChange={(v: FormFieldType) => updateField(field.id, { type: v })}>
+                          <SelectTrigger className="w-[140px] bg-background">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="text"><span className="flex items-center gap-2"><AlignLeft className="w-3 h-3"/> Short Answer</span></SelectItem>
+                            <SelectItem value="textarea"><span className="flex items-center gap-2"><AlignLeft className="w-3 h-3"/> Paragraph</span></SelectItem>
+                            <SelectItem value="radio"><span className="flex items-center gap-2"><Checkbox className="w-3 h-3 rounded-full border-muted-foreground"/> Multiple Choice</span></SelectItem>
+                            <SelectItem value="checkbox"><span className="flex items-center gap-2"><CheckSquare className="w-3 h-3"/> Checkboxes</span></SelectItem>
+                            <SelectItem value="select"><span className="flex items-center gap-2"><ChevronDown className="w-3 h-3"/> Dropdown</span></SelectItem>
+                            <SelectItem value="date"><span className="flex items-center gap-2"><Calendar className="w-3 h-3"/> Date</span></SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Options Builder for Choice types */}
+                      {['radio', 'checkbox', 'select'].includes(field.type) && (
+                        <div className="pl-2 space-y-2 mt-3 border-l-2 border-primary/20">
+                          {(field.options || []).map((opt, optIdx) => (
+                            <div key={opt.id} className="flex items-center gap-2">
+                              {field.type === 'radio' && <div className="w-3 h-3 rounded-full border border-muted-foreground shrink-0" />}
+                              {field.type === 'checkbox' && <div className="w-3 h-3 rounded border border-muted-foreground shrink-0" />}
+                              {field.type === 'select' && <span className="text-xs text-muted-foreground shrink-0">{optIdx + 1}.</span>}
+                              <Input 
+                                value={opt.label} 
+                                onChange={(e) => updateFieldOption(field.id, opt.id, e.target.value)}
+                                className="h-7 text-sm bg-background"
+                              />
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0" onClick={() => removeFieldOption(field.id, opt.id)}>
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          ))}
+                          <div className="pt-1">
+                            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => addFieldOption(field.id)}>
+                              <Plus className="w-3 h-3" /> Add Option
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <Button variant="outline" className="w-full gap-2 border-dashed" onClick={addField}>
+                <Plus className="w-4 h-4" /> Add Form Field
+              </Button>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSubmit} disabled={!form.title || !form.date || !form.time}>
+              {editingId ? 'Save Changes' : 'Create Event'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirm */}
+      <Dialog open={deleteConfirmId !== null} onOpenChange={() => setDeleteConfirmId(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Delete Event?</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">This action cannot be undone.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* View Responses Confirm */}
+      {selectedEventForResponses && (
+        <Dialog open={true} onOpenChange={(open) => !open && setSelectedEventForResponses(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <ListEnd className="w-5 h-5 text-primary" />
+                Responses for {selectedEventForResponses.title}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-4 space-y-6">
+              {(() => {
+                const regs = getEventRegistrations(selectedEventForResponses.id);
+                if (regs.length === 0) {
+                  return (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <ListEnd className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>No responses recorded yet.</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-6">
+                    <div className="flex gap-4 items-center p-3 bg-muted rounded-lg">
+                      <div className="flex-1">
+                        <p className="text-sm text-muted-foreground">Total Responses</p>
+                        <p className="text-2xl font-bold">{regs.length}</p>
+                      </div>
+                      <Button variant="outline" className="gap-2 shrink-0">
+                        <Download className="w-4 h-4" /> Export CSV
+                      </Button>
+                    </div>
+
+                    <div className="border rounded-xl divide-y">
+                      {regs.map(reg => (
+                        <div key={reg.id} className="p-4 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold">{reg.userName}</p>
+                              <p className="text-xs text-muted-foreground">{reg.userEmail} · {new Date(reg.registeredAt).toLocaleString()}</p>
+                            </div>
+                          </div>
+                          {Object.keys(reg.responses).length > 0 && (
+                            <div className="bg-muted/30 p-3 rounded-md space-y-2">
+                              {selectedEventForResponses.formFields?.map(field => {
+                                const answer = reg.responses[field.id];
+                                if (!answer) return null;
+                                return (
+                                  <div key={field.id} className="text-sm">
+                                    <span className="font-medium text-muted-foreground">{field.label}: </span>
+                                    <span>{Array.isArray(answer) ? answer.join(', ') : answer}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  );
+}
