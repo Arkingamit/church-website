@@ -1,87 +1,112 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Heart, MessageCircle, Plus, Shield, Clock, Users } from 'lucide-react';
+import { Heart, MessageCircle, Plus, Shield, Clock, Users, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
-const prayerRequests = [
-  {
-    id: 1,
-    title: "Healing for my mother",
-    content: "Please pray for my mother who is recovering from surgery. She's in good spirits but needs strength for the healing process.",
-    author: "Sarah M.",
-    isAnonymous: false,
-    privacy: "public",
-    createdAt: "2024-12-15T10:30:00Z",
-    prayedCount: 45,
-    comments: 8,
-    category: "Health"
-  },
-  {
-    id: 2,
-    title: "Job search guidance",
-    content: "I've been looking for work for several months. Praying for God's direction and the right opportunity to provide for my family.",
-    author: "Anonymous",
-    isAnonymous: true,
-    privacy: "public",
-    createdAt: "2024-12-14T15:20:00Z",
-    prayedCount: 23,
-    comments: 4,
-    category: "Career"
-  },
-  {
-    id: 3,
-    title: "Marriage restoration",
-    content: "Please pray for healing and restoration in my marriage. We're going through a difficult time but believe God can work miracles.",
-    author: "J.D.",
-    isAnonymous: false,
-    privacy: "members",
-    createdAt: "2024-12-13T09:15:00Z",
-    prayedCount: 67,
-    comments: 12,
-    category: "Relationships"
-  },
-  {
-    id: 4,
-    title: "Wisdom for our church leadership",
-    content: "Praying for our pastoral team as they make important decisions about the upcoming building expansion and new ministry programs.",
-    author: "Church Elder",
-    isAnonymous: false,
-    privacy: "public",
-    createdAt: "2024-12-12T14:45:00Z",
-    prayedCount: 89,
-    comments: 15,
-    category: "Church"
-  }
-];
+interface PrayerRequest {
+  id: string;
+  title: string;
+  content: string;
+  authorName: string;
+  isAnonymous: boolean;
+  privacy: string;
+  category: string;
+  prayedCount: number;
+  comments: number;
+  createdAt: string;
+}
 
 const categoryColors = {
   Health: "bg-success/10 text-success",
   Career: "bg-accent/10 text-accent-foreground",
   Relationships: "bg-prayer/10 text-prayer",
   Church: "bg-primary/10 text-primary",
-  Family: "bg-muted text-muted-foreground"
+  Family: "bg-muted text-muted-foreground",
+  General: "bg-gray-100 text-gray-800"
 };
 
 export const PrayerWall = () => {
+  const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
+
   const [newRequest, setNewRequest] = useState({
     title: '',
     content: '',
+    authorName: '',
     isAnonymous: false,
-    privacy: 'public'
+    privacy: 'public',
+    category: 'General'
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const fetchPrayers = async () => {
+    try {
+      const res = await fetch('/api/prayers');
+      if (res.ok) {
+        const data = await res.json();
+        setPrayers(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch prayers', error);
+      toast.error('Failed to load prayer requests');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPrayers();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log('Prayer request submitted:', newRequest);
-    setShowForm(false);
-    setNewRequest({ title: '', content: '', isAnonymous: false, privacy: 'public' });
+    setSubmitting(true);
+
+    try {
+      const res = await fetch('/api/prayers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newRequest)
+      });
+
+      if (res.ok) {
+        toast.success('Prayer request shared successfully!');
+        setShowForm(false);
+        setNewRequest({ title: '', content: '', authorName: '', isAnonymous: false, privacy: 'public', category: 'General' });
+        fetchPrayers(); // Reload the list
+      } else {
+        const data = await res.json();
+        toast.error(data.error || 'Failed to submit prayer request');
+      }
+    } catch (error) {
+      toast.error('An unexpected error occurred');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handlePray = async (id: string) => {
+    try {
+      const res = await fetch(`/api/prayers/${id}/pray`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        // Optimistically update the UI
+        setPrayers(prev => prev.map(p => p.id === id ? { ...p, prayedCount: data.prayedCount } : p));
+        toast.success('You prayed for this request');
+      } else {
+        const data = await res.json();
+        toast.error(data.error || 'You already prayed for this');
+      }
+    } catch (error) {
+      toast.error('Failed to record prayer');
+    }
   };
 
   return (
@@ -98,7 +123,7 @@ export const PrayerWall = () => {
 
           {/* Add Prayer Request Button */}
           <div className="text-center mb-8">
-            <Button 
+            <Button
               onClick={() => setShowForm(!showForm)}
               className="bg-gradient-to-r from-prayer to-prayer/80 hover:opacity-90"
               size="lg"
@@ -110,7 +135,7 @@ export const PrayerWall = () => {
 
           {/* Prayer Request Form */}
           {showForm && (
-            <Card className="mb-8 border-prayer/20">
+            <Card className="mb-8 border-prayer/20 animate-in fade-in slide-in-from-top-4">
               <CardHeader>
                 <h3 className="text-lg font-semibold">Share Your Prayer Request</h3>
               </CardHeader>
@@ -122,6 +147,7 @@ export const PrayerWall = () => {
                       value={newRequest.title}
                       onChange={(e) => setNewRequest(prev => ({ ...prev, title: e.target.value }))}
                       required
+                      minLength={3}
                     />
                   </div>
                   <div>
@@ -131,15 +157,42 @@ export const PrayerWall = () => {
                       value={newRequest.content}
                       onChange={(e) => setNewRequest(prev => ({ ...prev, content: e.target.value }))}
                       required
+                      minLength={10}
                     />
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-4">
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <Input
+                        placeholder="Your Name (Optional)"
+                        value={newRequest.authorName}
+                        onChange={(e) => setNewRequest(prev => ({ ...prev, authorName: e.target.value }))}
+                        disabled={newRequest.isAnonymous}
+                      />
+                    </div>
+                    <div>
+                      <select
+                        value={newRequest.category}
+                        onChange={(e) => setNewRequest(prev => ({ ...prev, category: e.target.value }))}
+                        className="w-full text-sm border rounded px-3 py-2 bg-transparent"
+                      >
+                        <option value="General">General</option>
+                        <option value="Health">Health</option>
+                        <option value="Family">Family</option>
+                        <option value="Career">Career</option>
+                        <option value="Relationships">Relationships</option>
+                        <option value="Church">Church</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-4 pt-2">
                     <div className="flex items-center space-x-2">
                       <input
                         type="checkbox"
                         id="anonymous"
                         checked={newRequest.isAnonymous}
-                        onChange={(e) => setNewRequest(prev => ({ ...prev, isAnonymous: e.target.checked }))}
+                        onChange={(e) => setNewRequest(prev => ({ ...prev, isAnonymous: e.target.checked, authorName: '' }))}
                         className="rounded"
                       />
                       <label htmlFor="anonymous" className="text-sm">Post anonymously</label>
@@ -148,7 +201,7 @@ export const PrayerWall = () => {
                       <select
                         value={newRequest.privacy}
                         onChange={(e) => setNewRequest(prev => ({ ...prev, privacy: e.target.value }))}
-                        className="text-sm border rounded px-3 py-1"
+                        className="text-sm border rounded px-3 py-1 bg-transparent"
                       >
                         <option value="public">Public</option>
                         <option value="members">Members Only</option>
@@ -156,8 +209,12 @@ export const PrayerWall = () => {
                       </select>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button type="submit">Submit Prayer Request</Button>
+
+                  <div className="flex gap-2 pt-4">
+                    <Button type="submit" disabled={submitting}>
+                      {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Submit Prayer Request
+                    </Button>
                     <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
                       Cancel
                     </Button>
@@ -178,66 +235,83 @@ export const PrayerWall = () => {
           </div>
 
           {/* Prayer Requests */}
-          <div className="space-y-6">
-            {prayerRequests.map((request) => (
-              <Card key={request.id} className="hover:shadow-elevated transition-all duration-300">
-                <CardHeader className="pb-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Badge className={`${categoryColors[request.category as keyof typeof categoryColors]} text-xs`}>
-                          {request.category}
-                        </Badge>
-                        {request.privacy !== 'public' && (
-                          <Badge variant="outline" className="text-xs gap-1">
-                            <Shield className="w-3 h-3" />
-                            {request.privacy === 'members' ? 'Members' : 'Staff Only'}
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-prayer" />
+            </div>
+          ) : prayers.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              No prayer requests found. Be the first to share one!
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {prayers.map((request) => (
+                <Card key={request.id} className="hover:shadow-elevated transition-all duration-300">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Badge className={`${categoryColors[request.category as keyof typeof categoryColors] || categoryColors.General} text-xs`}>
+                            {request.category}
                           </Badge>
-                        )}
-                      </div>
-                      <h3 className="text-lg font-semibold">{request.title}</h3>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>By {request.author}</span>
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          <span>{new Date(request.createdAt).toLocaleDateString()}</span>
+                          {request.privacy !== 'public' && (
+                            <Badge variant="outline" className="text-xs gap-1">
+                              <Shield className="w-3 h-3" />
+                              {request.privacy === 'members' ? 'Members' : 'Staff Only'}
+                            </Badge>
+                          )}
+                        </div>
+                        <h3 className="text-lg font-semibold">{request.title}</h3>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <span>By {request.authorName}</span>
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            <span>{new Date(request.createdAt).toLocaleDateString()}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="pt-0">
-                  <p className="text-muted-foreground leading-relaxed mb-4">
-                    {request.content}
-                  </p>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <Button variant="ghost" size="sm" className="gap-2 text-prayer hover:text-prayer">
-                        <Heart className="w-4 h-4" />
-                        <span>{request.prayedCount} prayed</span>
-                      </Button>
-                      <Button variant="ghost" size="sm" className="gap-2">
-                        <MessageCircle className="w-4 h-4" />
-                        <span>{request.comments} comments</span>
+                  </CardHeader>
+
+                  <CardContent className="pt-0">
+                    <p className="text-muted-foreground leading-relaxed mb-4 whitespace-pre-wrap">
+                      {request.content}
+                    </p>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <Button variant="ghost" size="sm" className="gap-2 text-prayer hover:text-prayer cursor-default">
+                          <Heart className="w-4 h-4" />
+                          <span>{request.prayedCount} prayed</span>
+                        </Button>
+                        <Button variant="ghost" size="sm" className="gap-2 cursor-default">
+                          <MessageCircle className="w-4 h-4" />
+                          <span>{request.comments} comments</span>
+                        </Button>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="bg-prayer/5 border-prayer/20 hover:bg-prayer/10 transition-colors"
+                        onClick={() => handlePray(request.id)}
+                      >
+                        I Prayed
                       </Button>
                     </div>
-                    <Button variant="outline" size="sm" className="bg-prayer/5 border-prayer/20 hover:bg-prayer/10">
-                      I Prayed
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
 
           {/* Load More */}
-          <div className="text-center mt-8">
-            <Button variant="outline" size="lg">
-              Load More Prayer Requests
-            </Button>
-          </div>
+          {!loading && prayers.length > 0 && (
+            <div className="text-center mt-8">
+              <Button variant="outline" size="lg">
+                Load More Prayer Requests
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </section>
