@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Navigation } from '@/components/ui/navigation';
 import { Calendar, Clock, MapPin, Users, ArrowRight, Images, ChevronLeft } from 'lucide-react';
 import { EventPhotoModal, EventRSVPModal, categoryColors, formatTime, getAvailabilityStatus } from '@/components/ui/events-section';
 
@@ -142,10 +141,8 @@ export default function EventsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <Navigation />
-
-      <main className="flex-1 py-12">
+    <div className="min-h-screen bg-background pt-24 pb-12">
+      <main className="flex-1">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto space-y-8">
             {/* Header */}

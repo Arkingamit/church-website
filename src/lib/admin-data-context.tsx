@@ -202,6 +202,9 @@ export function getAssignableRoles(role: UserRole): UserRole[] {
 
 /** Get group names visible for a given campus (global + campus-specific) */
 export function getGroupsForCampus(groupScopes: Group[], campusId: string): string[] {
+  if (campusId === 'global') {
+    return groupScopes.map(g => g.name);
+  }
   return groupScopes
     .filter(g => g.scope === 'global' || g.scope === campusId)
     .map(g => g.name);

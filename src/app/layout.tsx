@@ -28,6 +28,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { PublicLayoutWrapper } from "@/components/ui/public-layout-wrapper";
+
 export default function RootLayout({
   children,
 }: {
@@ -36,7 +38,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable}>
       <body>
-        <Providers>{children}</Providers>
+        <Providers>
+          <PublicLayoutWrapper>
+            {children}
+          </PublicLayoutWrapper>
+        </Providers>
       </body>
     </html>
   );

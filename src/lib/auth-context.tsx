@@ -31,6 +31,7 @@ export interface AuthSession {
   memberId: string;
   email: string;
   name: string;
+  role: string;
 }
 
 interface AuthContextType {
@@ -73,6 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             memberId: data.user._id,
             email: data.user.email,
             name: data.user.name || `${data.user.firstName} ${data.user.lastName}`,
+            role: data.user.role || 'member',
           });
         } else {
           setSession(null);

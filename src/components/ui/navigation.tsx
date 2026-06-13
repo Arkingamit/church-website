@@ -1,23 +1,49 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
-import { Heart, Calendar, Camera, Play, Users, Menu, X, Volume2, LogOut, User, Shield } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { LogOut, User } from 'lucide-react';
+
+const AnimatedNavLink = ({ href, children, isPageRoute }: { href: string; children: React.ReactNode; isPageRoute?: boolean }) => {
+  const defaultTextColor = 'text-gray-300';
+  const hoverTextColor = 'text-white';
+  const textSizeClass = 'text-sm';
+
+  const content = (
+    <div className={`group relative overflow-hidden h-5 flex items-start ${textSizeClass}`}>
+      <div className="flex flex-col transition-transform duration-400 ease-out transform group-hover:-translate-y-1/2">
+        <span className={`${defaultTextColor} h-5 flex items-center`}>{children}</span>
+        <span className={`${hoverTextColor} h-5 flex items-center`}>{children}</span>
+      </div>
+    </div>
+  );
+
+  if (isPageRoute) {
+    return <Link href={href} className="flex">{content}</Link>;
+  }
+
+  return <a href={href} className="flex">{content}</a>;
+};
 
 export const Navigation = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [headerShapeClass, setHeaderShapeClass] = useState('rounded-full');
+  const shapeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Existing scroll hiding state
   const [isScrolledDown, setIsScrolledDown] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
+
+  // Existing auth state
+  const { session, logout } = useAuth();
+  const router = useRouter();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      // Disperse (hide) when scrolling down, show when scrolling up or near top
       if (currentScrollY > lastScrollY && currentScrollY > 80) {
         setIsScrolledDown(true);
       } else {
@@ -30,16 +56,38 @@ export const Navigation = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
-  const { session, logout } = useAuth();
-  const router = useRouter();
+  const toggleMenu = () => {
+    setIsOpen(!isOpen);
+  };
 
-  const navItems = [
+  useEffect(() => {
+    if (shapeTimeoutRef.current) {
+      clearTimeout(shapeTimeoutRef.current);
+    }
+
+    if (isOpen) {
+      setHeaderShapeClass('rounded-2xl');
+    } else {
+      shapeTimeoutRef.current = setTimeout(() => {
+        setHeaderShapeClass('rounded-full');
+      }, 300);
+    }
+
+    return () => {
+      if (shapeTimeoutRef.current) {
+        clearTimeout(shapeTimeoutRef.current);
+      }
+    };
+  }, [isOpen]);
+
+  const navLinksData = [
+   
+    { label: 'Events', href: '#events' },
+    { label: 'Sermons', href: '/sermons' },
+    { label: 'Music', href: '/music' },
+    { label: 'Gallery', href: '#gallery' },
+    { label: 'Prayer Wall', href: '#prayers' },
     { label: 'About', href: '#about' },
-    { label: 'Events', href: '#events', icon: Calendar },
-    { label: 'Sermons', href: '/sermons', icon: Play },
-    { label: 'Music', href: '/music', icon: Volume2 },
-    { label: 'Gallery', href: '#gallery', icon: Camera },
-    { label: 'Prayer Wall', href: '#prayers', icon: Heart },
   ];
 
   const isPageRoute = (href: string) => href.startsWith('/');
@@ -47,6 +95,7 @@ export const Navigation = () => {
   const handleLogout = () => {
     logout();
     setUserMenuOpen(false);
+    setIsOpen(false);
     router.push('/');
   };
 
@@ -54,168 +103,169 @@ export const Navigation = () => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  return (
-    <nav 
-      className={`sticky top-0 z-50 glass border-b border-glass-border transition-all duration-300 ease-in-out ${
-        isScrolledDown ? '-translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100 pointer-events-auto'
-      }`}
-    >
-      <div className="container mx-auto px-6">
-        <div className="flex items-center justify-between h-20">
-          {/* Logo */}
-          <Link href="/" className="flex items-center space-x-4 group cursor-pointer">
-            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 animate-pulse-glow">
-              <img
-                src="/logo.png"
-                alt="Grace Ahmedabad Logo"
-                className="w-7 h-7 object-contain"
-              />
+  const logoElement = (
+    <Link href="/" className="flex items-center space-x-2 group cursor-pointer mr-auto sm:mr-22">
+      <div className="w-10 h-10 sm:w-14 sm:h-14 flex items-center justify-center">
+        <img
+          src="/logo.png"
+          alt="Grace Ahmedabad Logo"
+          className="w-12 h-12 sm:w-16 sm:h-16 object-contain opacity-90"
+        />
+      </div>
+    </Link>
+  );
+
+  const loginButtonElement = (
+    <Link href="/login" className="w-full sm:w-auto">
+      <button className="px-4 py-2 sm:px-4 text-xs sm:text-sm font-medium border border-[#333] bg-[rgba(31,31,31,0.62)] text-gray-300 rounded-full hover:border-white/50 hover:text-white transition-colors duration-200 w-full">
+        Sign In
+      </button>
+    </Link>
+  );
+
+  const signupButtonElement = (
+    <Link href="/register" className="w-full sm:w-auto">
+      <div className="relative group w-full sm:w-auto">
+        <div className="absolute inset-0 -m-2 rounded-full hidden sm:block bg-gray-100 opacity-40 filter blur-lg pointer-events-none transition-all duration-300 ease-out group-hover:opacity-60 group-hover:blur-xl group-hover:-m-3"></div>
+        <button className="relative z-10 px-4 py-2 sm:px-3 text-xs sm:text-sm font-semibold text-black bg-gradient-to-br from-gray-100 to-gray-300 rounded-full hover:from-gray-200 hover:to-gray-400 transition-all duration-200 w-full">
+          Signup
+        </button>
+      </div>
+    </Link>
+  );
+
+  const userDropdownElement = session ? (
+    <div className="relative">
+      <button
+        onClick={() => setUserMenuOpen(!userMenuOpen)}
+        className="flex items-center gap-2 px-2 py-1.5 rounded-full border border-[#333] bg-[rgba(31,31,31,0.62)] hover:border-white/50 transition-all"
+      >
+        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-gray-200 to-gray-400 flex items-center justify-center">
+          <span className="text-[9px] font-bold text-black">{getInitials(session.name)}</span>
+        </div>
+        <span className="text-sm font-medium text-gray-200 hidden sm:block max-w-[80px] truncate">{session.name.split(' ')[0]}</span>
+      </button>
+      {userMenuOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
+          <div className="absolute right-0 top-full mt-3 w-48 py-1 rounded-xl border border-[#333] bg-[#1f1f1f] shadow-2xl z-50 overflow-hidden">
+            <div className="px-3 py-2.5 border-b border-[#333] bg-white/5">
+              <p className="text-xs text-gray-400 truncate">{session.email}</p>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold gradient-text">Grace Ahmedabad</h1>
-              <p className="text-sm text-muted-foreground font-medium">Where hearts unite</p>
-            </div>
-          </Link>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            {navItems.map((item) =>
-              isPageRoute(item.href) ? (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className="group flex items-center space-x-2 text-muted-foreground hover:text-primary transition-all duration-300 relative"
-                >
-                  {item.icon && <item.icon className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />}
-                  <span className="text-sm font-semibold">{item.label}</span>
-                  <div className="absolute -bottom-2 left-0 w-0 h-0.5 bg-gradient-to-r from-primary to-accent group-hover:w-full transition-all duration-300" />
-                </Link>
-              ) : (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  className="group flex items-center space-x-2 text-muted-foreground hover:text-primary transition-all duration-300 relative"
-                >
-                  {item.icon && <item.icon className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />}
-                  <span className="text-sm font-semibold">{item.label}</span>
-                  <div className="absolute -bottom-2 left-0 w-0 h-0.5 bg-gradient-to-r from-primary to-accent group-hover:w-full transition-all duration-300" />
-                </a>
-              )
-            )}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="hidden md:flex items-center space-x-4">
-            <Link href="/admin" className="text-sm font-semibold text-muted-foreground hover:text-primary transition-colors">
-              Admin
-            </Link>
-
-            {session ? (
-              <div className="relative">
-                <button
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/10 hover:bg-primary/20 transition-all"
-                >
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                    <span className="text-[10px] font-bold text-white">{getInitials(session.name)}</span>
-                  </div>
-                  <span className="text-sm font-semibold max-w-[100px] truncate">{session.name}</span>
-                </button>
-                {userMenuOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
-                    <div className="absolute right-0 top-full mt-2 w-48 py-1 rounded-xl border border-border bg-card shadow-elevated z-50">
-                      <div className="px-3 py-2 border-b border-border">
-                        <p className="text-xs text-muted-foreground truncate">{session.email}</p>
-                      </div>
-                      <Link
-                        href="/profile"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="w-full flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-muted/50 transition-colors"
-                      >
-                        <User className="w-4 h-4" /> Profile
-                      </Link>
-                      <button
-                        onClick={handleLogout}
-                        className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-destructive hover:bg-muted/50 transition-colors"
-                      >
-                        <LogOut className="w-4 h-4" /> Sign Out
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            ) : (
-              <Link href="/login">
-                <Button variant="glass" size="sm" className="hover-lift">Sign In</Button>
+            {(session.role === 'admin' || session.role === 'super_admin' || session.role === 'campus_leader') && (
+              <Link
+                href="/admin"
+                onClick={() => setUserMenuOpen(false)}
+                className="w-full flex items-center px-3 py-2.5 text-sm text-gray-300 hover:bg-white/10 transition-colors"
+              >
+                Admin Panel
               </Link>
             )}
+            <Link
+              href="/profile"
+              onClick={() => setUserMenuOpen(false)}
+              className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-gray-300 hover:bg-white/10 transition-colors"
+            >
+              <User className="w-4 h-4" /> Profile
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-red-400 hover:bg-red-400/10 transition-colors"
+            >
+              <LogOut className="w-4 h-4" /> Sign Out
+            </button>
           </div>
+        </>
+      )}
+    </div>
+  ) : null;
 
-          {/* Mobile Menu Button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="md:hidden"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </Button>
+  return (
+    <header className={`fixed top-4 md:top-6 left-1/2 transform -translate-x-1/2 z-50
+                       flex flex-col items-center
+                       px-5 sm:px-10 py-2 sm:py-3 backdrop-blur-md shadow-2xl
+                       ${headerShapeClass}
+                       border border-[#333] bg-[#1f1f1f99] md:bg-[#1f1f1f57]
+                       w-[calc(100%-1.5rem)] md:w-auto md:min-w-[700px] lg:min-w-[900px]
+                       transition-[border-radius,transform,opacity] duration-300 ease-in-out
+                       ${isScrolledDown ? '-translate-y-24 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100 pointer-events-auto'}`}>
+
+      <div className="flex items-center justify-between w-full gap-x-6 sm:gap-x-10">
+        <div className="flex items-center">
+           {logoElement}
         </div>
 
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-border">
-            <div className="space-y-3">
-              {navItems.map((item) =>
-                isPageRoute(item.href) ? (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className="flex items-center space-x-2 text-muted-foreground hover:text-foreground transition-colors py-2"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    {item.icon && <item.icon className="w-4 h-4" />}
-                    <span className="font-medium">{item.label}</span>
-                  </Link>
-                ) : (
-                  <a
-                    key={item.label}
-                    href={item.href}
-                    className="flex items-center space-x-2 text-muted-foreground hover:text-foreground transition-colors py-2"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    {item.icon && <item.icon className="w-4 h-4" />}
-                    <span className="font-medium">{item.label}</span>
-                  </a>
-                )
-              )}
-              <div className="pt-4 border-t border-border space-y-2">
-                {session ? (
-                  <>
-                    <div className="flex items-center gap-2 py-2">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                        <span className="text-xs font-bold text-white">{getInitials(session.name)}</span>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">{session.name}</p>
-                        <p className="text-xs text-muted-foreground">{session.email}</p>
-                      </div>
-                    </div>
-                    <Button variant="outline" className="w-full gap-2" onClick={handleLogout}>
-                      <LogOut className="w-4 h-4" /> Sign Out
-                    </Button>
-                  </>
-                ) : (
-                  <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button variant="outline" className="w-full">Sign In</Button>
-                  </Link>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+        <nav className="hidden md:flex items-center space-x-8">
+          {navLinksData.map((link) => (
+            <AnimatedNavLink key={link.href} href={link.href} isPageRoute={isPageRoute(link.href)}>
+              {link.label}
+            </AnimatedNavLink>
+          ))}
+        </nav>
+
+        <div className="hidden md:flex items-center gap-4 ml-auto">
+          {session ? (
+            userDropdownElement
+          ) : (
+            <>
+              {loginButtonElement}
+              {signupButtonElement}
+            </>
+          )}
+        </div>
+
+        <button className="md:hidden flex items-center justify-center w-10 h-10 text-gray-300 hover:text-white hover:bg-white/10 rounded-full focus:outline-none ml-auto transition-colors" onClick={toggleMenu} aria-label={isOpen ? 'Close Menu' : 'Open Menu'}>
+          {isOpen ? (
+              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          ) : (
+              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+          )}
+        </button>
       </div>
-    </nav>
+
+      {/* Mobile Menu Content */}
+      <div className={`md:hidden flex flex-col items-center w-full transition-all ease-in-out duration-300 overflow-hidden
+                       ${isOpen ? 'max-h-[600px] opacity-100 pt-4 pb-2' : 'max-h-0 opacity-0 pt-0 pb-0 pointer-events-none'}`}>
+        <nav className="flex flex-col items-center space-y-1 w-full border-t border-white/10 pt-4 mt-2">
+          {navLinksData.map((link) => {
+            const content = <span className="text-gray-300 hover:text-white hover:bg-white/10 rounded-xl py-3.5 transition-colors w-full text-center font-medium block text-lg">{link.label}</span>;
+            return isPageRoute(link.href) ? (
+              <Link key={link.href} href={link.href} onClick={() => setIsOpen(false)} className="w-full px-2">{content}</Link>
+            ) : (
+              <a key={link.href} href={link.href} onClick={() => setIsOpen(false)} className="w-full px-2">{content}</a>
+            );
+          })}
+        </nav>
+        <div className="flex flex-col items-center space-y-3 mt-4 w-full border-t border-white/10 pt-6 px-4">
+          {session ? (
+            <>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-200 to-gray-400 flex items-center justify-center">
+                  <span className="text-xs font-bold text-black">{getInitials(session.name)}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-white">{session.name}</span>
+                  <span className="text-xs text-gray-400">{session.email}</span>
+                </div>
+              </div>
+              {(session.role === 'admin' || session.role === 'super_admin' || session.role === 'campus_leader') && (
+                <Link href="/admin" onClick={() => setIsOpen(false)} className="w-full">
+                  <button className="w-full py-2.5 text-sm font-medium border border-[#333] bg-white/5 text-gray-300 rounded-xl hover:text-white transition-colors">Admin Panel</button>
+                </Link>
+              )}
+              <Link href="/profile" onClick={() => setIsOpen(false)} className="w-full">
+                <button className="w-full py-2.5 text-sm font-medium border border-[#333] bg-white/5 text-gray-300 rounded-xl hover:text-white transition-colors">Profile</button>
+              </Link>
+              <button onClick={handleLogout} className="w-full py-2.5 text-sm font-medium border border-red-900/50 bg-red-900/20 text-red-400 rounded-xl hover:bg-red-900/40 transition-colors">Sign Out</button>
+            </>
+          ) : (
+            <>
+              {loginButtonElement}
+              {signupButtonElement}
+            </>
+          )}
+        </div>
+      </div>
+    </header>
   );
 };

@@ -92,8 +92,8 @@ export default function UsersPage() {
   const assignableRoles = getAssignableRoles(currentUser.role);
 
   const filtered = users.filter(u => {
-    // Campus leaders only see users in their campus
-    if (isCampusLeader && u.campusId !== currentUser.campusId) {
+    // Campus leaders only see users in their campus + global users
+    if (isCampusLeader && u.campusId !== currentUser.campusId && u.campusId !== 'global') {
       return false;
     }
     const matchesSearch = u.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -235,7 +235,7 @@ export default function UsersPage() {
                   <p className="text-sm text-muted-foreground truncate">{user.email}</p>
                   <div className="flex items-center gap-3 mt-1 flex-wrap">
                     <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Building2 className="w-3 h-3" /> {campus?.name || user.campusId}
+                      <Building2 className="w-3 h-3" /> {user.campusId === 'global' ? 'Global' : (campus?.name || user.campusId)}
                     </span>
                     {user.groups.length > 0 && (
                       <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -309,6 +309,7 @@ export default function UsersPage() {
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="global">Global (All Campuses)</SelectItem>
                     {campuses.map(c => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}

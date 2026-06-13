@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { Navigation } from "@/components/ui/navigation";
 import { HeroSection } from "@/components/ui/hero-section";
 import { AnnouncementsSection } from "@/components/ui/announcements-section";
 import { PrayerWall } from "@/components/ui/prayer-wall";
@@ -10,7 +9,6 @@ import GallerySection from "@/components/ui/gallery-section";
 import { LiveStreamSection } from "@/components/ui/live-stream";
 import { SongCarousel } from "@/components/ui/song-carousel";
 import { CampusDetails } from "@/components/ui/campus-details";
-import { Footer } from "@/components/ui/footer";
 import { SermonsPreview } from "@/components/ui/sermons-preview";
 import { useParallax, useScrollReveal } from "@/lib/use-parallax";
 
@@ -80,8 +78,7 @@ function RevealSection({
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-background">
-      <Navigation />
+    <div className="min-h-screen bg-background selection:bg-primary/10">
 
       {/* Hero — parallax background blobs */}
       <ParallaxSection speed={0.15}>
@@ -136,7 +133,6 @@ export default function HomePage() {
         <CampusDetails />
       </RevealSection>
 
-      <Footer />
     </div>
   );
 }
