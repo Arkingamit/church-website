@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/api-auth';
 import connectToDatabase from '@/lib/db';
 import Announcement from '@/models/Announcement';
+import { calculateNextOccurrence } from '@/lib/recurrence';
 
 export async function GET() {
   const admin = await requireAdmin();
@@ -23,6 +24,17 @@ export async function POST(req: Request) {
   try {
     await connectToDatabase();
     const body = await req.json();
+
+    // Auto-calculate nextOccurrence for recurring announcements
+    if (body.isRecurring) {
+      body.nextOccurrence = calculateNextOccurrence(
+        body.recurrencePattern || 'weekly',
+        body.recurrenceDay,
+        body.date || new Date().toISOString().split('T')[0],
+        body.recurrenceEndDate
+      );
+    }
+
     const announcement = await Announcement.create(body);
     return NextResponse.json(announcement, { status: 201 });
   } catch (error: any) {

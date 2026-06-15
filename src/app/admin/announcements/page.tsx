@@ -36,6 +36,8 @@ import {
   Globe,
   Building2,
   Users,
+  Repeat,
+  Clock,
 } from 'lucide-react';
 
 const ANNOUNCEMENT_CATEGORIES = ['Worship', 'Youth', 'Outreach', 'Membership', 'Urgent'];
@@ -59,6 +61,11 @@ const emptyForm = {
   reactions: 0,
   targetCampuses: ['all'] as string[],
   targetGroups: ['all'] as string[],
+  isRecurring: false,
+  recurrencePattern: 'weekly' as 'weekly' | 'biweekly' | 'monthly' | 'custom',
+  recurrenceDay: 'Sunday',
+  recurrenceEndDate: '',
+  recurrenceNote: '',
 };
 
 export default function AnnouncementsPage() {
@@ -111,6 +118,11 @@ export default function AnnouncementsPage() {
       reactions: announcement.reactions,
       targetCampuses: announcement.targetCampuses || ['all'],
       targetGroups: announcement.targetGroups || ['all'],
+      isRecurring: announcement.isRecurring || false,
+      recurrencePattern: announcement.recurrencePattern || 'weekly',
+      recurrenceDay: announcement.recurrenceDay || 'Sunday',
+      recurrenceEndDate: announcement.recurrenceEndDate || '',
+      recurrenceNote: announcement.recurrenceNote || '',
     });
     setDialogOpen(true);
   };
@@ -225,6 +237,15 @@ export default function AnnouncementsPage() {
                     <Badge className={`text-[10px] ${categoryColors[announcement.category] || 'bg-muted text-muted-foreground'}`}>
                       {announcement.category}
                     </Badge>
+                    {announcement.isRecurring && (
+                      <Badge variant="outline" className="text-[9px] gap-1 border-violet-500/30 text-violet-600">
+                        <Repeat className="w-2.5 h-2.5" />
+                        {announcement.recurrencePattern === 'weekly' ? `Every ${announcement.recurrenceDay || 'week'}`
+                          : announcement.recurrencePattern === 'biweekly' ? `Bi-weekly ${announcement.recurrenceDay || ''}`
+                          : announcement.recurrencePattern === 'monthly' ? `Monthly`
+                          : announcement.recurrenceNote || 'Recurring'}
+                      </Badge>
+                    )}
                   </div>
                   <h3 className="text-lg font-semibold leading-tight">{announcement.title}</h3>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
@@ -237,6 +258,17 @@ export default function AnnouncementsPage() {
                       <Heart className="w-3 h-3" />
                       <span>{announcement.reactions}</span>
                     </div>
+                    {announcement.isRecurring && announcement.nextOccurrence && (
+                      <div className="flex items-center gap-1 text-violet-500">
+                        <Clock className="w-3 h-3" />
+                        <span>Next: {new Date(announcement.nextOccurrence).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                      </div>
+                    )}
+                    {announcement.isRecurring && announcement.lastTriggered && (
+                      <div className="flex items-center gap-1 text-emerald-500">
+                        <span>Last sent: {new Date(announcement.lastTriggered).toLocaleDateString()}</span>
+                      </div>
+                    )}
                   </div>
                   {/* Audience Tags */}
                   <div className="flex items-center gap-1.5 flex-wrap">
@@ -334,6 +366,78 @@ export default function AnnouncementsPage() {
                 <Switch id="a-pinned" checked={form.isPinned} onCheckedChange={(checked) => setForm({ ...form, isPinned: checked })} />
                 <Label htmlFor="a-pinned">Pin announcement</Label>
               </div>
+            </div>
+
+            {/* ── Recurring Section ── */}
+            <div className="border-t border-border/50 pt-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <Switch
+                  id="a-recurring"
+                  checked={form.isRecurring}
+                  onCheckedChange={(checked) => setForm({ ...form, isRecurring: checked })}
+                />
+                <Label htmlFor="a-recurring" className="flex items-center gap-2">
+                  <Repeat className="w-4 h-4 text-violet-500" />
+                  Recurring Announcement
+                </Label>
+              </div>
+
+              {form.isRecurring && (
+                <div className="pl-2 space-y-3 animate-in fade-in slide-in-from-top-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Pattern</Label>
+                      <Select
+                        value={form.recurrencePattern}
+                        onValueChange={(v) => setForm({ ...form, recurrencePattern: v as any })}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="weekly">Every Week</SelectItem>
+                          <SelectItem value="biweekly">Every 2 Weeks</SelectItem>
+                          <SelectItem value="monthly">Every Month</SelectItem>
+                          <SelectItem value="custom">Custom</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {form.recurrencePattern !== 'custom' && (
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">Day</Label>
+                        <Select
+                          value={form.recurrenceDay}
+                          onValueChange={(v) => setForm({ ...form, recurrenceDay: v })}
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(d => (
+                              <SelectItem key={d} value={d}>{d}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+                  {form.recurrencePattern === 'custom' && (
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Custom Schedule Note</Label>
+                      <Input
+                        value={form.recurrenceNote}
+                        onChange={(e) => setForm({ ...form, recurrenceNote: e.target.value })}
+                        placeholder="e.g. Every 1st and 3rd Sunday, Last Friday of month"
+                      />
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Recurring Until (optional)</Label>
+                    <Input
+                      type="date"
+                      value={form.recurrenceEndDate}
+                      onChange={(e) => setForm({ ...form, recurrenceEndDate: e.target.value })}
+                    />
+                    <p className="text-[10px] text-muted-foreground">Leave empty for indefinite recurring</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* ── Audience Targeting ── */}

@@ -11,6 +11,13 @@ export interface IAnnouncement extends Document {
   reactions: number;
   targetCampuses: string[];
   targetGroups: string[];
+  isRecurring: boolean;
+  recurrencePattern?: string;
+  recurrenceDay?: string;
+  recurrenceEndDate?: string;
+  recurrenceNote?: string;
+  nextOccurrence?: string; // ISO date string for next scheduled push
+  lastTriggered?: string;  // ISO date string when notification was last sent
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,6 +34,13 @@ const AnnouncementSchema = new Schema<IAnnouncement>(
     reactions: { type: Number, default: 0 },
     targetCampuses: [{ type: String }],
     targetGroups: [{ type: String }],
+    isRecurring: { type: Boolean, default: false },
+    recurrencePattern: { type: String },
+    recurrenceDay: { type: String },
+    recurrenceEndDate: { type: String },
+    recurrenceNote: { type: String },
+    nextOccurrence: { type: String },
+    lastTriggered: { type: String },
   },
   { timestamps: true }
 );

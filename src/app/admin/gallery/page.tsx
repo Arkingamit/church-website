@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useAdminData, GalleryAlbum } from '@/lib/admin-data-context';
+import { useAdminData, canPublishAllCampuses, GalleryAlbum } from '@/lib/admin-data-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Plus,
   Image as ImageIcon,
@@ -19,12 +20,16 @@ import {
   CheckCircle2,
   AlertCircle,
   ArrowUp,
-  GripVertical
+  GripVertical,
+  Megaphone,
+  Globe,
+  Building2,
+  Users,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function GalleryManagementPage() {
-   const { galleryAlbums, addGalleryAlbum, updateGalleryAlbum, deleteGalleryAlbum, reorderGalleryAlbums } = useAdminData();
+  const { galleryAlbums, addGalleryAlbum, updateGalleryAlbum, deleteGalleryAlbum, reorderGalleryAlbums, campuses, groups, currentUser } = useAdminData();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -35,15 +40,66 @@ export default function GalleryManagementPage() {
     title: '',
     description: '',
     url: '',
-    category: 'Worship'
+    category: 'Worship',
+    targetCampuses: ['all'],
+    targetGroups: ['all'],
   });
 
   const categories = ['Worship', 'Youth', 'Fellowship', 'Outreach', 'Baptism', 'Group', 'Event'];
 
+  const isCampusLeader = currentUser.role === 'campus_leader';
+  const isGroupLeader = currentUser.role === 'group_leader';
+
+  // ── Audience helpers ──
+  const isAllCampuses = (form.targetCampuses || ['all']).includes('all');
+  const isAllGroups = (form.targetGroups || ['all']).includes('all');
+
+  const toggleCampusMode = (all: boolean) => {
+    if (isCampusLeader || isGroupLeader) return;
+    setForm(f => ({ ...f, targetCampuses: all ? ['all'] : [] }));
+  };
+
+  const toggleCampus = (campusId: string) => {
+    if (isCampusLeader || isGroupLeader) return;
+    setForm(f => {
+      const tc = f.targetCampuses || [];
+      const has = tc.includes(campusId);
+      const next = has
+        ? tc.filter(c => c !== campusId)
+        : [...tc.filter(c => c !== 'all'), campusId];
+      return { ...f, targetCampuses: next.length === 0 ? ['all'] : next };
+    });
+  };
+
+  const toggleGroupMode = (all: boolean) => {
+    if (isGroupLeader) return;
+    setForm(f => ({ ...f, targetGroups: all ? ['all'] : [] }));
+  };
+
+  const toggleGroup = (group: string) => {
+    if (isGroupLeader) return;
+    setForm(f => {
+      const tg = f.targetGroups || [];
+      const has = tg.includes(group);
+      const next = has
+        ? tg.filter(g => g !== group)
+        : [...tg.filter(g => g !== 'all'), group];
+      return { ...f, targetGroups: next.length === 0 ? ['all'] : next };
+    });
+  };
 
   const filteredAlbums = galleryAlbums.filter(album => {
-    return album.title.toLowerCase().includes(search.toLowerCase()) ||
+    const matchesSearch = album.title.toLowerCase().includes(search.toLowerCase()) ||
       album.description.toLowerCase().includes(search.toLowerCase());
+
+    // Group leaders only see albums targeted at their groups
+    if (isGroupLeader) {
+      const aGroups = album.targetGroups ?? ['all'];
+      if (!aGroups.includes('all') && !aGroups.some(g => currentUser.groups.includes(g))) {
+        return false;
+      }
+    }
+    return matchesSearch;
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -55,7 +111,7 @@ export default function GalleryManagementPage() {
       addGalleryAlbum(form);
       setIsAdding(false);
     }
-    setForm({ title: '', description: '', url: '', category: 'Worship' });
+    setForm({ title: '', description: '', url: '', category: 'Worship', targetCampuses: ['all'], targetGroups: ['all'] });
   };
 
   const handleEdit = (album: GalleryAlbum) => {
@@ -63,7 +119,9 @@ export default function GalleryManagementPage() {
       title: album.title,
       description: album.description,
       url: album.url,
-      category: album.category
+      category: album.category,
+      targetCampuses: album.targetCampuses || ['all'],
+      targetGroups: album.targetGroups || ['all'],
     });
     setEditingId(album.id);
     setIsAdding(true);
@@ -105,7 +163,15 @@ export default function GalleryManagementPage() {
           <p className="text-muted-foreground italic">Manage church photo albums from Google Photos</p>
         </div>
         {!isAdding && (
-          <Button onClick={() => setIsAdding(true)} className="rounded-full px-6 hover-lift">
+          <Button onClick={() => {
+            setForm({
+              title: '', description: '', url: '', category: 'Worship',
+              targetCampuses: (isCampusLeader || isGroupLeader) ? [currentUser.campusId] : ['all'],
+              targetGroups: isGroupLeader ? currentUser.groups : ['all'],
+            });
+            setEditingId(null);
+            setIsAdding(true);
+          }} className="rounded-full px-6 hover-lift">
             <Plus className="w-4 h-4 mr-2" /> New Album
           </Button>
         )}
@@ -184,7 +250,107 @@ export default function GalleryManagementPage() {
                 />
               </div>
 
+              {/* ── Audience Targeting ── */}
+              <div className="border-t border-border/50 pt-6 space-y-4">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <Megaphone className="w-4 h-4 text-primary" />
+                  Audience Targeting
+                </h4>
 
+                {/* Campus Targeting */}
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Broadcast to Campuses</Label>
+                  {isCampusLeader && (
+                    <p className="text-[10px] text-amber-500">
+                      As a Campus Leader, you can only broadcast to your campus: {campuses.find(c => c.id === currentUser.campusId)?.name}
+                    </p>
+                  )}
+                  {isGroupLeader && (
+                    <p className="text-[10px] text-emerald-500">
+                      As a Group Leader, you can only broadcast to your campus: {campuses.find(c => c.id === currentUser.campusId)?.name}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox
+                        checked={isAllCampuses}
+                        onCheckedChange={() => toggleCampusMode(true)}
+                        disabled={isCampusLeader || isGroupLeader}
+                      />
+                      All Campuses
+                    </label>
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox
+                        checked={!isAllCampuses}
+                        onCheckedChange={() => toggleCampusMode(false)}
+                        disabled={isCampusLeader || isGroupLeader}
+                      />
+                      Specific
+                    </label>
+                  </div>
+                  {!isAllCampuses && (
+                    <div className="grid grid-cols-1 gap-1.5 pl-2">
+                      {campuses.map(campus => (
+                        <label key={campus.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={(form.targetCampuses || []).includes(campus.id)}
+                            onCheckedChange={() => toggleCampus(campus.id)}
+                            disabled={(isCampusLeader || isGroupLeader) && campus.id !== currentUser.campusId}
+                          />
+                          {campus.name}
+                          {(isCampusLeader || isGroupLeader) && campus.id !== currentUser.campusId && (
+                            <span className="text-[10px] text-muted-foreground">(restricted)</span>
+                          )}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Group Targeting */}
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Visible to Groups</Label>
+                  {isGroupLeader && (
+                    <p className="text-[10px] text-emerald-500">
+                      As a Group Leader, you can only broadcast to your assigned groups.
+                    </p>
+                  )}
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox checked={isAllGroups} onCheckedChange={() => toggleGroupMode(true)} disabled={isGroupLeader} />
+                      All Groups
+                    </label>
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox checked={!isAllGroups} onCheckedChange={() => toggleGroupMode(false)} disabled={isGroupLeader} />
+                      Specific
+                    </label>
+                  </div>
+                  {!isAllGroups && (
+                    <div className="grid grid-cols-2 gap-1.5 pl-2">
+                      {groups.map(group => (
+                        <label key={group} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={(form.targetGroups || []).includes(group)}
+                            onCheckedChange={() => toggleGroup(group)}
+                            disabled={isGroupLeader && !currentUser.groups.includes(group)}
+                          />
+                          {group}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Preview */}
+                <div className="bg-muted/30 rounded-lg p-3">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">Audience Preview</p>
+                  <p className="text-xs">
+                    {isAllCampuses ? '🌐 All Campuses' : `🏢 ${(form.targetCampuses || []).map(id => campuses.find(c => c.id === id)?.name || id).join(', ') || 'None selected'}`}
+                    {' · '}
+                    {isAllGroups ? '👥 All Groups' : `👤 ${(form.targetGroups || []).join(', ') || 'None selected'}`}
+                  </p>
+                </div>
+              </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-border/50">
                 <Button type="button" variant="outline" onClick={() => { setIsAdding(false); setEditingId(null); }} className="rounded-full px-8 border-border/50">
@@ -243,9 +409,36 @@ export default function GalleryManagementPage() {
                   </div>
                 </div>
                 <CardContent className="p-6 flex-1 flex flex-col">
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-6 flex-1 italic leading-relaxed">
+                  <p className="text-sm text-muted-foreground line-clamp-2 mb-4 flex-1 italic leading-relaxed">
                     {album.description || 'No description provided.'}
                   </p>
+
+                  {/* Audience Tags */}
+                  <div className="flex items-center gap-1.5 flex-wrap mb-4">
+                    {(album.targetCampuses ?? ['all']).includes('all') ? (
+                      <Badge variant="outline" className="text-[9px] gap-1 border-amber-500/30 text-amber-600">
+                        <Globe className="w-2.5 h-2.5" /> All Campuses
+                      </Badge>
+                    ) : (
+                      album.targetCampuses?.map(id => (
+                        <Badge key={id} variant="outline" className="text-[9px] gap-1 border-blue-500/30 text-blue-600">
+                          <Building2 className="w-2.5 h-2.5" /> {campuses.find(c => c.id === id)?.name || id}
+                        </Badge>
+                      ))
+                    )}
+                    {(album.targetGroups ?? ['all']).includes('all') ? (
+                      <Badge variant="outline" className="text-[9px] gap-1 border-emerald-500/30 text-emerald-600">
+                        <Users className="w-2.5 h-2.5" /> All Groups
+                      </Badge>
+                    ) : (
+                      album.targetGroups?.map(g => (
+                        <Badge key={g} variant="outline" className="text-[9px] gap-1 border-purple-500/30 text-purple-600">
+                          <Users className="w-2.5 h-2.5" /> {g}
+                        </Badge>
+                      ))
+                    )}
+                  </div>
+
                   <div className="flex items-center justify-between pt-4 border-t border-border/50">
                     <div className="flex gap-2">
                       <Button

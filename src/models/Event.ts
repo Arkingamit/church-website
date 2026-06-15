@@ -1,6 +1,13 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 import { FormField } from '@/lib/types';
 
+export interface IEventScheduleDay {
+  date: string;
+  startTime: string;
+  endTime: string;
+  label?: string;
+}
+
 export interface IEvent extends Document {
   title: string;
   description: string;
@@ -18,6 +25,9 @@ export interface IEvent extends Document {
   targetGroups: string[];
   googlePhotosUrl?: string;
   formFields?: FormField[];
+  isMultiDay: boolean;
+  endDate?: string;
+  schedule?: IEventScheduleDay[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,6 +51,16 @@ const FormFieldSchema = new Schema(
   { _id: false }
 );
 
+const EventScheduleDaySchema = new Schema(
+  {
+    date: { type: String, required: true },
+    startTime: { type: String, required: true },
+    endTime: { type: String, required: true },
+    label: { type: String },
+  },
+  { _id: false }
+);
+
 const EventSchema = new Schema<IEvent>(
   {
     title: { type: String, required: true },
@@ -59,6 +79,9 @@ const EventSchema = new Schema<IEvent>(
     targetGroups: [{ type: String }],
     googlePhotosUrl: { type: String },
     formFields: [FormFieldSchema],
+    isMultiDay: { type: Boolean, default: false },
+    endDate: { type: String },
+    schedule: [EventScheduleDaySchema],
   },
   { timestamps: true }
 );

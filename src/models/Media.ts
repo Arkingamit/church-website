@@ -77,6 +77,8 @@ export interface IGalleryAlbum extends Document {
   category: string;
   coverImage?: string;
   sortOrder: number;
+  targetCampuses: string[];
+  targetGroups: string[];
 }
 
 const GalleryAlbumSchema = new Schema<IGalleryAlbum>({
@@ -86,6 +88,8 @@ const GalleryAlbumSchema = new Schema<IGalleryAlbum>({
   category: { type: String, required: true },
   coverImage: { type: String },
   sortOrder: { type: Number, default: 0 },
+  targetCampuses: [{ type: String }],
+  targetGroups: [{ type: String }],
 }, { timestamps: true });
 
 export const GalleryAlbum: Model<IGalleryAlbum> = mongoose.models.GalleryAlbum || mongoose.model<IGalleryAlbum>('GalleryAlbum', GalleryAlbumSchema);

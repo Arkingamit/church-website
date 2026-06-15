@@ -33,6 +33,13 @@ export interface FormField {
   options?: FormFieldOption[];
 }
 
+export interface EventScheduleDay {
+  date: string;
+  startTime: string;
+  endTime: string;
+  label?: string; // e.g. "Day 1 - Opening Ceremony"
+}
+
 export interface Event {
   id: string;
   _id?: string;
@@ -53,6 +60,9 @@ export interface Event {
   createdAt: string;
   googlePhotosUrl?: string;
   formFields?: FormField[];
+  isMultiDay?: boolean;
+  endDate?: string;
+  schedule?: EventScheduleDay[];
 }
 
 export interface EventRegistration {
@@ -80,6 +90,13 @@ export interface Announcement {
   targetCampuses: string[];
   targetGroups: string[];
   createdAt: string;
+  isRecurring?: boolean;
+  recurrencePattern?: 'weekly' | 'biweekly' | 'monthly' | 'custom';
+  recurrenceDay?: string; // e.g. 'Sunday', 'Monday', or '1st Sunday'
+  recurrenceEndDate?: string; // optional end date for recurring
+  recurrenceNote?: string; // e.g. 'Every Sunday at 10 AM'
+  nextOccurrence?: string;
+  lastTriggered?: string;
 }
 
 export interface WorshipVideo {
@@ -127,6 +144,8 @@ export interface GalleryAlbum {
   category: string;
   coverImage?: string;
   sortOrder?: number;
+  targetCampuses?: string[];
+  targetGroups?: string[];
 }
 
 export interface LiveStream {
@@ -334,7 +353,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
         const [
           campusesRes, eventsRes, announcementsRes, usersRes,
           sermonsRes, seriesRes, worshipRes, galleryRes, livestreamRes,
-          eventRegistrationsRes
+          eventRegistrationsRes, groupsRes
         ] = await Promise.all([
           fetch('/api/admin/campuses').catch(() => null),
           fetch('/api/admin/events').catch(() => null),
@@ -346,6 +365,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
           fetch('/api/admin/media/gallery').catch(() => null),
           fetch('/api/admin/media/livestreams').catch(() => null),
           fetch('/api/admin/event-registrations').catch(() => null),
+          fetch('/api/admin/groups').catch(() => null),
         ]);
 
         if (campusesRes?.ok) setCampuses(mapIds(await campusesRes.json()));
@@ -364,6 +384,12 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
         if (galleryRes?.ok) setGalleryAlbums(mapIds(await galleryRes.json()));
         if (livestreamRes?.ok) setLiveStreams(mapIds(await livestreamRes.json()));
         if (eventRegistrationsRes?.ok) setEventRegistrations(mapIds(await eventRegistrationsRes.json()));
+        if (groupsRes?.ok) {
+          const rawGroups = await groupsRes.json();
+          const mappedGroups = mapIds(rawGroups);
+          setGroupScopes(mappedGroups.map((g: any) => ({ name: g.name, scope: g.scope, id: g.id || g._id })));
+          setGroups(mappedGroups.map((g: any) => g.name));
+        }
       } catch (err) {
         console.error('Failed to fetch admin data:', err);
       }
@@ -656,18 +682,58 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
     if (res.ok) setCampuses(prev => prev.filter(c => c.id !== id));
   }, []);
 
-  // ── Groups CRUD (client-side only for now) ────────────────────────────
-  const addGroup = useCallback((name: string, scope: string = 'global') => {
-    setGroups(prev => prev.includes(name) ? prev : [...prev, name]);
-    setGroupScopes(prev => prev.some(g => g.name === name) ? prev : [...prev, { name, scope }]);
+  // ── Groups CRUD (persisted to backend) ─────────────────────────────────
+  const addGroup = useCallback(async (name: string, scope: string = 'global') => {
+    try {
+      const res = await fetch('/api/admin/groups', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, scope }),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        const id = created._id || created.id;
+        setGroups(prev => prev.includes(name) ? prev : [...prev, name]);
+        setGroupScopes(prev => prev.some(g => g.name === name) ? prev : [...prev, { name, scope, id } as any]);
+      }
+    } catch (err) {
+      console.error('Failed to add group:', err);
+    }
   }, []);
-  const deleteGroup = useCallback((name: string) => {
-    setGroups(prev => prev.filter(g => g !== name));
-    setGroupScopes(prev => prev.filter(g => g.name !== name));
-  }, []);
-  const updateGroupScope = useCallback((name: string, scope: string) => {
-    setGroupScopes(prev => prev.map(g => g.name === name ? { ...g, scope } : g));
-  }, []);
+
+  const deleteGroup = useCallback(async (name: string) => {
+    try {
+      // Find the group's ID from groupScopes
+      const group = groupScopes.find(g => g.name === name) as any;
+      const id = group?.id || group?._id;
+      if (id) {
+        const res = await fetch(`/api/admin/groups/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          setGroups(prev => prev.filter(g => g !== name));
+          setGroupScopes(prev => prev.filter(g => g.name !== name));
+        }
+      }
+    } catch (err) {
+      console.error('Failed to delete group:', err);
+    }
+  }, [groupScopes]);
+
+  const updateGroupScope = useCallback(async (name: string, scope: string) => {
+    try {
+      const group = groupScopes.find(g => g.name === name) as any;
+      const id = group?.id || group?._id;
+      if (id) {
+        const res = await fetch(`/api/admin/groups/${id}`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scope }),
+        });
+        if (res.ok) {
+          setGroupScopes(prev => prev.map(g => g.name === name ? { ...g, scope } : g));
+        }
+      }
+    } catch (err) {
+      console.error('Failed to update group scope:', err);
+    }
+  }, [groupScopes]);
 
   // ── Filtering ─────────────────────────────────────────────────────────
   const getVisibleAnnouncements = useCallback((campusId: string, userGroups: string[]) => {

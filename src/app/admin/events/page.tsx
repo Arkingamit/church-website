@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useAdminData, canPublishAllCampuses, type Event, type FormField, type FormFieldType } from '@/lib/admin-data-context';
+import { useAdminData, canPublishAllCampuses, type Event, type EventScheduleDay, type FormField, type FormFieldType } from '@/lib/admin-data-context';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +40,9 @@ const emptyForm = {
   targetGroups: ['all'] as string[],
   googlePhotosUrl: '',
   formFields: [] as FormField[],
+  isMultiDay: false,
+  endDate: '',
+  schedule: [] as EventScheduleDay[],
 };
 
 export default function EventsPage() {
@@ -92,12 +95,17 @@ export default function EventsPage() {
       targetGroups: event.targetGroups ?? ['all'],
       googlePhotosUrl: event.googlePhotosUrl || '',
       formFields: event.formFields || [],
+      isMultiDay: event.isMultiDay || false,
+      endDate: event.endDate || '',
+      schedule: event.schedule || [],
     });
     setDialogOpen(true);
   };
 
   const handleSubmit = () => {
-    if (!form.title || !form.date || !form.time) return;
+    if (!form.title || !form.date) return;
+    // For single-day, require time. For multi-day, schedule is optional but date is needed.
+    if (!form.isMultiDay && !form.time) return;
     if (editingId !== null) {
       updateEvent(editingId, form);
     } else {
@@ -115,6 +123,11 @@ export default function EventsPage() {
     const [h, m] = time.split(':');
     const hour = parseInt(h);
     return `${hour % 12 || 12}:${m} ${hour >= 12 ? 'PM' : 'AM'}`;
+  };
+
+  const formatDateShort = (dateStr: string) => {
+    if (!dateStr) return '';
+    return new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   };
 
   // Audience helpers
@@ -143,6 +156,57 @@ export default function EventsPage() {
       const has = f.targetGroups.includes(g);
       const next = has ? f.targetGroups.filter(x => x !== g) : [...f.targetGroups.filter(x => x !== 'all'), g];
       return { ...f, targetGroups: next.length === 0 ? ['all'] : next };
+    });
+  };
+
+  // ── Multi-day Schedule Helpers ──
+  const toggleMultiDay = (enabled: boolean) => {
+    setForm(f => ({
+      ...f,
+      isMultiDay: enabled,
+      endDate: enabled ? f.endDate || f.date : '',
+      schedule: enabled && f.schedule.length === 0 && f.date
+        ? [{ date: f.date, startTime: f.time || '09:00', endTime: f.endTime || '17:00', label: '' }]
+        : f.schedule,
+    }));
+  };
+
+  const addScheduleDay = () => {
+    const lastDay = form.schedule[form.schedule.length - 1];
+    const nextDate = lastDay?.date
+      ? new Date(new Date(lastDay.date).getTime() + 86400000).toISOString().split('T')[0]
+      : form.date || new Date().toISOString().split('T')[0];
+    setForm(f => ({
+      ...f,
+      schedule: [...f.schedule, { date: nextDate, startTime: '09:00', endTime: '17:00', label: '' }],
+      endDate: nextDate,
+    }));
+  };
+
+  const updateScheduleDay = (index: number, updates: Partial<EventScheduleDay>) => {
+    setForm(f => {
+      const newSchedule = f.schedule.map((day, i) => i === index ? { ...day, ...updates } : day);
+      // Auto-update endDate to the latest date in the schedule
+      const dates = newSchedule.map(d => d.date).filter(Boolean).sort();
+      return {
+        ...f,
+        schedule: newSchedule,
+        date: dates[0] || f.date,
+        endDate: dates[dates.length - 1] || f.endDate,
+      };
+    });
+  };
+
+  const removeScheduleDay = (index: number) => {
+    setForm(f => {
+      const newSchedule = f.schedule.filter((_, i) => i !== index);
+      const dates = newSchedule.map(d => d.date).filter(Boolean).sort();
+      return {
+        ...f,
+        schedule: newSchedule,
+        date: dates[0] || f.date,
+        endDate: dates[dates.length - 1] || f.endDate,
+      };
     });
   };
 
@@ -268,12 +332,35 @@ export default function EventsPage() {
               <div className="space-y-1.5 text-sm">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-3.5 h-3.5 text-primary" />
-                  <span>{new Date(event.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                  {event.isMultiDay ? (
+                    <span>
+                      {formatDateShort(event.date)} – {formatDateShort(event.endDate || event.date)}
+                      <Badge variant="outline" className="ml-2 text-[9px]"> {(event.schedule || []).length} days</Badge>
+                    </span>
+                  ) : (
+                    <span>{formatDateShort(event.date)}</span>
+                  )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-3.5 h-3.5 text-primary" />
-                  <span>{formatTime(event.time)} – {formatTime(event.endTime)}</span>
-                </div>
+                {!event.isMultiDay && (
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5 text-primary" />
+                    <span>{formatTime(event.time)} – {formatTime(event.endTime)}</span>
+                  </div>
+                )}
+                {event.isMultiDay && (event.schedule || []).length > 0 && (
+                  <div className="pl-5 space-y-0.5">
+                    {(event.schedule || []).slice(0, 3).map((day, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Clock className="w-3 h-3" />
+                        <span>{formatDateShort(day.date)}: {formatTime(day.startTime)} – {formatTime(day.endTime)}</span>
+                        {day.label && <span className="text-primary/70">({day.label})</span>}
+                      </div>
+                    ))}
+                    {(event.schedule || []).length > 3 && (
+                      <span className="text-[10px] text-muted-foreground">+{(event.schedule || []).length - 3} more days</span>
+                    )}
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <MapPin className="w-3.5 h-3.5 text-primary" />
                   <span>{event.location}</span>
@@ -318,7 +405,7 @@ export default function EventsPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Date *</Label>
+                  <Label>{form.isMultiDay ? 'Start Date *' : 'Date *'}</Label>
                   <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
                 </div>
                 <div className="space-y-2">
@@ -331,16 +418,93 @@ export default function EventsPage() {
                   </Select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Start Time *</Label>
-                  <Input type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label>End Time</Label>
-                  <Input type="time" value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} />
-                </div>
+
+              {/* Multi-day toggle */}
+              <div className="flex items-center gap-3 py-1">
+                <Switch checked={form.isMultiDay} onCheckedChange={toggleMultiDay} />
+                <Label>Multi-day event</Label>
               </div>
+
+              {!form.isMultiDay ? (
+                /* Single-day: simple start/end time */
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Start Time *</Label>
+                    <Input type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>End Time</Label>
+                    <Input type="time" value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} />
+                  </div>
+                </div>
+              ) : (
+                /* Multi-day: schedule builder */
+                <div className="border border-border/50 rounded-xl p-4 space-y-3 bg-muted/20">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-primary" />
+                      Day-by-Day Schedule
+                    </h4>
+                    <Button type="button" variant="outline" size="sm" className="gap-1 h-7 text-xs" onClick={addScheduleDay}>
+                      <Plus className="w-3 h-3" /> Add Day
+                    </Button>
+                  </div>
+                  {form.schedule.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-4">No days added yet. Click "Add Day" to build your schedule.</p>
+                  )}
+                  <div className="space-y-2">
+                    {form.schedule.map((day, index) => (
+                      <div key={index} className="flex items-end gap-2 p-3 rounded-lg bg-background border border-border/30">
+                        <div className="flex-1 space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">Day {index + 1}</Label>
+                          <Input
+                            type="date"
+                            value={day.date}
+                            onChange={(e) => updateScheduleDay(index, { date: e.target.value })}
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                        <div className="w-24 space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">Start</Label>
+                          <Input
+                            type="time"
+                            value={day.startTime}
+                            onChange={(e) => updateScheduleDay(index, { startTime: e.target.value })}
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                        <div className="w-24 space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">End</Label>
+                          <Input
+                            type="time"
+                            value={day.endTime}
+                            onChange={(e) => updateScheduleDay(index, { endTime: e.target.value })}
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">Label (optional)</Label>
+                          <Input
+                            value={day.label || ''}
+                            onChange={(e) => updateScheduleDay(index, { label: e.target.value })}
+                            placeholder="e.g. Opening Day"
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive shrink-0"
+                          onClick={() => removeScheduleDay(index)}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Location</Label>

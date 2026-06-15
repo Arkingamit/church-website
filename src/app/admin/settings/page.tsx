@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   useAdminData,
   canManageCampusesAndGroups,
   type Campus,
+  type UserProfile,
 } from '@/lib/admin-data-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,10 +29,14 @@ import {
   Shield,
   Church,
   Tag,
+  Search,
+  UserPlus,
+  UserMinus,
+  Check,
 } from 'lucide-react';
 
 export default function SettingsPage() {
-  const { campuses, groupScopes, groups, currentUser, addCampus, updateCampus, deleteCampus, addGroup, deleteGroup, users } = useAdminData();
+  const { campuses, groupScopes, groups, currentUser, addCampus, updateCampus, deleteCampus, addGroup, deleteGroup, users, updateUser } = useAdminData();
 
   // Campus form state
   const [campusDialogOpen, setCampusDialogOpen] = useState(false);
@@ -44,6 +49,11 @@ export default function SettingsPage() {
   const [newGroup, setNewGroup] = useState('');
   const [newGroupScope, setNewGroupScope] = useState('global');
   const [deleteGroupConfirm, setDeleteGroupConfirm] = useState<string | null>(null);
+
+  // Group member management state
+  const [managingGroup, setManagingGroup] = useState<string | null>(null);
+  const [memberSearch, setMemberSearch] = useState('');
+  const [savingMembers, setSavingMembers] = useState(false);
 
   if (!canManageCampusesAndGroups(currentUser.role)) {
     return (
@@ -96,6 +106,43 @@ export default function SettingsPage() {
   const handleDeleteGroup = (name: string) => {
     deleteGroup(name);
     setDeleteGroupConfirm(null);
+  };
+
+  // Group member management
+  const managingGroupScope = useMemo(() => {
+    if (!managingGroup) return 'global';
+    return groupScopes.find(g => g.name === managingGroup)?.scope || 'global';
+  }, [managingGroup, groupScopes]);
+
+  const scopeFilteredUsers = useMemo(() => {
+    if (managingGroupScope === 'global') return users;
+    return users.filter(u => u.campusId === managingGroupScope);
+  }, [users, managingGroupScope]);
+
+  const groupMembers = useMemo(() => {
+    if (!managingGroup) return { members: [] as UserProfile[], nonMembers: [] as UserProfile[] };
+    const members = scopeFilteredUsers.filter(u => u.groups.includes(managingGroup));
+    const nonMembers = scopeFilteredUsers.filter(u => !u.groups.includes(managingGroup));
+    return { members, nonMembers };
+  }, [managingGroup, scopeFilteredUsers]);
+
+  const filteredUsers = useMemo(() => {
+    if (!managingGroup) return [];
+    const all = [...groupMembers.members, ...groupMembers.nonMembers];
+    if (!memberSearch.trim()) return all;
+    const q = memberSearch.toLowerCase();
+    return all.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
+  }, [managingGroup, groupMembers, memberSearch]);
+
+  const toggleUserInGroup = async (user: UserProfile) => {
+    if (!managingGroup) return;
+    setSavingMembers(true);
+    const isMember = user.groups.includes(managingGroup);
+    const newGroups = isMember
+      ? user.groups.filter(g => g !== managingGroup)
+      : [...user.groups, managingGroup];
+    await updateUser(user.id, { groups: newGroups });
+    setSavingMembers(false);
   };
 
   return (
@@ -182,18 +229,21 @@ export default function SettingsPage() {
               return (
                 <div
                   key={group.name}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors group/item"
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors group/item cursor-pointer"
+                  onClick={() => { setManagingGroup(group.name); setMemberSearch(''); }}
                 >
                   <Tag className="w-3.5 h-3.5 text-primary" />
                   <span className="text-sm font-medium">{group.name}</span>
                   <Badge variant="secondary" className="text-[10px] ml-1 bg-background">
                     {group.scope === 'global' ? 'Global' : campuses.find(c => c.id === group.scope)?.name || group.scope}
                   </Badge>
-                  <Badge variant="outline" className="text-[9px]">{memberCount}</Badge>
+                  <Badge variant="outline" className="text-[9px] gap-1">
+                    <Users className="w-2.5 h-2.5" />{memberCount}
+                  </Badge>
                   <Button
                     variant="ghost" size="icon"
                     className="h-6 w-6 opacity-0 group-hover/item:opacity-100 transition-opacity text-destructive hover:text-destructive"
-                    onClick={() => setDeleteGroupConfirm(group.name)}
+                    onClick={(e) => { e.stopPropagation(); setDeleteGroupConfirm(group.name); }}
                   >
                     <Trash2 className="w-3 h-3" />
                   </Button>
@@ -280,6 +330,89 @@ export default function SettingsPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteGroupConfirm(null)}>Cancel</Button>
             <Button variant="destructive" onClick={() => deleteGroupConfirm && handleDeleteGroup(deleteGroupConfirm)}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Manage Group Members Dialog ── */}
+      <Dialog open={managingGroup !== null} onOpenChange={() => setManagingGroup(null)}>
+        <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              {managingGroup} — Members
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              {groupMembers.members.length} member{groupMembers.members.length !== 1 ? 's' : ''}
+              {managingGroupScope !== 'global'
+                ? ` · Showing only ${campuses.find(c => c.id === managingGroupScope)?.name || managingGroupScope} members`
+                : ' · Showing all campuses'}
+              {' · '}Click to add or remove
+            </p>
+          </DialogHeader>
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search members by name or email..."
+              value={memberSearch}
+              onChange={(e) => setMemberSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
+          {/* Member List */}
+          <div className="flex-1 overflow-y-auto space-y-1 min-h-0 max-h-[50vh] pr-1">
+            {filteredUsers.map(user => {
+              const isMember = user.groups.includes(managingGroup || '');
+              const userCampus = campuses.find(c => c.id === user.campusId);
+              return (
+                <div
+                  key={user.id}
+                  onClick={() => toggleUserInGroup(user)}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${
+                    isMember
+                      ? 'bg-primary/10 border border-primary/20 hover:bg-primary/15'
+                      : 'bg-muted/20 border border-transparent hover:bg-muted/40'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                    isMember ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                  }`}>
+                    {user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{user.name}</p>
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                      <span className="truncate">{user.email}</span>
+                      {userCampus && (
+                        <Badge variant="outline" className="text-[9px] shrink-0">
+                          {userCampus.name}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                    isMember
+                      ? 'bg-primary text-primary-foreground'
+                      : 'border-2 border-muted-foreground/30'
+                  }`}>
+                    {isMember && <Check className="w-3.5 h-3.5" />}
+                  </div>
+                </div>
+              );
+            })}
+            {filteredUsers.length === 0 && (
+              <div className="text-center py-8">
+                <Users className="w-8 h-8 mx-auto text-muted-foreground/30 mb-2" />
+                <p className="text-sm text-muted-foreground">No members found</p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setManagingGroup(null)}>Done</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
