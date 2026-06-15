@@ -20,6 +20,13 @@ export interface IEvent extends Document {
   registered: number;
   image?: string;
   recurring: boolean;
+  recurrencePattern?: string;
+  recurrenceDay?: string;
+  recurrenceEndDate?: string;
+  recurrenceNote?: string;
+  nextOccurrence?: string;
+  lastTriggered?: string;
+  mapUrl?: string;
   host: string;
   targetCampuses: string[];
   targetGroups: string[];
@@ -74,6 +81,13 @@ const EventSchema = new Schema<IEvent>(
     registered: { type: Number, default: 0 },
     image: { type: String },
     recurring: { type: Boolean, default: false },
+    recurrencePattern: { type: String },
+    recurrenceDay: { type: String },
+    recurrenceEndDate: { type: String },
+    recurrenceNote: { type: String },
+    nextOccurrence: { type: String },
+    lastTriggered: { type: String },
+    mapUrl: { type: String },
     host: { type: String, required: true },
     targetCampuses: [{ type: String }],
     targetGroups: [{ type: String }],

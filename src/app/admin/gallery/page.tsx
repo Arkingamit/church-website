@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useAdminData, canPublishAllCampuses, GalleryAlbum } from '@/lib/admin-data-context';
+import { useAdminData, canPublishAllCampuses, getGroupsForCampus, GalleryAlbum } from '@/lib/admin-data-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,7 +29,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 
 export default function GalleryManagementPage() {
-  const { galleryAlbums, addGalleryAlbum, updateGalleryAlbum, deleteGalleryAlbum, reorderGalleryAlbums, campuses, groups, currentUser } = useAdminData();
+  const { galleryAlbums, addGalleryAlbum, updateGalleryAlbum, deleteGalleryAlbum, reorderGalleryAlbums, campuses, groups, groupScopes, currentUser } = useAdminData();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -327,16 +327,22 @@ export default function GalleryManagementPage() {
                   </div>
                   {!isAllGroups && (
                     <div className="grid grid-cols-2 gap-1.5 pl-2">
-                      {groups.map(group => (
-                        <label key={group} className="flex items-center gap-2 text-sm cursor-pointer">
-                          <Checkbox
-                            checked={(form.targetGroups || []).includes(group)}
-                            onCheckedChange={() => toggleGroup(group)}
-                            disabled={isGroupLeader && !currentUser.groups.includes(group)}
-                          />
-                          {group}
-                        </label>
-                      ))}
+                      {(() => {
+                        const selectedCampusIds = isAllCampuses ? ['global'] : (form.targetCampuses || []);
+                        const visibleGroups = isAllCampuses
+                          ? groups
+                          : [...new Set(selectedCampusIds.flatMap(cid => getGroupsForCampus(groupScopes, cid)))];
+                        return visibleGroups.map(group => (
+                          <label key={group} className="flex items-center gap-2 text-sm cursor-pointer">
+                            <Checkbox
+                              checked={(form.targetGroups || []).includes(group)}
+                              onCheckedChange={() => toggleGroup(group)}
+                              disabled={isGroupLeader && !currentUser.groups.includes(group)}
+                            />
+                            {group}
+                          </label>
+                        ));
+                      })()}
                     </div>
                   )}
                 </div>

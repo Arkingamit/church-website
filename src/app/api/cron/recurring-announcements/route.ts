@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/db';
 import Announcement from '@/models/Announcement';
+import EventModel from '@/models/Event';
 import Notification from '@/models/Notification';
 import { calculateNextOccurrence, isTodayMatchingSchedule } from '@/lib/recurrence';
 
@@ -9,7 +10,7 @@ import { calculateNextOccurrence, isTodayMatchingSchedule } from '@/lib/recurren
  * 
  * This endpoint should be called once daily (e.g. via Vercel Cron, external scheduler,
  * or a manual trigger). It:
- * 1. Finds all recurring announcements due today
+ * 1. Finds all recurring announcements and events due today
  * 2. Creates Notification records for the targeted audience
  * 3. Updates nextOccurrence and lastTriggered
  * 
@@ -39,23 +40,31 @@ export async function POST(req: Request) {
       ],
     });
 
+    // Find all active recurring events
+    const recurringEvents = await EventModel.find({
+      recurring: true,
+      $or: [
+        { recurrenceEndDate: { $exists: false } },
+        { recurrenceEndDate: '' },
+        { recurrenceEndDate: { $gte: today } },
+      ],
+    });
+
     let triggered = 0;
     let skipped = 0;
 
+    // Process Announcements
     for (const announcement of recurringAnnouncements) {
-      // Skip if already triggered today
       if (announcement.lastTriggered === today) {
         skipped++;
         continue;
       }
 
-      // Check if today matches the schedule
       if (!isTodayMatchingSchedule(announcement)) {
         skipped++;
         continue;
       }
 
-      // Create a notification
       await Notification.create({
         title: `📢 ${announcement.title}`,
         message: announcement.content,
@@ -65,7 +74,6 @@ export async function POST(req: Request) {
         targetGroups: announcement.targetGroups || ['all'],
       });
 
-      // Calculate next occurrence
       const nextOccurrence = calculateNextOccurrence(
         announcement.recurrencePattern || 'weekly',
         announcement.recurrenceDay,
@@ -73,8 +81,43 @@ export async function POST(req: Request) {
         announcement.recurrenceEndDate
       );
 
-      // Update the announcement
       await Announcement.findByIdAndUpdate(announcement._id, {
+        lastTriggered: today,
+        nextOccurrence: nextOccurrence,
+      });
+
+      triggered++;
+    }
+
+    // Process Events
+    for (const event of recurringEvents) {
+      if (event.lastTriggered === today) {
+        skipped++;
+        continue;
+      }
+
+      if (!isTodayMatchingSchedule(event)) {
+        skipped++;
+        continue;
+      }
+
+      await Notification.create({
+        title: `📅 ${event.title}`,
+        message: `Event reminder: ${event.description}`,
+        type: 'event_reminder',
+        sourceId: event._id.toString(),
+        targetCampuses: event.targetCampuses || ['all'],
+        targetGroups: event.targetGroups || ['all'],
+      });
+
+      const nextOccurrence = calculateNextOccurrence(
+        event.recurrencePattern || 'weekly',
+        event.recurrenceDay,
+        today,
+        event.recurrenceEndDate
+      );
+
+      await EventModel.findByIdAndUpdate(event._id, {
         lastTriggered: today,
         nextOccurrence: nextOccurrence,
       });
@@ -85,13 +128,13 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       date: today,
-      processed: recurringAnnouncements.length,
+      processed: recurringAnnouncements.length + recurringEvents.length,
       triggered,
       skipped,
     });
   } catch (error: any) {
     console.error('Cron error:', error);
-    return NextResponse.json({ error: 'Failed to process recurring announcements' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to process recurring tasks' }, { status: 500 });
   }
 }
 

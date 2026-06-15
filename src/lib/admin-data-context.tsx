@@ -54,6 +54,13 @@ export interface Event {
   registered: number;
   image: string | null;
   recurring: boolean;
+  recurrencePattern?: 'weekly' | 'biweekly' | 'monthly' | 'custom';
+  recurrenceDay?: string;
+  recurrenceEndDate?: string;
+  recurrenceNote?: string;
+  nextOccurrence?: string;
+  lastTriggered?: string;
+  mapUrl?: string;
   host: string;
   targetCampuses: string[];
   targetGroups: string[];

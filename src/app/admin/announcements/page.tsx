@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useAdminData, canPublishAllCampuses, type Announcement } from '@/lib/admin-data-context';
+import { useAdminData, canPublishAllCampuses, getGroupsForCampus, type Announcement } from '@/lib/admin-data-context';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -69,7 +69,7 @@ const emptyForm = {
 };
 
 export default function AnnouncementsPage() {
-  const { announcements, campuses, groups, addAnnouncement, updateAnnouncement, deleteAnnouncement, currentUser } = useAdminData();
+  const { announcements, campuses, groups, groupScopes, addAnnouncement, updateAnnouncement, deleteAnnouncement, currentUser } = useAdminData();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -517,16 +517,22 @@ export default function AnnouncementsPage() {
                 </div>
                 {!isAllGroups && (
                   <div className="grid grid-cols-2 gap-1.5 pl-2">
-                    {groups.map(group => (
-                      <label key={group} className="flex items-center gap-2 text-sm cursor-pointer">
-                        <Checkbox
-                          checked={form.targetGroups.includes(group)}
-                          onCheckedChange={() => toggleGroup(group)}
-                          disabled={isGroupLeader && !currentUser.groups.includes(group)}
-                        />
-                        {group}
-                      </label>
-                    ))}
+                    {(() => {
+                      const selectedCampusIds = isAllCampuses ? ['global'] : form.targetCampuses;
+                      const visibleGroups = isAllCampuses
+                        ? groups
+                        : [...new Set(selectedCampusIds.flatMap(cid => getGroupsForCampus(groupScopes, cid)))];
+                      return visibleGroups.map(group => (
+                        <label key={group} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={form.targetGroups.includes(group)}
+                            onCheckedChange={() => toggleGroup(group)}
+                            disabled={isGroupLeader && !currentUser.groups.includes(group)}
+                          />
+                          {group}
+                        </label>
+                      ));
+                    })()}
                   </div>
                 )}
               </div>

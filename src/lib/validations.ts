@@ -31,11 +31,21 @@ export const eventSchema = z.object({
   category: z.string(),
   capacity: z.number().int().positive(),
   recurring: z.boolean().optional(),
+  recurrencePattern: z.string().optional(),
+  recurrenceDay: z.string().optional(),
+  recurrenceEndDate: z.string().optional(),
+  recurrenceNote: z.string().optional(),
+  nextOccurrence: z.string().optional(),
+  lastTriggered: z.string().optional(),
+  mapUrl: z.string().optional().or(z.literal('')),
   host: z.string().optional(),
   targetCampuses: z.array(z.string()),
   targetGroups: z.array(z.string()),
   googlePhotosUrl: z.string().url().optional().or(z.literal('')),
   formFields: z.array(z.any()).optional(),
+  isMultiDay: z.boolean().optional(),
+  endDate: z.string().optional(),
+  schedule: z.array(z.any()).optional(),
 });
 
 // User Admin Schema (for creating/updating users in admin)

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useAdminData, canPublishAllCampuses, type Event, type EventScheduleDay, type FormField, type FormFieldType } from '@/lib/admin-data-context';
+import { useAdminData, canPublishAllCampuses, getGroupsForCampus, type Event, type EventScheduleDay, type FormField, type FormFieldType } from '@/lib/admin-data-context';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select';
 import {
   Calendar, Clock, MapPin, Users, Plus, Pencil, Trash2, Search, X,
-  Megaphone, Globe, Building2, Image as ImageIcon, Link2, ListPlus, AlignLeft, CheckSquare, ChevronDown, Trash, ListEnd, Download
+  Megaphone, Globe, Building2, Image as ImageIcon, Link2, ListPlus, AlignLeft, CheckSquare, ChevronDown, Trash, ListEnd, Download, Repeat
 } from 'lucide-react';
 
 const EVENT_CATEGORIES = ['Worship', 'Prayer', 'Youth', 'Study', 'Outreach', 'Fellowship'];
@@ -43,10 +43,15 @@ const emptyForm = {
   isMultiDay: false,
   endDate: '',
   schedule: [] as EventScheduleDay[],
+  recurrencePattern: 'weekly' as 'weekly' | 'biweekly' | 'monthly' | 'custom',
+  recurrenceDay: 'Sunday',
+  recurrenceEndDate: '',
+  recurrenceNote: '',
+  mapUrl: '',
 };
 
 export default function EventsPage() {
-  const { events, campuses, groups, currentUser, addEvent, updateEvent, deleteEvent } = useAdminData();
+  const { events, campuses, groups, groupScopes, currentUser, addEvent, updateEvent, deleteEvent } = useAdminData();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -98,6 +103,11 @@ export default function EventsPage() {
       isMultiDay: event.isMultiDay || false,
       endDate: event.endDate || '',
       schedule: event.schedule || [],
+      recurrencePattern: event.recurrencePattern || 'weekly',
+      recurrenceDay: event.recurrenceDay || 'Sunday',
+      recurrenceEndDate: event.recurrenceEndDate || '',
+      recurrenceNote: event.recurrenceNote || '',
+      mapUrl: event.mapUrl || '',
     });
     setDialogOpen(true);
   };
@@ -361,9 +371,21 @@ export default function EventsPage() {
                     )}
                   </div>
                 )}
+                {event.recurring && event.nextOccurrence && (
+                  <div className="flex items-center gap-2 text-violet-500">
+                    <Repeat className="w-3.5 h-3.5" />
+                    <span>Next: {new Date(event.nextOccurrence).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <MapPin className="w-3.5 h-3.5 text-primary" />
-                  <span>{event.location}</span>
+                  {event.mapUrl ? (
+                    <a href={event.mapUrl} target="_blank" rel="noopener noreferrer" className="hover:underline text-primary">
+                      {event.location}
+                    </a>
+                  ) : (
+                    <span>{event.location}</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <Users className="w-3.5 h-3.5 text-primary" />
@@ -511,20 +533,88 @@ export default function EventsPage() {
                   <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="e.g. Grace Central" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Host</Label>
-                  <Input value={form.host} onChange={(e) => setForm({ ...form, host: e.target.value })} placeholder="e.g. Pastoral Team" />
+                  <Label>Location Google Map URL (optional)</Label>
+                  <Input value={form.mapUrl || ''} onChange={(e) => setForm({ ...form, mapUrl: e.target.value })} placeholder="e.g. https://maps.app.goo.gl/..." />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
+                  <Label>Host</Label>
+                  <Input value={form.host} onChange={(e) => setForm({ ...form, host: e.target.value })} placeholder="e.g. Pastoral Team" />
+                </div>
+                <div className="space-y-2">
                   <Label>Capacity</Label>
                   <Input type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: parseInt(e.target.value) || 0 })} />
                 </div>
-                <div className="flex items-center gap-3 pt-6">
-                  <Switch checked={form.recurring} onCheckedChange={(c) => setForm({ ...form, recurring: c })} />
-                  <Label>Recurring event</Label>
+              </div>
+              <div className="flex items-center gap-3 pt-4">
+                <Switch checked={form.recurring} onCheckedChange={(c) => setForm({ ...form, recurring: c })} />
+                <div className="space-y-0.5">
+                  <Label className="flex items-center gap-2">
+                    <Repeat className="w-4 h-4 text-violet-500" />
+                    Recurring Event
+                  </Label>
+                  <p className="text-[10px] text-muted-foreground">Automatically schedule and notify users for repeated events</p>
                 </div>
               </div>
+
+              {form.recurring && (
+                <div className="border border-violet-500/20 bg-violet-500/5 rounded-xl p-4 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Pattern</Label>
+                      <Select
+                        value={form.recurrencePattern}
+                        onValueChange={(v: any) => setForm({ ...form, recurrencePattern: v })}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="weekly">Every Week</SelectItem>
+                          <SelectItem value="biweekly">Every 2 Weeks</SelectItem>
+                          <SelectItem value="monthly">Every Month</SelectItem>
+                          <SelectItem value="custom">Custom</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {form.recurrencePattern !== 'custom' && (
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">Day</Label>
+                        <Select
+                          value={form.recurrenceDay}
+                          onValueChange={(v) => setForm({ ...form, recurrenceDay: v })}
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(d => (
+                              <SelectItem key={d} value={d}>{d}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+                  {form.recurrencePattern === 'custom' && (
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">Custom Schedule Note</Label>
+                      <Input
+                        value={form.recurrenceNote}
+                        onChange={(e) => setForm({ ...form, recurrenceNote: e.target.value })}
+                        placeholder="e.g. Every 1st and 3rd Sunday, Last Friday of month"
+                      />
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Recurring Until (optional)</Label>
+                    <Input
+                      type="date"
+                      value={form.recurrenceEndDate}
+                      onChange={(e) => setForm({ ...form, recurrenceEndDate: e.target.value })}
+                    />
+                    <p className="text-[10px] text-muted-foreground">Leave empty for indefinite recurring</p>
+                  </div>
+                </div>
+              )}
+
 
               {/* Audience Targeting */}
               <div className="border-t border-border/50 pt-4 space-y-4">
@@ -579,16 +669,23 @@ export default function EventsPage() {
                   </div>
                   {!isAllGroups && (
                     <div className="grid grid-cols-2 gap-1.5 pl-2">
-                      {groups.map(g => (
-                        <label key={g} className="flex items-center gap-2 text-sm cursor-pointer">
-                          <Checkbox 
-                            checked={form.targetGroups.includes(g)} 
-                            onCheckedChange={() => toggleGroup(g)} 
-                            disabled={isGroupLeader && !currentUser.groups.includes(g)}
-                          />
-                          {g}
-                        </label>
-                      ))}
+                      {(() => {
+                        // Filter groups based on selected campuses
+                        const selectedCampusIds = isAllCampuses ? ['global'] : form.targetCampuses;
+                        const visibleGroups = isAllCampuses
+                          ? groups
+                          : [...new Set(selectedCampusIds.flatMap(cid => getGroupsForCampus(groupScopes, cid)))];
+                        return visibleGroups.map(g => (
+                          <label key={g} className="flex items-center gap-2 text-sm cursor-pointer">
+                            <Checkbox 
+                              checked={form.targetGroups.includes(g)} 
+                              onCheckedChange={() => toggleGroup(g)} 
+                              disabled={isGroupLeader && !currentUser.groups.includes(g)}
+                            />
+                            {g}
+                          </label>
+                        ));
+                      })()}
                     </div>
                   )}
                 </div>
