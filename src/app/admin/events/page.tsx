@@ -562,6 +562,12 @@ export default function EventsPage() {
                   <Input value={form.mapUrl || ''} onChange={(e) => setForm({ ...form, mapUrl: e.target.value })} placeholder="e.g. https://maps.app.goo.gl/..." />
                 </div>
               </div>
+              
+              <div className="space-y-2">
+                <Label>Registration Limit (Capacity)</Label>
+                <Input type="number" min="0" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: parseInt(e.target.value) || 0 })} placeholder="e.g. 100 (0 for unlimited)" />
+                <p className="text-[10px] text-muted-foreground">Set to 0 if there is no limit to how many people can register.</p>
+              </div>
 
               <div className="flex items-center gap-3 pt-4">
                 <Switch checked={form.recurring} onCheckedChange={(c) => setForm({ ...form, recurring: c })} />
