@@ -52,7 +52,7 @@ const emptyForm = {
   isSeriesTemplate: false,
   mapUrl: '',
   reminders: [] as string[], // Deprecated
-  customReminders: [] as { daysBefore: number, time: string }[],
+  customReminders: [] as { daysBefore: number, hoursBefore: number, minutesBefore: number }[],
 };
 
 export default function EventsPage() {
@@ -698,7 +698,7 @@ export default function EventsPage() {
                     <h4 className="text-sm font-semibold flex items-center gap-2">
                       <Megaphone className="w-4 h-4 text-primary" /> Automated Reminders
                     </h4>
-                    <p className="text-[10px] text-muted-foreground">Automatically send a push notification/announcement a specific number of days before the event starts.</p>
+                    <p className="text-[10px] text-muted-foreground">Automatically send a push notification/announcement a specific amount of time before the event starts.</p>
                   </div>
                   <Button
                     type="button"
@@ -707,7 +707,7 @@ export default function EventsPage() {
                     className="h-7 text-xs border-dashed"
                     onClick={() => setForm(f => ({
                       ...f,
-                      customReminders: [...f.customReminders, { daysBefore: 1, time: '09:00' }]
+                      customReminders: [...f.customReminders, { daysBefore: 0, hoursBefore: 1, minutesBefore: 0 }]
                     }))}
                   >
                     <Plus className="w-3 h-3 mr-1" /> Add Reminder
@@ -716,46 +716,67 @@ export default function EventsPage() {
                 {form.customReminders.length > 0 && (
                   <div className="space-y-2 pl-1">
                     {form.customReminders.map((rem: any, idx) => (
-                      <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-muted/20 border border-border/50">
-                        <div className="grid grid-cols-2 gap-2 flex-1">
-                          <div className="flex items-center gap-2">
+                      <div key={idx} className="flex flex-col gap-2 p-2 rounded-lg bg-muted/20 border border-border/50">
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
                             <Input
                               type="number"
                               min="0"
                               value={rem.daysBefore}
-                              className="h-8 text-xs w-16"
+                              className="h-8 text-xs w-14"
                               onChange={(e) => {
                                 const newRems = [...form.customReminders];
                                 newRems[idx].daysBefore = parseInt(e.target.value) || 0;
                                 setForm({ ...form, customReminders: newRems });
                               }}
                             />
-                            <span className="text-xs text-muted-foreground">Days Before</span>
+                            <span className="text-[10px] text-muted-foreground uppercase mr-2">Days</span>
                           </div>
-                          <Input
-                            type="time"
-                            value={rem.time}
-                            className="h-8 text-xs"
-                            onChange={(e) => {
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              min="0"
+                              max="23"
+                              value={rem.hoursBefore}
+                              className="h-8 text-xs w-14"
+                              onChange={(e) => {
+                                const newRems = [...form.customReminders];
+                                newRems[idx].hoursBefore = parseInt(e.target.value) || 0;
+                                setForm({ ...form, customReminders: newRems });
+                              }}
+                            />
+                            <span className="text-[10px] text-muted-foreground uppercase mr-2">Hrs</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              min="0"
+                              max="59"
+                              value={rem.minutesBefore}
+                              className="h-8 text-xs w-14"
+                              onChange={(e) => {
+                                const newRems = [...form.customReminders];
+                                newRems[idx].minutesBefore = parseInt(e.target.value) || 0;
+                                setForm({ ...form, customReminders: newRems });
+                              }}
+                            />
+                            <span className="text-[10px] text-muted-foreground uppercase">Mins</span>
+                          </div>
+                          <div className="flex-1" />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                            onClick={() => {
                               const newRems = [...form.customReminders];
-                              newRems[idx].time = e.target.value;
+                              newRems.splice(idx, 1);
                               setForm({ ...form, customReminders: newRems });
                             }}
-                          />
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
-                          onClick={() => {
-                            const newRems = [...form.customReminders];
-                            newRems.splice(idx, 1);
-                            setForm({ ...form, customReminders: newRems });
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
                       </div>
                     ))}
                   </div>

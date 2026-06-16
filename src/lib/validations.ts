@@ -52,7 +52,8 @@ export const eventSchema = z.object({
   reminders: z.array(z.string()).optional(),
   customReminders: z.array(z.object({
     daysBefore: z.number(),
-    time: z.string()
+    hoursBefore: z.number(),
+    minutesBefore: z.number()
   })).optional(),
 });
 

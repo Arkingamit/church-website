@@ -25,7 +25,7 @@ export interface Event {
   isSeriesTemplate?: boolean;
   nextOccurrence?: string;
   reminders?: string[]; // Deprecated, keeping for backwards compatibility
-  customReminders?: { daysBefore: number; time: string; }[];
+  customReminders?: { daysBefore: number; hoursBefore: number; minutesBefore: number; }[];
 }
 
 export interface FormField {

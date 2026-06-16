@@ -122,18 +122,24 @@ export async function POST(req: Request) {
         skipped++;
       }
 
-      // 2. Process new customReminders (Relative Days Before and Time)
+      // 2. Process new customReminders (Relative Days, Hours, Minutes Before)
       if (event.customReminders && event.customReminders.length > 0) {
         for (const rem of event.customReminders) {
-          if (typeof rem.daysBefore !== 'number' || !rem.time) continue;
+          if (typeof rem.daysBefore !== 'number' || typeof rem.hoursBefore !== 'number' || typeof rem.minutesBefore !== 'number') continue;
           
-          const customReminderKey = `custom_rem_${rem.daysBefore}d_${rem.time}_${event._id}`;
+          const customReminderKey = `custom_rem_${rem.daysBefore}d_${rem.hoursBefore}h_${rem.minutesBefore}m_${event._id}`;
           
-          // We trigger if the calculated diffDays matches their daysBefore setting.
-          if (diffDays === rem.daysBefore && !triggeredKeys.includes(customReminderKey)) {
+          // Calculate the exact target datetime for the reminder
+          const eventDateTime = new Date(`${event.date}T${event.time || '00:00'}:00`);
+          const offsetMs = (rem.daysBefore * 24 * 60 * 60 * 1000) + (rem.hoursBefore * 60 * 60 * 1000) + (rem.minutesBefore * 60 * 1000);
+          const reminderDateTime = new Date(eventDateTime.getTime() - offsetMs);
+          const now = new Date();
+          
+          // We trigger if we have passed the reminder time, but the event hasn't started yet
+          if (now >= reminderDateTime && now <= eventDateTime && !triggeredKeys.includes(customReminderKey)) {
             await Notification.create({
               title: `📅 Reminder: ${event.title}`,
-              message: diffDays === 0 ? `Starts today at ${event.time}!` : `Starts in ${diffDays} day(s)! ${event.description || ''}`,
+              message: `Starts soon at ${event.time}! ${event.description || ''}`,
               type: 'event_reminder',
               sourceId: event._id.toString(),
               targetCampuses: event.targetCampuses || ['all'],
