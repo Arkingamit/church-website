@@ -74,7 +74,7 @@ export interface Event {
   endDate?: string;
   schedule?: EventScheduleDay[];
   reminders?: string[]; // Deprecated
-  customReminders?: { date: string; time: string; }[];
+  customReminders?: { daysBefore: number; time: string; }[];
 }
 
 export interface EventRegistration {

@@ -52,7 +52,7 @@ const emptyForm = {
   isSeriesTemplate: false,
   mapUrl: '',
   reminders: [] as string[], // Deprecated
-  customReminders: [] as { date: string, time: string }[],
+  customReminders: [] as { daysBefore: number, time: string }[],
 };
 
 export default function EventsPage() {
@@ -698,7 +698,7 @@ export default function EventsPage() {
                     <h4 className="text-sm font-semibold flex items-center gap-2">
                       <Megaphone className="w-4 h-4 text-primary" /> Automated Reminders
                     </h4>
-                    <p className="text-[10px] text-muted-foreground">Automatically send a push notification/announcement at an exact date and time before the event starts</p>
+                    <p className="text-[10px] text-muted-foreground">Automatically send a push notification/announcement a specific number of days before the event starts.</p>
                   </div>
                   <Button
                     type="button"
@@ -707,7 +707,7 @@ export default function EventsPage() {
                     className="h-7 text-xs border-dashed"
                     onClick={() => setForm(f => ({
                       ...f,
-                      customReminders: [...f.customReminders, { date: form.date || '', time: '09:00' }]
+                      customReminders: [...f.customReminders, { daysBefore: 1, time: '09:00' }]
                     }))}
                   >
                     <Plus className="w-3 h-3 mr-1" /> Add Reminder
@@ -715,19 +715,23 @@ export default function EventsPage() {
                 </div>
                 {form.customReminders.length > 0 && (
                   <div className="space-y-2 pl-1">
-                    {form.customReminders.map((rem, idx) => (
+                    {form.customReminders.map((rem: any, idx) => (
                       <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-muted/20 border border-border/50">
                         <div className="grid grid-cols-2 gap-2 flex-1">
-                          <Input
-                            type="date"
-                            value={rem.date}
-                            className="h-8 text-xs"
-                            onChange={(e) => {
-                              const newRems = [...form.customReminders];
-                              newRems[idx].date = e.target.value;
-                              setForm({ ...form, customReminders: newRems });
-                            }}
-                          />
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              min="0"
+                              value={rem.daysBefore}
+                              className="h-8 text-xs w-16"
+                              onChange={(e) => {
+                                const newRems = [...form.customReminders];
+                                newRems[idx].daysBefore = parseInt(e.target.value) || 0;
+                                setForm({ ...form, customReminders: newRems });
+                              }}
+                            />
+                            <span className="text-xs text-muted-foreground">Days Before</span>
+                          </div>
                           <Input
                             type="time"
                             value={rem.time}

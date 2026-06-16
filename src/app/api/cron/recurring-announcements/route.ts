@@ -122,18 +122,18 @@ export async function POST(req: Request) {
         skipped++;
       }
 
-      // 2. Process new customReminders (Exact Date and Time)
+      // 2. Process new customReminders (Relative Days Before and Time)
       if (event.customReminders && event.customReminders.length > 0) {
-        // We get current UTC hour/minute, or assume the cron runs and checks if time has passed
-        // For simplicity, we trigger if today == reminder.date
         for (const rem of event.customReminders) {
-          if (!rem.date || !rem.time) continue;
+          if (typeof rem.daysBefore !== 'number' || !rem.time) continue;
           
-          const customReminderKey = `custom_rem_${rem.date}_${rem.time}`;
-          if (rem.date === today && !triggeredKeys.includes(customReminderKey)) {
+          const customReminderKey = `custom_rem_${rem.daysBefore}d_${rem.time}_${event._id}`;
+          
+          // We trigger if the calculated diffDays matches their daysBefore setting.
+          if (diffDays === rem.daysBefore && !triggeredKeys.includes(customReminderKey)) {
             await Notification.create({
               title: `📅 Reminder: ${event.title}`,
-              message: `Starts at ${event.time}! ${event.description || ''}`,
+              message: diffDays === 0 ? `Starts today at ${event.time}!` : `Starts in ${diffDays} day(s)! ${event.description || ''}`,
               type: 'event_reminder',
               sourceId: event._id.toString(),
               targetCampuses: event.targetCampuses || ['all'],
