@@ -443,15 +443,10 @@ export const EventsSection = () => {
           {/* Events Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {visibleEvents.map((event) => {
-              const availability = getAvailabilityStatus(event.registered, event.capacity);
               return (
                 <Card key={event.id} className="overflow-hidden hover:shadow-elevated transition-all duration-300 group">
                   <CardHeader className="pb-4">
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Badge className={`${categoryColors[event.category] || 'bg-muted text-muted-foreground'} text-xs`}>
-                          {event.category}
-                        </Badge>
                         <div className="flex items-center gap-2">
                           {event.recurring && (
                             <Badge variant="outline" className="text-xs">Recurring</Badge>
@@ -494,31 +489,18 @@ export const EventsSection = () => {
                       <div className="flex items-center gap-2 text-sm">
                         <Users className="w-4 h-4 text-primary" />
                         <span>
-                          {event.registered > 0
-                            ? `${event.registered}/${event.capacity} registered`
-                            : `Up to ${event.capacity} attendees`
-                          }
+                          {event.registered} registered
                         </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-2">
-                      <span className={`text-xs font-medium ${availability.color}`}>
-                        {availability.text}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        Host: {event.host}
-                      </span>
-                    </div>
-
                     <div className="flex gap-2 pt-2">
                       <Button 
-                        disabled={event.registered >= event.capacity}
                         onClick={() => setRsvpEvent(event)}
                         className="flex-1 group-hover:bg-primary group-hover:text-primary-foreground transition-all"
                       >
-                        {event.registered >= event.capacity ? 'Full' : 'RSVP'}
-                        {event.registered < event.capacity && <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />}
+                        RSVP
+                        <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                       </Button>
                       {event.googlePhotosUrl && (
                         <Button

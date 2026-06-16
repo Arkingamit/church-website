@@ -389,7 +389,7 @@ export default function EventsPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Users className="w-3.5 h-3.5 text-primary" />
-                  <span>{event.registered}/{event.capacity} registered</span>
+                  <span>{event.registered} registered</span>
                 </div>
               </div>
             </CardContent>
@@ -425,21 +425,10 @@ export default function EventsPage() {
                 <Label>Description</Label>
                 <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Describe the event..." rows={3} />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div className="col-span-2 space-y-2">
                   <Label>{form.isMultiDay ? 'Start Date *' : 'Date *'}</Label>
                   <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
                 </div>
-                <div className="space-y-2">
-                  <Label>Category</Label>
-                  <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {EVENT_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
 
               {/* Multi-day toggle */}
               <div className="flex items-center gap-3 py-1">
@@ -539,16 +528,7 @@ export default function EventsPage() {
                   <Input value={form.mapUrl || ''} onChange={(e) => setForm({ ...form, mapUrl: e.target.value })} placeholder="e.g. https://maps.app.goo.gl/..." />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Host</Label>
-                  <Input value={form.host} onChange={(e) => setForm({ ...form, host: e.target.value })} placeholder="e.g. Pastoral Team" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Capacity</Label>
-                  <Input type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: parseInt(e.target.value) || 0 })} />
-                </div>
-              </div>
+
               <div className="flex items-center gap-3 pt-4">
                 <Switch checked={form.recurring} onCheckedChange={(c) => setForm({ ...form, recurring: c })} />
                 <div className="space-y-0.5">
