@@ -22,8 +22,11 @@ export interface IEvent extends Document {
   recurring: boolean;
   recurrencePattern?: string;
   recurrenceDay?: string;
+  recurrenceWeekOfMonth?: string;
   recurrenceEndDate?: string;
   recurrenceNote?: string;
+  seriesId?: string;
+  isSeriesTemplate?: boolean;
   nextOccurrence?: string;
   lastTriggered?: string;
   mapUrl?: string;
@@ -83,8 +86,11 @@ const EventSchema = new Schema<IEvent>(
     recurring: { type: Boolean, default: false },
     recurrencePattern: { type: String },
     recurrenceDay: { type: String },
+    recurrenceWeekOfMonth: { type: String },
     recurrenceEndDate: { type: String },
     recurrenceNote: { type: String },
+    seriesId: { type: String },
+    isSeriesTemplate: { type: Boolean, default: false },
     nextOccurrence: { type: String },
     lastTriggered: { type: String },
     mapUrl: { type: String },

@@ -107,3 +107,74 @@ export function isTodayMatchingSchedule(announcement: {
       return false;
   }
 }
+
+/**
+ * Generate a list of dates for a recurring event ahead of time.
+ */
+export function generateOccurrences(
+  startDateStr: string,
+  endDateStr: string | undefined,
+  pattern: string,
+  dayOfWeek: string | undefined,
+  weekOfMonth: string | undefined, // '1st', '2nd', '3rd', '4th', 'last'
+  maxOccurrences: number = 52
+): string[] {
+  const occurrences: string[] = [];
+  const current = new Date(startDateStr);
+  const end = endDateStr 
+    ? new Date(endDateStr) 
+    : new Date(current.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year default
+  
+  if (pattern !== 'custom_monthly') {
+    let d = new Date(startDateStr);
+    while (d <= end && occurrences.length < maxOccurrences) {
+      occurrences.push(d.toISOString().split('T')[0]);
+      if (pattern === 'weekly') d.setDate(d.getDate() + 7);
+      else if (pattern === 'biweekly') d.setDate(d.getDate() + 14);
+      else if (pattern === 'monthly') d.setMonth(d.getMonth() + 1);
+      else break;
+    }
+  } else {
+    // Custom monthly logic: "2nd Thursday"
+    const targetDayIndex = dayOfWeek ? DAYS.indexOf(dayOfWeek) : -1;
+    if (targetDayIndex === -1) return occurrences;
+
+    let year = current.getFullYear();
+    let month = current.getMonth();
+    const startObj = new Date(startDateStr);
+    
+    while (occurrences.length < maxOccurrences) {
+      let dateObj = new Date(year, month, 1);
+      // Advance to the first occurrence of the dayOfWeek
+      while (dateObj.getDay() !== targetDayIndex) {
+        dateObj.setDate(dateObj.getDate() + 1);
+      }
+      
+      // Advance to the requested week
+      if (weekOfMonth === '2nd') dateObj.setDate(dateObj.getDate() + 7);
+      else if (weekOfMonth === '3rd') dateObj.setDate(dateObj.getDate() + 14);
+      else if (weekOfMonth === '4th') dateObj.setDate(dateObj.getDate() + 21);
+      else if (weekOfMonth === 'last') {
+        const nextMonth = new Date(year, month + 1, 1);
+        let lastObj = new Date(nextMonth.getTime() - 24 * 60 * 60 * 1000);
+        while (lastObj.getDay() !== targetDayIndex) {
+          lastObj.setDate(lastObj.getDate() - 1);
+        }
+        dateObj = lastObj;
+      }
+
+      if (dateObj > end) break;
+      if (dateObj >= startObj) {
+        occurrences.push(dateObj.toISOString().split('T')[0]);
+      }
+
+      month++;
+      if (month > 11) {
+        month = 0;
+        year++;
+      }
+    }
+  }
+  
+  return occurrences;
+}

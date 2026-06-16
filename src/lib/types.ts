@@ -8,6 +8,24 @@ export interface FormFieldOption {
   label: string;
 }
 
+export interface Event {
+  id: string;
+  title: string;
+  description: string;
+  startTime: string;
+  endTime: string;
+  location: string;
+  recurring: boolean;
+  recurrencePattern?: 'weekly' | 'biweekly' | 'monthly' | 'custom' | 'custom_monthly';
+  recurrenceDay?: string;
+  recurrenceWeekOfMonth?: string; // '1st', '2nd', '3rd', '4th', 'last'
+  recurrenceEndDate?: string;
+  recurrenceNote?: string;
+  seriesId?: string;
+  isSeriesTemplate?: boolean;
+  nextOccurrence?: string;
+}
+
 export interface FormField {
   id: string;
   type: FormFieldType;

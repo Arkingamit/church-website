@@ -54,10 +54,13 @@ export interface Event {
   registered: number;
   image: string | null;
   recurring: boolean;
-  recurrencePattern?: 'weekly' | 'biweekly' | 'monthly' | 'custom';
+  recurrencePattern?: 'weekly' | 'biweekly' | 'monthly' | 'custom' | 'custom_monthly';
   recurrenceDay?: string;
+  recurrenceWeekOfMonth?: string; // '1st', '2nd', '3rd', '4th', 'last'
   recurrenceEndDate?: string;
   recurrenceNote?: string;
+  seriesId?: string;
+  isSeriesTemplate?: boolean;
   nextOccurrence?: string;
   lastTriggered?: string;
   mapUrl?: string;
@@ -291,8 +294,8 @@ interface AdminDataContextType {
 
   // Events CRUD
   addEvent: (event: Omit<Event, 'id' | 'createdAt'>) => void;
-  updateEvent: (id: string, event: Partial<Event>) => void;
-  deleteEvent: (id: string) => void;
+  updateEvent: (id: string, event: Partial<Event>, updateSeries?: boolean) => void;
+  deleteEvent: (id: string, deleteSeries?: boolean) => void;
   addEventRegistration: (reg: Omit<EventRegistration, 'id' | 'registeredAt'>) => void;
   getEventRegistrations: (eventId: string) => EventRegistration[];
 
@@ -476,24 +479,35 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const updateEvent = useCallback(async (id: string, u: Partial<Event>) => {
-    const res = await fetch(`/api/admin/events/${id}`, {
+  const updateEvent = useCallback(async (id: string, u: Partial<Event>, updateSeries?: boolean) => {
+    const url = updateSeries ? `/api/admin/events/${id}?updateSeries=true` : `/api/admin/events/${id}`;
+    const res = await fetch(url, {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(u),
     });
     if (res.ok) {
-      const updated = await res.json();
-      setEvents(prev => prev.map(e => e.id === id ? mapId(updated) : e));
+      if (updateSeries) {
+        // Reload all events if we updated a series
+        fetchEvents();
+      } else {
+        const updated = await res.json();
+        setEvents(prev => prev.map(e => e.id === id ? mapId(updated) : e));
+      }
     }
-  }, []);
+  }, [fetchEvents]);
 
-  const deleteEvent = useCallback(async (id: string) => {
-    const res = await fetch(`/api/admin/events/${id}`, { method: 'DELETE' });
+  const deleteEvent = useCallback(async (id: string, deleteSeries?: boolean) => {
+    const url = deleteSeries ? `/api/admin/events/${id}?deleteSeries=true` : `/api/admin/events/${id}`;
+    const res = await fetch(url, { method: 'DELETE' });
     if (res.ok) {
-      setEvents(prev => prev.filter(e => e.id !== id));
-      setEventRegistrations(prev => prev.filter(r => r.eventId !== id));
+      if (deleteSeries) {
+        fetchEvents();
+      } else {
+        setEvents(prev => prev.filter(e => e.id !== id));
+        setEventRegistrations(prev => prev.filter(r => r.eventId !== id));
+      }
     }
-  }, []);
+  }, [fetchEvents]);
 
   const addEventRegistration = useCallback(async (reg: Omit<EventRegistration, 'id' | 'registeredAt'>) => {
     const res = await fetch('/api/admin/event-registrations', {

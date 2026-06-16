@@ -43,10 +43,13 @@ const emptyForm = {
   isMultiDay: false,
   endDate: '',
   schedule: [] as EventScheduleDay[],
-  recurrencePattern: 'weekly' as 'weekly' | 'biweekly' | 'monthly' | 'custom',
+  recurrencePattern: 'weekly' as 'weekly' | 'biweekly' | 'monthly' | 'custom' | 'custom_monthly',
   recurrenceDay: 'Sunday',
+  recurrenceWeekOfMonth: '1st',
   recurrenceEndDate: '',
   recurrenceNote: '',
+  seriesId: '',
+  isSeriesTemplate: false,
   mapUrl: '',
 };
 
@@ -57,6 +60,7 @@ export default function EventsPage() {
   const [form, setForm] = useState(emptyForm);
   const [search, setSearch] = useState('');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [updateSeriesConfirm, setUpdateSeriesConfirm] = useState<{action: 'put' | 'delete', eventId: string} | null>(null);
   const [selectedEventForResponses, setSelectedEventForResponses] = useState<Event | null>(null);
 
   const { getEventRegistrations } = useAdminData();
@@ -105,8 +109,11 @@ export default function EventsPage() {
       schedule: event.schedule || [],
       recurrencePattern: event.recurrencePattern || 'weekly',
       recurrenceDay: event.recurrenceDay || 'Sunday',
+      recurrenceWeekOfMonth: event.recurrenceWeekOfMonth || '1st',
       recurrenceEndDate: event.recurrenceEndDate || '',
       recurrenceNote: event.recurrenceNote || '',
+      seriesId: event.seriesId || '',
+      isSeriesTemplate: event.isSeriesTemplate || false,
       mapUrl: event.mapUrl || '',
     });
     setDialogOpen(true);
@@ -114,16 +121,43 @@ export default function EventsPage() {
 
   const handleSubmit = () => {
     if (!form.title || !form.date) return;
-    // For single-day, require time. For multi-day, schedule is optional but date is needed.
     if (!form.isMultiDay && !form.time) return;
+    
     if (editingId !== null) {
-      updateEvent(editingId, form);
+      if (form.recurring && form.seriesId) {
+        // Need to ask the user if they want to update the whole series
+        setUpdateSeriesConfirm({ action: 'put', eventId: editingId });
+        setDialogOpen(false);
+        return;
+      } else {
+        updateEvent(editingId, form);
+      }
     } else {
       addEvent(form);
     }
     setDialogOpen(false);
     setForm(emptyForm);
     setEditingId(null);
+  };
+
+  const confirmSubmitSeries = (updateSeries: boolean) => {
+    if (updateSeriesConfirm?.action === 'put') {
+      updateEvent(updateSeriesConfirm.eventId, form, updateSeries);
+      setForm(emptyForm);
+      setEditingId(null);
+    } else if (updateSeriesConfirm?.action === 'delete') {
+      deleteEvent(updateSeriesConfirm.eventId, updateSeries);
+      setDeleteConfirmId(null);
+    }
+    setUpdateSeriesConfirm(null);
+  };
+
+  const handleDeleteClick = (event: Event) => {
+    if (event.recurring && event.seriesId) {
+      setUpdateSeriesConfirm({ action: 'delete', eventId: event.id });
+    } else {
+      setDeleteConfirmId(event.id);
+    }
   };
 
   const handleDelete = (id: string) => { deleteEvent(id); setDeleteConfirmId(null); };
@@ -331,7 +365,7 @@ export default function EventsPage() {
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(event)}>
                     <Pencil className="w-3.5 h-3.5" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteConfirmId(event.id)}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteClick(event)}>
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
                 </div>
@@ -554,11 +588,42 @@ export default function EventsPage() {
                           <SelectItem value="weekly">Every Week</SelectItem>
                           <SelectItem value="biweekly">Every 2 Weeks</SelectItem>
                           <SelectItem value="monthly">Every Month</SelectItem>
-                          <SelectItem value="custom">Custom</SelectItem>
+                          <SelectItem value="custom_monthly">Custom Monthly (e.g. 2nd Thursday)</SelectItem>
+                          <SelectItem value="custom">Custom Notes</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
-                    {form.recurrencePattern !== 'custom' && (
+
+                    {form.recurrencePattern === 'custom_monthly' && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground">Week of Month</Label>
+                          <Select value={form.recurrenceWeekOfMonth} onValueChange={(v) => setForm({ ...form, recurrenceWeekOfMonth: v })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1st">First</SelectItem>
+                              <SelectItem value="2nd">Second</SelectItem>
+                              <SelectItem value="3rd">Third</SelectItem>
+                              <SelectItem value="4th">Fourth</SelectItem>
+                              <SelectItem value="last">Last</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground">Day of Week</Label>
+                          <Select value={form.recurrenceDay} onValueChange={(v) => setForm({ ...form, recurrenceDay: v })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(d => (
+                                <SelectItem key={d} value={d}>{d}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+
+                    {(form.recurrencePattern === 'weekly' || form.recurrencePattern === 'biweekly') && (
                       <div className="space-y-2">
                         <Label className="text-xs text-muted-foreground">Day</Label>
                         <Select
@@ -790,17 +855,42 @@ export default function EventsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirm */}
-      <Dialog open={deleteConfirmId !== null} onOpenChange={() => setDeleteConfirmId(null)}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Delete Event?</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">This action cannot be undone.</p>
+      {/* Delete Single Event Confirm */}
+      <Dialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Delete Event</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>Are you sure you want to delete this event? This action cannot be undone.</p>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}>Delete</Button>
+            <Button variant="destructive" onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}>Delete Event</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Series Update/Delete Confirm */}
+      <Dialog open={!!updateSeriesConfirm} onOpenChange={(open) => !open && setUpdateSeriesConfirm(null)}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Recurring Event Series</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <p className="text-sm">This is a recurring event. Do you want to apply this change to just this specific event, or all upcoming events in the series?</p>
+            <div className="flex flex-col gap-2">
+              <Button variant="outline" onClick={() => confirmSubmitSeries(false)}>
+                Just this occurrence
+              </Button>
+              <Button variant={updateSeriesConfirm?.action === 'delete' ? 'destructive' : 'default'} onClick={() => confirmSubmitSeries(true)}>
+                All upcoming events in series
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* View Responses Confirm */}
       {selectedEventForResponses && (
         <Dialog open={true} onOpenChange={(open) => !open && setSelectedEventForResponses(null)}>
