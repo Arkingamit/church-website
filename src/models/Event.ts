@@ -38,6 +38,7 @@ export interface IEvent extends Document {
   isMultiDay: boolean;
   endDate?: string;
   schedule?: IEventScheduleDay[];
+  reminders?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -101,7 +102,8 @@ const EventSchema = new Schema<IEvent>(
     formFields: [FormFieldSchema],
     isMultiDay: { type: Boolean, default: false },
     endDate: { type: String },
-    schedule: [EventScheduleDaySchema],
+    schedule: { type: [EventScheduleDaySchema], default: [] },
+    reminders: { type: [String], default: [] },
   },
   { timestamps: true }
 );

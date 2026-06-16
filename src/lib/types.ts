@@ -24,6 +24,7 @@ export interface Event {
   seriesId?: string;
   isSeriesTemplate?: boolean;
   nextOccurrence?: string;
+  reminders?: string[];
 }
 
 export interface FormField {

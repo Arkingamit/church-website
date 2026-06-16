@@ -73,6 +73,7 @@ export interface Event {
   isMultiDay?: boolean;
   endDate?: string;
   schedule?: EventScheduleDay[];
+  reminders?: string[];
 }
 
 export interface EventRegistration {

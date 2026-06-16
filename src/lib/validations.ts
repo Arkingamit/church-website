@@ -49,6 +49,7 @@ export const eventSchema = z.object({
   isMultiDay: z.boolean().optional(),
   endDate: z.string().optional(),
   schedule: z.array(z.any()).optional(),
+  reminders: z.array(z.string()).optional(),
 });
 
 // User Admin Schema (for creating/updating users in admin)

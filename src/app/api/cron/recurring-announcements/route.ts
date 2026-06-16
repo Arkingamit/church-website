@@ -40,14 +40,10 @@ export async function POST(req: Request) {
       ],
     });
 
-    // Find all active recurring events
-    const recurringEvents = await EventModel.find({
-      recurring: true,
-      $or: [
-        { recurrenceEndDate: { $exists: false } },
-        { recurrenceEndDate: '' },
-        { recurrenceEndDate: { $gte: today } },
-      ],
+    // Find all future events that have reminders configured
+    const futureEventsWithReminders = await EventModel.find({
+      date: { $gte: today },
+      reminders: { $exists: true, $not: { $size: 0 } }
     });
 
     let triggered = 0;
@@ -89,46 +85,46 @@ export async function POST(req: Request) {
       triggered++;
     }
 
-    // Process Events
-    for (const event of recurringEvents) {
-      if (event.lastTriggered === today) {
+    // Process Event Reminders
+    for (const event of futureEventsWithReminders) {
+      // Calculate how many days away the event is
+      const eventDate = new Date(event.date);
+      const todayDate = new Date(today);
+      const diffTime = eventDate.getTime() - todayDate.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      let shouldTrigger = false;
+      if (diffDays === 0 && event.reminders.includes('0_days')) shouldTrigger = true;
+      if (diffDays === 1 && event.reminders.includes('1_days')) shouldTrigger = true;
+      if (diffDays === 3 && event.reminders.includes('3_days')) shouldTrigger = true;
+      if (diffDays === 7 && event.reminders.includes('7_days')) shouldTrigger = true;
+
+      const reminderKey = `rem_${diffDays}_${today}`;
+
+      if (shouldTrigger && event.lastTriggered !== reminderKey) {
+        await Notification.create({
+          title: `📅 Reminder: ${event.title}`,
+          message: diffDays === 0 ? `Starts today at ${event.time}!` : `Starts in ${diffDays} day(s)! ${event.description || ''}`,
+          type: 'event_reminder',
+          sourceId: event._id.toString(),
+          targetCampuses: event.targetCampuses || ['all'],
+          targetGroups: event.targetGroups || ['all'],
+        });
+
+        await EventModel.findByIdAndUpdate(event._id, {
+          lastTriggered: reminderKey,
+        });
+
+        triggered++;
+      } else {
         skipped++;
-        continue;
       }
-
-      if (!isTodayMatchingSchedule(event)) {
-        skipped++;
-        continue;
-      }
-
-      await Notification.create({
-        title: `📅 ${event.title}`,
-        message: `Event reminder: ${event.description}`,
-        type: 'event_reminder',
-        sourceId: event._id.toString(),
-        targetCampuses: event.targetCampuses || ['all'],
-        targetGroups: event.targetGroups || ['all'],
-      });
-
-      const nextOccurrence = calculateNextOccurrence(
-        event.recurrencePattern || 'weekly',
-        event.recurrenceDay,
-        today,
-        event.recurrenceEndDate
-      );
-
-      await EventModel.findByIdAndUpdate(event._id, {
-        lastTriggered: today,
-        nextOccurrence: nextOccurrence,
-      });
-
-      triggered++;
     }
 
     return NextResponse.json({
       success: true,
       date: today,
-      processed: recurringAnnouncements.length + recurringEvents.length,
+      processed: recurringAnnouncements.length + futureEventsWithReminders.length,
       triggered,
       skipped,
     });

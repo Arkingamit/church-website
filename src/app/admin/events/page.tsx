@@ -51,6 +51,7 @@ const emptyForm = {
   seriesId: '',
   isSeriesTemplate: false,
   mapUrl: '',
+  reminders: [] as string[],
 };
 
 export default function EventsPage() {
@@ -115,6 +116,7 @@ export default function EventsPage() {
       seriesId: event.seriesId || '',
       isSeriesTemplate: event.isSeriesTemplate || false,
       mapUrl: event.mapUrl || '',
+      reminders: event.reminders || [],
     });
     setDialogOpen(true);
   };
@@ -563,10 +565,29 @@ export default function EventsPage() {
                 </div>
               </div>
               
-              <div className="space-y-2">
-                <Label>Registration Limit (Capacity)</Label>
-                <Input type="number" min="0" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: parseInt(e.target.value) || 0 })} placeholder="e.g. 100 (0 for unlimited)" />
-                <p className="text-[10px] text-muted-foreground">Set to 0 if there is no limit to how many people can register.</p>
+              <div className="space-y-3 p-3 rounded-lg border border-border/50 bg-muted/10">
+                <div className="flex items-center gap-3">
+                  <Switch 
+                    checked={form.capacity > 0} 
+                    onCheckedChange={(c) => setForm({ ...form, capacity: c ? 100 : 0 })} 
+                  />
+                  <div className="space-y-0.5">
+                    <Label className="flex items-center gap-2">Registration Limit</Label>
+                    <p className="text-[10px] text-muted-foreground">Restrict the maximum number of people who can register</p>
+                  </div>
+                </div>
+                {form.capacity > 0 && (
+                  <div className="pl-12 space-y-2">
+                    <Label className="text-xs text-muted-foreground">Maximum Capacity</Label>
+                    <Input 
+                      type="number" 
+                      min="1" 
+                      value={form.capacity} 
+                      onChange={(e) => setForm({ ...form, capacity: parseInt(e.target.value) || 1 })} 
+                      className="max-w-[200px] h-8 text-sm"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-3 pt-4">
@@ -668,6 +689,38 @@ export default function EventsPage() {
                 </div>
               )}
 
+              {/* Reminders */}
+              <div className="border-t border-border/50 pt-4 space-y-4">
+                <div className="space-y-0.5">
+                  <h4 className="text-sm font-semibold flex items-center gap-2">
+                    <Megaphone className="w-4 h-4 text-primary" /> Automated Reminders
+                  </h4>
+                  <p className="text-[10px] text-muted-foreground">Automatically send a push notification/announcement before the event starts</p>
+                </div>
+                <div className="flex flex-wrap gap-4 pl-1">
+                  {[
+                    { id: '0_days', label: 'Day of Event' },
+                    { id: '1_days', label: '1 Day Before' },
+                    { id: '3_days', label: '3 Days Before' },
+                    { id: '7_days', label: '1 Week Before' },
+                  ].map(rem => (
+                    <label key={rem.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox
+                        checked={form.reminders.includes(rem.id)}
+                        onCheckedChange={(c) => {
+                          setForm(f => ({
+                            ...f,
+                            reminders: c 
+                              ? [...f.reminders, rem.id] 
+                              : f.reminders.filter(x => x !== rem.id)
+                          }));
+                        }}
+                      />
+                      {rem.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
 
               {/* Audience Targeting */}
               <div className="border-t border-border/50 pt-4 space-y-4">
