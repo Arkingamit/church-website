@@ -487,27 +487,27 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
     });
     if (res.ok) {
       if (updateSeries) {
-        // Reload all events if we updated a series
-        fetchEvents();
+        // Reload page to fetch the newly generated events
+        window.location.reload();
       } else {
         const updated = await res.json();
         setEvents(prev => prev.map(e => e.id === id ? mapId(updated) : e));
       }
     }
-  }, [fetchEvents]);
+  }, []);
 
   const deleteEvent = useCallback(async (id: string, deleteSeries?: boolean) => {
     const url = deleteSeries ? `/api/admin/events/${id}?deleteSeries=true` : `/api/admin/events/${id}`;
     const res = await fetch(url, { method: 'DELETE' });
     if (res.ok) {
       if (deleteSeries) {
-        fetchEvents();
+        window.location.reload();
       } else {
         setEvents(prev => prev.filter(e => e.id !== id));
         setEventRegistrations(prev => prev.filter(r => r.eventId !== id));
       }
     }
-  }, [fetchEvents]);
+  }, []);
 
   const addEventRegistration = useCallback(async (reg: Omit<EventRegistration, 'id' | 'registeredAt'>) => {
     const res = await fetch('/api/admin/event-registrations', {
