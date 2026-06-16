@@ -476,8 +476,8 @@ export default function EventsPage() {
                   )}
                   <div className="space-y-2">
                     {form.schedule.map((day, index) => (
-                      <div key={index} className="flex items-end gap-2 p-3 rounded-lg bg-background border border-border/30">
-                        <div className="flex-1 space-y-1">
+                      <div key={index} className="grid grid-cols-2 gap-3 p-3 rounded-lg bg-background border border-border/30">
+                        <div className="col-span-2 sm:col-span-1 space-y-1">
                           <Label className="text-[10px] text-muted-foreground">Day {index + 1}</Label>
                           <Input
                             type="date"
@@ -486,25 +486,7 @@ export default function EventsPage() {
                             className="h-8 text-xs"
                           />
                         </div>
-                        <div className="w-24 space-y-1">
-                          <Label className="text-[10px] text-muted-foreground">Start</Label>
-                          <Input
-                            type="time"
-                            value={day.startTime}
-                            onChange={(e) => updateScheduleDay(index, { startTime: e.target.value })}
-                            className="h-8 text-xs"
-                          />
-                        </div>
-                        <div className="w-24 space-y-1">
-                          <Label className="text-[10px] text-muted-foreground">End</Label>
-                          <Input
-                            type="time"
-                            value={day.endTime}
-                            onChange={(e) => updateScheduleDay(index, { endTime: e.target.value })}
-                            className="h-8 text-xs"
-                          />
-                        </div>
-                        <div className="flex-1 space-y-1">
+                        <div className="col-span-2 sm:col-span-1 space-y-1">
                           <Label className="text-[10px] text-muted-foreground">Label (optional)</Label>
                           <Input
                             value={day.label || ''}
@@ -513,15 +495,35 @@ export default function EventsPage() {
                             className="h-8 text-xs"
                           />
                         </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive shrink-0"
-                          onClick={() => removeScheduleDay(index)}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                        <div className="col-span-1 space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">Start Time</Label>
+                          <Input
+                            type="time"
+                            value={day.startTime}
+                            onChange={(e) => updateScheduleDay(index, { startTime: e.target.value })}
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                        <div className="col-span-1 space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">End Time</Label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="time"
+                              value={day.endTime}
+                              onChange={(e) => updateScheduleDay(index, { endTime: e.target.value })}
+                              className="h-8 text-xs flex-1"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:bg-destructive/10 shrink-0"
+                              onClick={() => removeScheduleDay(index)}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
