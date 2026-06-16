@@ -26,17 +26,20 @@ export const AnnouncementsSection = () => {
   const sessionMember = getSessionMember();
   const effectiveGroups = sessionMember ? getEffectiveGroups(sessionMember) : [];
 
-  // Build user groups: selected filter + family-linked groups
-  const baseGroups = selectedGroup === 'all' ? groups.map(g => g) : [selectedGroup];
-  const userGroups = effectiveGroups.length > 0
-    ? Array.from(new Set([...baseGroups, ...effectiveGroups]))
-    : baseGroups;
+  const isAdminOrLeader = sessionMember?.role === 'admin' || sessionMember?.role === 'super_admin' || sessionMember?.role === 'campus_leader';
+  const allowedGroups = isAdminOrLeader 
+    ? groups 
+    : Array.from(new Set([...effectiveGroups, 'all']));
+
+  // For the dropdown filter: only filter if they select a specific group/campus
+  // and we pass allowedGroups to getVisibleAnnouncements to enforce security at the data level
+  const userGroups = selectedGroup === 'all' 
+    ? allowedGroups 
+    : (allowedGroups.includes(selectedGroup) || isAdminOrLeader ? [selectedGroup] : []);
+
   const campusForFilter = selectedCampus === 'all' ? 'all' : selectedCampus;
 
-  // When campus is 'all', show everything targeted to any campus
-  const visibleAnnouncements = selectedCampus === 'all'
-    ? getVisibleAnnouncements('all', userGroups as string[])
-    : getVisibleAnnouncements(campusForFilter, userGroups as string[]);
+  const visibleAnnouncements = getVisibleAnnouncements(campusForFilter, userGroups as string[]);
 
   return (
     <section id="announcements" className="py-16 bg-muted/30">

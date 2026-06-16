@@ -333,6 +333,7 @@ interface AdminDataContextType {
   // Filtering
   getVisibleAnnouncements: (campusId: string, groups: string[]) => Announcement[];
   getVisibleEvents: (campusId: string, groups: string[]) => Event[];
+  getVisibleGalleryAlbums: (campusId: string, groups: string[]) => GalleryAlbum[];
 }
 
 const AdminDataContext = createContext<AdminDataContextType | null>(null);
@@ -763,6 +764,16 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
     });
   }, [events]);
 
+  const getVisibleGalleryAlbums = useCallback((campusId: string, userGroups: string[]) => {
+    return galleryAlbums.filter(a => {
+      const tc = a.targetCampuses ?? ['all'];
+      const tg = a.targetGroups ?? ['all'];
+      const campusMatch = campusId === 'all' || tc.includes('all') || tc.includes(campusId);
+      const groupMatch = tg.includes('all') || tg.some(g => userGroups.includes(g));
+      return campusMatch && groupMatch;
+    });
+  }, [galleryAlbums]);
+
   return (
     <AdminDataContext.Provider value={{
       campuses, groups, groupScopes, events, eventRegistrations, announcements, users, currentUser, setCurrentUser,
@@ -770,7 +781,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
       addAnnouncement, updateAnnouncement, deleteAnnouncement,
       addUser, updateUser, deleteUser,
       addCampus, updateCampus, deleteCampus, addGroup, deleteGroup, updateGroupScope,
-      getVisibleAnnouncements, getVisibleEvents,
+      getVisibleAnnouncements, getVisibleEvents, getVisibleGalleryAlbums,
       galleryAlbumUrl, setGalleryAlbumUrl,
       worshipVideos, addWorshipVideo, updateWorshipVideo, deleteWorshipVideo,
       sermons, addSermon, updateSermon, deleteSermon, reorderSermons,

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { X, Download, Share2, Heart, Calendar, User, Loader2, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import { useAdminData } from '@/lib/admin-data-context';
+import { useAuth } from '@/lib/auth-context';
 
 import gallery1 from '@/assets/gallery-1.jpg';
 import gallery2 from '@/assets/gallery-2.jpg';
@@ -35,7 +36,18 @@ const categoryColors = {
 };
 
 export default function GallerySection() {
-  const { galleryAlbums } = useAdminData();
+  const { getVisibleGalleryAlbums, groups } = useAdminData();
+  const { getSessionMember, getEffectiveGroups } = useAuth();
+  
+  const sessionMember = getSessionMember();
+  const effectiveGroups = sessionMember ? getEffectiveGroups(sessionMember) : [];
+  
+  const userGroups = effectiveGroups.length > 0
+    ? Array.from(new Set([...effectiveGroups]))
+    : ['all'];
+
+  const galleryAlbums = getVisibleGalleryAlbums('all', userGroups as string[]);
+
   const [selectedAlbum, setSelectedAlbum] = useState<any>(null);
   const [previewPhotos, setPreviewPhotos] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);

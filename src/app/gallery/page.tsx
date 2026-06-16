@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAdminData } from '@/lib/admin-data-context';
+import { useAuth } from '@/lib/auth-context';
 import { 
   ImageIcon, 
   ChevronLeft, 
@@ -21,7 +22,18 @@ import {
 } from "@/components/ui/dialog";
 
 export default function GalleryPage() {
-  const { galleryAlbums } = useAdminData();
+  const { getVisibleGalleryAlbums } = useAdminData();
+  const { getSessionMember, getEffectiveGroups } = useAuth();
+
+  const sessionMember = getSessionMember();
+  const effectiveGroups = sessionMember ? getEffectiveGroups(sessionMember) : [];
+  
+  const userGroups = effectiveGroups.length > 0
+    ? Array.from(new Set([...effectiveGroups]))
+    : ['all'];
+
+  const galleryAlbums = getVisibleGalleryAlbums('all', userGroups as string[]);
+
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [albumCovers, setAlbumCovers] = useState<Record<string, string>>({});

@@ -51,7 +51,7 @@ export async function POST(req: Request) {
       familyMemberId,
       status: 'pending',
       role: 'member',
-      groups: [],
+      groups: ['New Members'],
     });
 
     return NextResponse.json({ success: true, message: 'Registration submitted for approval.' }, { status: 201 });

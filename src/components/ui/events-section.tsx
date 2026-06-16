@@ -382,13 +382,18 @@ export const EventsSection = () => {
   const sessionMember = getSessionMember();
   const effectiveGroups = sessionMember ? getEffectiveGroups(sessionMember) : [];
 
-  const baseGroups = selectedGroup === 'all' ? groups : [selectedGroup];
-  const userGroups = effectiveGroups.length > 0
-    ? Array.from(new Set([...baseGroups, ...effectiveGroups]))
-    : baseGroups;
+  const isAdminOrLeader = sessionMember?.role === 'admin' || sessionMember?.role === 'super_admin' || sessionMember?.role === 'campus_leader';
+  const allowedGroups = isAdminOrLeader 
+    ? groups 
+    : Array.from(new Set([...effectiveGroups, 'all']));
+
+  const userGroups = selectedGroup === 'all' 
+    ? allowedGroups 
+    : (allowedGroups.includes(selectedGroup) || isAdminOrLeader ? [selectedGroup] : []);
+
   const visibleEvents = getVisibleEvents(
     selectedCampus === 'all' ? 'all' : selectedCampus,
-    userGroups
+    userGroups as string[]
   );
 
   return (

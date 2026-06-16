@@ -25,6 +25,7 @@ export interface ChurchMember {
   groups: string[];
   qrCode?: string;
   familyMemberId?: string;
+  role?: string;
 }
 
 export interface AuthSession {
