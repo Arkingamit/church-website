@@ -53,10 +53,9 @@ const categoryColors: Record<string, string> = {
 const emptyForm = {
   title: '',
   content: '',
-  category: 'Worship',
   isPinned: false,
-  date: new Date().toISOString().split('T')[0],
-  author: '',
+  reminderDate: '',
+  reminderTime: '',
   image: null as string | null,
   reactions: 0,
   targetCampuses: ['all'] as string[],
@@ -81,8 +80,7 @@ export default function AnnouncementsPage() {
 
   const filtered = announcements.filter(a => {
     const matchesSearch = a.title.toLowerCase().includes(search.toLowerCase()) ||
-      a.category.toLowerCase().includes(search.toLowerCase()) ||
-      a.author.toLowerCase().includes(search.toLowerCase());
+      a.content.toLowerCase().includes(search.toLowerCase());
       
     if (isGroupLeader) {
       const aGroups = a.targetGroups ?? ['all'];
@@ -97,7 +95,6 @@ export default function AnnouncementsPage() {
     setEditingId(null);
     setForm({
       ...emptyForm,
-      date: new Date().toISOString().split('T')[0],
       // Campus leaders & group leaders: lock to their campus
       targetCampuses: (isCampusLeader || isGroupLeader) ? [currentUser.campusId] : ['all'],
       targetGroups: isGroupLeader ? currentUser.groups : ['all'],
@@ -110,10 +107,9 @@ export default function AnnouncementsPage() {
     setForm({
       title: announcement.title,
       content: announcement.content,
-      category: announcement.category,
       isPinned: announcement.isPinned,
-      date: announcement.date,
-      author: announcement.author,
+      reminderDate: announcement.reminderDate || '',
+      reminderTime: announcement.reminderTime || '',
       image: announcement.image,
       reactions: announcement.reactions,
       targetCampuses: announcement.targetCampuses || ['all'],
@@ -234,9 +230,7 @@ export default function AnnouncementsPage() {
                     {announcement.isPinned && (
                       <Pin className="w-3.5 h-3.5 text-accent fill-current shrink-0" />
                     )}
-                    <Badge className={`text-[10px] ${categoryColors[announcement.category] || 'bg-muted text-muted-foreground'}`}>
-                      {announcement.category}
-                    </Badge>
+
                     {announcement.isRecurring && (
                       <Badge variant="outline" className="text-[9px] gap-1 border-violet-500/30 text-violet-600">
                         <Repeat className="w-2.5 h-2.5" />
@@ -249,11 +243,12 @@ export default function AnnouncementsPage() {
                   </div>
                   <h3 className="text-lg font-semibold leading-tight">{announcement.title}</h3>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-                    <span>By {announcement.author}</span>
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      <span>{new Date(announcement.date).toLocaleDateString()}</span>
-                    </div>
+                    {announcement.reminderDate && announcement.reminderTime && (
+                      <div className="flex items-center gap-1 text-blue-500">
+                        <Calendar className="w-3 h-3" />
+                        <span>Scheduled: {announcement.reminderDate} at {announcement.reminderTime}</span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-1">
                       <Heart className="w-3 h-3" />
                       <span>{announcement.reactions}</span>
@@ -344,28 +339,17 @@ export default function AnnouncementsPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="a-category">Category</Label>
-                <Select value={form.category} onValueChange={(val) => setForm({ ...form, category: val })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {ANNOUNCEMENT_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="a-reminder-date">Schedule Date (Optional)</Label>
+                <Input id="a-reminder-date" type="date" value={form.reminderDate} onChange={(e) => setForm({ ...form, reminderDate: e.target.value })} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="a-date">Date</Label>
-                <Input id="a-date" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+                <Label htmlFor="a-reminder-time">Schedule Time</Label>
+                <Input id="a-reminder-time" type="time" value={form.reminderTime} onChange={(e) => setForm({ ...form, reminderTime: e.target.value })} disabled={!form.reminderDate} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="a-author">Author</Label>
-                <Input id="a-author" value={form.author} onChange={(e) => setForm({ ...form, author: e.target.value })} placeholder="e.g. Pastor Mark" />
-              </div>
-              <div className="flex items-center gap-3 pt-6">
-                <Switch id="a-pinned" checked={form.isPinned} onCheckedChange={(checked) => setForm({ ...form, isPinned: checked })} />
-                <Label htmlFor="a-pinned">Pin announcement</Label>
-              </div>
+            <div className="flex items-center gap-3 pt-2">
+              <Switch id="a-pinned" checked={form.isPinned} onCheckedChange={(checked) => setForm({ ...form, isPinned: checked })} />
+              <Label htmlFor="a-pinned">Pin announcement</Label>
             </div>
 
             {/* ── Recurring Section ── */}

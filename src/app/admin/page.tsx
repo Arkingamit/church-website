@@ -336,14 +336,13 @@ export default function AdminDashboardPage() {
                         <Pin className="w-3 h-3 text-accent fill-current shrink-0" />
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {announcement.author} · {new Date(announcement.date).toLocaleDateString()}
-                    </p>
+                    {announcement.reminderDate && announcement.reminderTime && (
+                      <p className="text-xs text-blue-500">
+                        Scheduled: {announcement.reminderDate} at {announcement.reminderTime}
+                      </p>
+                    )}
                   </div>
                 </div>
-                <Badge variant="outline" className="text-[10px] shrink-0 ml-2">
-                  {announcement.category}
-                </Badge>
               </div>
             ))}
             {announcements.length === 0 && (

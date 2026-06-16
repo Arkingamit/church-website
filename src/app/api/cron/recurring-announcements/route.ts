@@ -40,6 +40,12 @@ export async function POST(req: Request) {
       ],
     });
 
+    // Find all scheduled announcements (one-time reminders)
+    const scheduledAnnouncements = await Announcement.find({
+      isRecurring: false,
+      reminderDate: today,
+    });
+
     // Find all future events that have reminders configured
     const futureEventsWithReminders = await EventModel.find({
       date: { $gte: today },
@@ -86,6 +92,34 @@ export async function POST(req: Request) {
       });
 
       triggered++;
+    }
+
+    // Process Scheduled Announcements
+    for (const announcement of scheduledAnnouncements) {
+      if (!announcement.reminderTime) continue;
+      
+      const scheduledKey = `scheduled_${announcement.reminderDate}_${announcement.reminderTime}_${announcement._id}`;
+      if (announcement.lastTriggered === scheduledKey) continue;
+
+      const scheduledDateTime = new Date(`${announcement.reminderDate}T${announcement.reminderTime}:00`);
+      const now = new Date();
+
+      if (now >= scheduledDateTime) {
+        await Notification.create({
+          title: `📢 ${announcement.title}`,
+          message: announcement.content,
+          type: 'recurring_announcement',
+          sourceId: announcement._id.toString(),
+          targetCampuses: announcement.targetCampuses || ['all'],
+          targetGroups: announcement.targetGroups || ['all'],
+        });
+
+        await Announcement.findByIdAndUpdate(announcement._id, {
+          lastTriggered: scheduledKey,
+        });
+
+        triggered++;
+      }
     }
 
     // Process Event Reminders

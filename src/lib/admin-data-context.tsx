@@ -93,11 +93,10 @@ export interface Announcement {
   _id?: string;
   title: string;
   content: string;
-  category: string;
   isPinned: boolean;
-  date: string;
-  author: string;
-  image: string | null;
+  reminderDate?: string;
+  reminderTime?: string;
+  image?: string;
   reactions: number;
   targetCampuses: string[];
   targetGroups: string[];

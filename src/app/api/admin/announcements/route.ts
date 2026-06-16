@@ -10,7 +10,7 @@ export async function GET() {
 
   try {
     await connectToDatabase();
-    const announcements = await Announcement.find({}).sort({ isPinned: -1, date: -1 });
+    const announcements = await Announcement.find({}).sort({ isPinned: -1, createdAt: -1 });
     return NextResponse.json(announcements);
   } catch (error: any) {
     return NextResponse.json({ error: 'Failed to fetch announcements' }, { status: 500 });

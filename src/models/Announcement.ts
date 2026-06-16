@@ -3,10 +3,9 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 export interface IAnnouncement extends Document {
   title: string;
   content: string;
-  category: string;
   isPinned: boolean;
-  date: string;
-  author: string;
+  reminderDate?: string;
+  reminderTime?: string;
   image?: string;
   reactions: number;
   targetCampuses: string[];
@@ -26,10 +25,9 @@ const AnnouncementSchema = new Schema<IAnnouncement>(
   {
     title: { type: String, required: true },
     content: { type: String, required: true },
-    category: { type: String, required: true },
     isPinned: { type: Boolean, default: false },
-    date: { type: String, required: true },
-    author: { type: String, required: true },
+    reminderDate: { type: String },
+    reminderTime: { type: String },
     image: { type: String },
     reactions: { type: Number, default: 0 },
     targetCampuses: [{ type: String }],

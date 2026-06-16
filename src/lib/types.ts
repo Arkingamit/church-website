@@ -8,6 +8,18 @@ export interface FormFieldOption {
   label: string;
 }
 
+export interface Announcement {
+  id: string;
+  _id?: string;
+  title: string;
+  content: string;
+  isPinned: boolean;
+  reminderDate?: string;
+  reminderTime?: string;
+  image?: string;
+  reactions: number;
+}
+
 export interface Event {
   id: string;
   title: string;

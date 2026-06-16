@@ -70,11 +70,7 @@ export const AnnouncementsSection = () => {
                         {announcement.isPinned && (
                           <Pin className="w-4 h-4 text-accent fill-current" />
                         )}
-                        <Badge 
-                          className={`${categoryColors[announcement.category] || 'bg-muted text-muted-foreground'} text-xs`}
-                        >
-                          {announcement.category}
-                        </Badge>
+
                         {/* Show targeting info */}
                         {!announcement.targetCampuses?.includes('all') && (
                           <Badge variant="outline" className="text-[9px] gap-1">
@@ -93,11 +89,12 @@ export const AnnouncementsSection = () => {
                         {announcement.title}
                       </h3>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>By {announcement.author}</span>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          <span>{new Date(announcement.date).toLocaleDateString()}</span>
-                        </div>
+                        {announcement.reminderDate && announcement.reminderTime && (
+                          <div className="flex items-center gap-1 text-blue-500">
+                            <Calendar className="w-3 h-3" />
+                            <span>Scheduled for {announcement.reminderDate} at {announcement.reminderTime}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
