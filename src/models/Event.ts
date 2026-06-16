@@ -39,6 +39,7 @@ export interface IEvent extends Document {
   endDate?: string;
   schedule?: IEventScheduleDay[];
   reminders?: string[];
+  customReminders?: { date: string; time: string; }[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -103,7 +104,11 @@ const EventSchema = new Schema<IEvent>(
     isMultiDay: { type: Boolean, default: false },
     endDate: { type: String },
     schedule: { type: [EventScheduleDaySchema], default: [] },
-    reminders: { type: [String], default: [] },
+    reminders: { type: [String], default: [] }, // Deprecated
+    customReminders: {
+      type: [{ date: String, time: String }],
+      default: []
+    },
   },
   { timestamps: true }
 );

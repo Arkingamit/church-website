@@ -73,7 +73,8 @@ export interface Event {
   isMultiDay?: boolean;
   endDate?: string;
   schedule?: EventScheduleDay[];
-  reminders?: string[];
+  reminders?: string[]; // Deprecated
+  customReminders?: { date: string; time: string; }[];
 }
 
 export interface EventRegistration {

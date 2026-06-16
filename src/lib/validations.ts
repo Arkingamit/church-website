@@ -50,6 +50,10 @@ export const eventSchema = z.object({
   endDate: z.string().optional(),
   schedule: z.array(z.any()).optional(),
   reminders: z.array(z.string()).optional(),
+  customReminders: z.array(z.object({
+    date: z.string(),
+    time: z.string()
+  })).optional(),
 });
 
 // User Admin Schema (for creating/updating users in admin)

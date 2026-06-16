@@ -43,7 +43,10 @@ export async function POST(req: Request) {
     // Find all future events that have reminders configured
     const futureEventsWithReminders = await EventModel.find({
       date: { $gte: today },
-      reminders: { $exists: true, $not: { $size: 0 } }
+      $or: [
+        { customReminders: { $exists: true, $not: { $size: 0 } } },
+        { reminders: { $exists: true, $not: { $size: 0 } } }
+      ]
     });
 
     let triggered = 0;
@@ -87,21 +90,24 @@ export async function POST(req: Request) {
 
     // Process Event Reminders
     for (const event of futureEventsWithReminders) {
-      // Calculate how many days away the event is
+      // 1. Backwards compatibility for old "reminders" string array
       const eventDate = new Date(event.date);
       const todayDate = new Date(today);
       const diffTime = eventDate.getTime() - todayDate.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-      let shouldTrigger = false;
-      if (diffDays === 0 && event.reminders.includes('0_days')) shouldTrigger = true;
-      if (diffDays === 1 && event.reminders.includes('1_days')) shouldTrigger = true;
-      if (diffDays === 3 && event.reminders.includes('3_days')) shouldTrigger = true;
-      if (diffDays === 7 && event.reminders.includes('7_days')) shouldTrigger = true;
+      let shouldTriggerLegacy = false;
+      if (event.reminders && event.reminders.length > 0) {
+        if (diffDays === 0 && event.reminders.includes('0_days')) shouldTriggerLegacy = true;
+        if (diffDays === 1 && event.reminders.includes('1_days')) shouldTriggerLegacy = true;
+        if (diffDays === 3 && event.reminders.includes('3_days')) shouldTriggerLegacy = true;
+        if (diffDays === 7 && event.reminders.includes('7_days')) shouldTriggerLegacy = true;
+      }
 
-      const reminderKey = `rem_${diffDays}_${today}`;
+      const legacyReminderKey = `rem_${diffDays}_${today}`;
+      let triggeredKeys = event.lastTriggered ? event.lastTriggered.split(',') : [];
 
-      if (shouldTrigger && event.lastTriggered !== reminderKey) {
+      if (shouldTriggerLegacy && !triggeredKeys.includes(legacyReminderKey)) {
         await Notification.create({
           title: `📅 Reminder: ${event.title}`,
           message: diffDays === 0 ? `Starts today at ${event.time}!` : `Starts in ${diffDays} day(s)! ${event.description || ''}`,
@@ -110,14 +116,40 @@ export async function POST(req: Request) {
           targetCampuses: event.targetCampuses || ['all'],
           targetGroups: event.targetGroups || ['all'],
         });
-
-        await EventModel.findByIdAndUpdate(event._id, {
-          lastTriggered: reminderKey,
-        });
-
+        triggeredKeys.push(legacyReminderKey);
         triggered++;
       } else {
         skipped++;
+      }
+
+      // 2. Process new customReminders (Exact Date and Time)
+      if (event.customReminders && event.customReminders.length > 0) {
+        // We get current UTC hour/minute, or assume the cron runs and checks if time has passed
+        // For simplicity, we trigger if today == reminder.date
+        for (const rem of event.customReminders) {
+          if (!rem.date || !rem.time) continue;
+          
+          const customReminderKey = `custom_rem_${rem.date}_${rem.time}`;
+          if (rem.date === today && !triggeredKeys.includes(customReminderKey)) {
+            await Notification.create({
+              title: `📅 Reminder: ${event.title}`,
+              message: `Starts at ${event.time}! ${event.description || ''}`,
+              type: 'event_reminder',
+              sourceId: event._id.toString(),
+              targetCampuses: event.targetCampuses || ['all'],
+              targetGroups: event.targetGroups || ['all'],
+            });
+            triggeredKeys.push(customReminderKey);
+            triggered++;
+          }
+        }
+      }
+
+      // Save updated triggered keys
+      if (triggeredKeys.join(',') !== event.lastTriggered) {
+        await EventModel.findByIdAndUpdate(event._id, {
+          lastTriggered: triggeredKeys.join(','),
+        });
       }
     }
 

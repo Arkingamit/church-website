@@ -51,7 +51,8 @@ const emptyForm = {
   seriesId: '',
   isSeriesTemplate: false,
   mapUrl: '',
-  reminders: [] as string[],
+  reminders: [] as string[], // Deprecated
+  customReminders: [] as { date: string, time: string }[],
 };
 
 export default function EventsPage() {
@@ -117,6 +118,7 @@ export default function EventsPage() {
       isSeriesTemplate: event.isSeriesTemplate || false,
       mapUrl: event.mapUrl || '',
       reminders: event.reminders || [],
+      customReminders: event.customReminders || [],
     });
     setDialogOpen(true);
   };
@@ -691,35 +693,69 @@ export default function EventsPage() {
 
               {/* Reminders */}
               <div className="border-t border-border/50 pt-4 space-y-4">
-                <div className="space-y-0.5">
-                  <h4 className="text-sm font-semibold flex items-center gap-2">
-                    <Megaphone className="w-4 h-4 text-primary" /> Automated Reminders
-                  </h4>
-                  <p className="text-[10px] text-muted-foreground">Automatically send a push notification/announcement before the event starts</p>
+                <div className="flex justify-between items-start">
+                  <div className="space-y-0.5">
+                    <h4 className="text-sm font-semibold flex items-center gap-2">
+                      <Megaphone className="w-4 h-4 text-primary" /> Automated Reminders
+                    </h4>
+                    <p className="text-[10px] text-muted-foreground">Automatically send a push notification/announcement at an exact date and time before the event starts</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs border-dashed"
+                    onClick={() => setForm(f => ({
+                      ...f,
+                      customReminders: [...f.customReminders, { date: form.date || '', time: '09:00' }]
+                    }))}
+                  >
+                    <Plus className="w-3 h-3 mr-1" /> Add Reminder
+                  </Button>
                 </div>
-                <div className="flex flex-wrap gap-4 pl-1">
-                  {[
-                    { id: '0_days', label: 'Day of Event' },
-                    { id: '1_days', label: '1 Day Before' },
-                    { id: '3_days', label: '3 Days Before' },
-                    { id: '7_days', label: '1 Week Before' },
-                  ].map(rem => (
-                    <label key={rem.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                      <Checkbox
-                        checked={form.reminders.includes(rem.id)}
-                        onCheckedChange={(c) => {
-                          setForm(f => ({
-                            ...f,
-                            reminders: c 
-                              ? [...f.reminders, rem.id] 
-                              : f.reminders.filter(x => x !== rem.id)
-                          }));
-                        }}
-                      />
-                      {rem.label}
-                    </label>
-                  ))}
-                </div>
+                {form.customReminders.length > 0 && (
+                  <div className="space-y-2 pl-1">
+                    {form.customReminders.map((rem, idx) => (
+                      <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-muted/20 border border-border/50">
+                        <div className="grid grid-cols-2 gap-2 flex-1">
+                          <Input
+                            type="date"
+                            value={rem.date}
+                            className="h-8 text-xs"
+                            onChange={(e) => {
+                              const newRems = [...form.customReminders];
+                              newRems[idx].date = e.target.value;
+                              setForm({ ...form, customReminders: newRems });
+                            }}
+                          />
+                          <Input
+                            type="time"
+                            value={rem.time}
+                            className="h-8 text-xs"
+                            onChange={(e) => {
+                              const newRems = [...form.customReminders];
+                              newRems[idx].time = e.target.value;
+                              setForm({ ...form, customReminders: newRems });
+                            }}
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                          onClick={() => {
+                            const newRems = [...form.customReminders];
+                            newRems.splice(idx, 1);
+                            setForm({ ...form, customReminders: newRems });
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Audience Targeting */}
