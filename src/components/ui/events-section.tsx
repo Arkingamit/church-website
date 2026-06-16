@@ -461,7 +461,6 @@ export const EventsSection = () => {
                             </button>
                           )}
                         </div>
-                      </div>
                       <h3 className="text-lg font-semibold leading-tight group-hover:text-primary transition-colors">
                         {event.title}
                       </h3>
