@@ -5,6 +5,7 @@ export interface IPrayerRequest extends Document {
   content: string;
   authorName: string;
   authorId?: mongoose.Types.ObjectId | string;
+  campusId: string;
   isAnonymous: boolean;
   privacy: 'public' | 'members' | 'staff';
   category: string;
@@ -22,6 +23,7 @@ const prayerRequestSchema = new mongoose.Schema<IPrayerRequest>(
     content: { type: String, required: true },
     authorName: { type: String, required: true, default: 'Anonymous' },
     authorId: { type: mongoose.Schema.Types.Mixed }, // Could be ObjectId if logged in
+    campusId: { type: String, required: true },
     isAnonymous: { type: Boolean, default: false },
     privacy: { 
       type: String, 
@@ -35,7 +37,7 @@ const prayerRequestSchema = new mongoose.Schema<IPrayerRequest>(
     status: { 
       type: String, 
       enum: ['pending', 'approved', 'rejected'], 
-      default: 'approved' // Set to approved by default so they show up immediately
+      default: 'pending' // Set to pending by default for admin approval
     },
   },
   {

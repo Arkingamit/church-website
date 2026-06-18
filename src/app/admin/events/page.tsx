@@ -38,6 +38,8 @@ const emptyForm = {
   image: null as string | null, recurring: false, host: '',
   targetCampuses: ['all'] as string[],
   targetGroups: ['all'] as string[],
+  excludeCampuses: [] as string[],
+  excludeGroups: [] as string[],
   googlePhotosUrl: '',
   formFields: [] as FormField[],
   isMultiDay: false,
@@ -56,13 +58,14 @@ const emptyForm = {
 };
 
 export default function EventsPage() {
-  const { events, campuses, groups, groupScopes, currentUser, addEvent, updateEvent, deleteEvent } = useAdminData();
+  const { events, campuses, groups, groupScopes, users, addEvent, updateEvent, deleteEvent, currentUser } = useAdminData();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [search, setSearch] = useState('');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [updateSeriesConfirm, setUpdateSeriesConfirm] = useState<{action: 'put' | 'delete', eventId: string} | null>(null);
+  const [showBroadcastList, setShowBroadcastList] = useState(false);
   const [selectedEventForResponses, setSelectedEventForResponses] = useState<Event | null>(null);
 
   const { getEventRegistrations } = useAdminData();
@@ -104,6 +107,8 @@ export default function EventsPage() {
       image: event.image, recurring: event.recurring, host: event.host,
       targetCampuses: event.targetCampuses ?? ['all'],
       targetGroups: event.targetGroups ?? ['all'],
+      excludeCampuses: event.excludeCampuses ?? [],
+      excludeGroups: event.excludeGroups ?? [],
       googlePhotosUrl: event.googlePhotosUrl || '',
       formFields: event.formFields || [],
       isMultiDay: event.isMultiDay || false,
@@ -179,13 +184,17 @@ export default function EventsPage() {
   };
 
   // Audience helpers
-  const isAllCampuses = form.targetCampuses.includes('all');
-  const isAllGroups = form.targetGroups.includes('all');
+  const campusMode = form.targetCampuses.includes('all') ? 'all' : 'specific';
+  const groupMode = form.targetGroups.includes('all') || (isGroupLeader && form.targetGroups.length === currentUser.groups.length && currentUser.groups.length > 0) ? 'all' : 'specific';
 
-  const toggleCampusMode = (all: boolean) => {
+  const setCampusMode = (mode: 'all' | 'specific') => {
     if (isCampusLeader || isGroupLeader) return;
-    setForm(f => ({ ...f, targetCampuses: all ? ['all'] : [] }));
+    setForm(f => ({
+      ...f,
+      targetCampuses: mode === 'specific' ? [] : ['all'],
+    }));
   };
+
   const toggleCampus = (id: string) => {
     if (isCampusLeader || isGroupLeader) return;
     setForm(f => {
@@ -194,16 +203,41 @@ export default function EventsPage() {
       return { ...f, targetCampuses: next.length === 0 ? ['all'] : next };
     });
   };
-  const toggleGroupMode = (all: boolean) => {
-    if (isGroupLeader) return;
-    setForm(f => ({ ...f, targetGroups: all ? ['all'] : [] }));
+
+  const toggleExcludeCampus = (id: string) => {
+    if (isCampusLeader || isGroupLeader) return;
+    setForm(f => {
+      const has = f.excludeCampuses.includes(id);
+      const next = has ? f.excludeCampuses.filter(c => c !== id) : [...f.excludeCampuses, id];
+      return { ...f, excludeCampuses: next };
+    });
   };
+
+  const setGroupMode = (mode: 'all' | 'specific') => {
+    setForm(f => {
+      let nextTarget = ['all'];
+      if (isGroupLeader) {
+        nextTarget = mode === 'specific' ? [] : currentUser.groups;
+      } else if (mode === 'specific') {
+        nextTarget = [];
+      }
+      return { ...f, targetGroups: nextTarget };
+    });
+  };
+
   const toggleGroup = (g: string) => {
-    if (isGroupLeader) return;
     setForm(f => {
       const has = f.targetGroups.includes(g);
       const next = has ? f.targetGroups.filter(x => x !== g) : [...f.targetGroups.filter(x => x !== 'all'), g];
-      return { ...f, targetGroups: next.length === 0 ? ['all'] : next };
+      return { ...f, targetGroups: next.length === 0 ? (isGroupLeader ? currentUser.groups : ['all']) : next };
+    });
+  };
+
+  const toggleExcludeGroup = (g: string) => {
+    setForm(f => {
+      const has = f.excludeGroups.includes(g);
+      const next = has ? f.excludeGroups.filter(x => x !== g) : [...f.excludeGroups, g];
+      return { ...f, excludeGroups: next };
     });
   };
 
@@ -592,6 +626,76 @@ export default function EventsPage() {
                 )}
               </div>
 
+              {/* ── Custom Reminders ── */}
+              <div className="space-y-3 pt-4 border-t border-border/50">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="flex items-center gap-2">
+                      <Megaphone className="w-4 h-4 text-primary" />
+                      Push Notification Reminders
+                    </Label>
+                    <p className="text-[10px] text-muted-foreground">Automatically push notifications before this event occurs.</p>
+                  </div>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 text-xs gap-1"
+                    onClick={() => {
+                      setForm(f => ({
+                        ...f, 
+                        customReminders: [...(f.customReminders || []), { daysBefore: 0, hoursBefore: 1, minutesBefore: 0 }]
+                      }));
+                    }}
+                  >
+                    <Plus className="w-3 h-3" /> Add Reminder
+                  </Button>
+                </div>
+                
+                {(form.customReminders || []).map((rem, i) => (
+                  <div key={i} className="flex items-center gap-2 bg-muted/30 p-2 rounded-lg border border-border/50 animate-in fade-in slide-in-from-top-2">
+                    <div className="grid grid-cols-3 gap-2 flex-1">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] text-muted-foreground">Days Before</Label>
+                        <Input type="number" min="0" value={rem.daysBefore} onChange={e => {
+                          const newRem = [...form.customReminders];
+                          newRem[i].daysBefore = parseInt(e.target.value) || 0;
+                          setForm({ ...form, customReminders: newRem });
+                        }} className="h-7 text-xs" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] text-muted-foreground">Hours</Label>
+                        <Input type="number" min="0" max="23" value={rem.hoursBefore} onChange={e => {
+                          const newRem = [...form.customReminders];
+                          newRem[i].hoursBefore = parseInt(e.target.value) || 0;
+                          setForm({ ...form, customReminders: newRem });
+                        }} className="h-7 text-xs" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] text-muted-foreground">Minutes</Label>
+                        <Input type="number" min="0" max="59" value={rem.minutesBefore} onChange={e => {
+                          const newRem = [...form.customReminders];
+                          newRem[i].minutesBefore = parseInt(e.target.value) || 0;
+                          setForm({ ...form, customReminders: newRem });
+                        }} className="h-7 text-xs" />
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-destructive hover:bg-destructive/10 shrink-0 mt-4"
+                      onClick={() => {
+                        const newRem = [...form.customReminders];
+                        newRem.splice(i, 1);
+                        setForm({ ...form, customReminders: newRem });
+                      }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
               <div className="flex items-center gap-3 pt-4">
                 <Switch checked={form.recurring} onCheckedChange={(c) => setForm({ ...form, recurring: c })} />
                 <div className="space-y-0.5">
@@ -618,7 +722,6 @@ export default function EventsPage() {
                           <SelectItem value="biweekly">Every 2 Weeks</SelectItem>
                           <SelectItem value="monthly">Every Month</SelectItem>
                           <SelectItem value="custom_monthly">Custom Monthly (e.g. 2nd Thursday)</SelectItem>
-                          <SelectItem value="custom">Custom Notes</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -799,14 +902,14 @@ export default function EventsPage() {
                   )}
                   <div className="flex items-center gap-4">
                     <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <Checkbox checked={isAllCampuses} onCheckedChange={() => toggleCampusMode(true)} disabled={isCampusLeader || isGroupLeader} /> All
+                      <Checkbox checked={campusMode === 'all'} onCheckedChange={() => setCampusMode('all')} disabled={isCampusLeader || isGroupLeader} /> All
                     </label>
                     <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <Checkbox checked={!isAllCampuses} onCheckedChange={() => toggleCampusMode(false)} disabled={isCampusLeader || isGroupLeader} /> Specific
+                      <Checkbox checked={campusMode === 'specific'} onCheckedChange={() => setCampusMode('specific')} disabled={isCampusLeader || isGroupLeader} /> Specific
                     </label>
                   </div>
-                  {!isAllCampuses && (
-                    <div className="grid grid-cols-1 gap-1.5 pl-2">
+                  {campusMode !== 'all' && (
+                    <div className="grid grid-cols-1 gap-1.5 pl-2 mt-2">
                       {campuses.map(c => (
                         <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer">
                           <Checkbox
@@ -819,27 +922,43 @@ export default function EventsPage() {
                       ))}
                     </div>
                   )}
+
+                  <div className="pt-2">
+                    <Label className="text-xs text-muted-foreground">Exclude Campuses (Optional)</Label>
+                    <div className="grid grid-cols-1 gap-1.5 pl-2 mt-2">
+                      {campuses.map(c => (
+                        <label key={`ex-${c.id}`} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={form.excludeCampuses.includes(c.id)}
+                            onCheckedChange={() => toggleExcludeCampus(c.id)}
+                            disabled={(isCampusLeader || isGroupLeader) && c.id !== currentUser.campusId}
+                          />
+                          {c.name}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 {/* Groups */}
-                <div className="space-y-2">
+                <div className="space-y-2 pt-2">
                   <Label className="text-xs text-muted-foreground">Visible to Groups</Label>
                   {isGroupLeader && (
                     <p className="text-[10px] text-emerald-500">Group Leader: restricted to your assigned groups</p>
                   )}
                   <div className="flex items-center gap-4">
                     <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <Checkbox checked={isAllGroups} onCheckedChange={() => toggleGroupMode(true)} disabled={isGroupLeader} /> All
+                      <Checkbox checked={groupMode === 'all'} onCheckedChange={() => setGroupMode('all')} /> All
                     </label>
                     <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <Checkbox checked={!isAllGroups} onCheckedChange={() => toggleGroupMode(false)} disabled={isGroupLeader} /> Specific
+                      <Checkbox checked={groupMode === 'specific'} onCheckedChange={() => setGroupMode('specific')} /> Specific
                     </label>
                   </div>
-                  {!isAllGroups && (
-                    <div className="grid grid-cols-2 gap-1.5 pl-2">
+                  {groupMode !== 'all' && (
+                    <div className="grid grid-cols-2 gap-1.5 pl-2 mt-2">
                       {(() => {
                         // Filter groups based on selected campuses
-                        const selectedCampusIds = isAllCampuses ? ['global'] : form.targetCampuses;
-                        const visibleGroups = isAllCampuses
+                        const selectedCampusIds = campusMode === 'all' ? ['global'] : form.targetCampuses;
+                        const visibleGroups = campusMode === 'all'
                           ? groups
                           : [...new Set(selectedCampusIds.flatMap(cid => getGroupsForCampus(groupScopes, cid)))];
                         return visibleGroups.map(g => (
@@ -855,15 +974,97 @@ export default function EventsPage() {
                       })()}
                     </div>
                   )}
+
+                  <div className="pt-2">
+                    <Label className="text-xs text-muted-foreground">Exclude Groups (Optional)</Label>
+                    <div className="grid grid-cols-2 gap-1.5 pl-2 mt-2">
+                      {(() => {
+                        // Filter groups based on selected campuses
+                        const selectedCampusIds = campusMode === 'all' ? ['global'] : form.targetCampuses;
+                        const visibleGroups = campusMode === 'all'
+                          ? groups
+                          : [...new Set(selectedCampusIds.flatMap(cid => getGroupsForCampus(groupScopes, cid)))];
+                        return visibleGroups.map(g => (
+                          <label key={`ex-${g}`} className="flex items-center gap-2 text-sm cursor-pointer">
+                            <Checkbox 
+                              checked={form.excludeGroups.includes(g)} 
+                              onCheckedChange={() => toggleExcludeGroup(g)} 
+                              disabled={isGroupLeader && !currentUser.groups.includes(g)}
+                            />
+                            {g}
+                          </label>
+                        ));
+                      })()}
+                    </div>
+                  </div>
                 </div>
                 {/* Preview */}
                 <div className="bg-muted/30 rounded-lg p-3">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">Audience Preview</p>
                   <p className="text-xs">
-                    {isAllCampuses ? '🌐 All Campuses' : `🏢 ${form.targetCampuses.map(id => campuses.find(c => c.id === id)?.name || id).join(', ') || 'None'}`}
+                    {campusMode === 'all' ? '🌐 All Campuses' : `🏢 ${form.targetCampuses.map(id => campuses.find(c => c.id === id)?.name || id).join(', ') || 'None'}`}
+                    {form.excludeCampuses.length > 0 && ` (excluding: ${form.excludeCampuses.map(id => campuses.find(c => c.id === id)?.name || id).join(', ')})`}
                     {' · '}
-                    {isAllGroups ? '👥 All Groups' : `👤 ${form.targetGroups.join(', ') || 'None'}`}
+                    {groupMode === 'all' ? '👥 All Groups' : `👤 ${form.targetGroups.join(', ') || 'None'}`}
+                    {form.excludeGroups.length > 0 && ` (excluding: ${form.excludeGroups.join(', ')})`}
                   </p>
+                  {(() => {
+                    const broadcastUsers = users.filter(u => {
+                      if (form.excludeCampuses.includes(u.campusId)) return false;
+                      const tc = form.targetCampuses;
+                      const campusMatch = tc.includes('all') || tc.includes(u.campusId);
+                      if (!campusMatch) return false;
+                      if (u.groups.some(g => form.excludeGroups.includes(g))) return false;
+                      const tg = form.targetGroups;
+                      const groupMatch = tg.includes('all') || tg.some(g => u.groups.includes(g));
+                      return groupMatch;
+                    });
+                    return (
+                      <div className="mt-2 pt-2 border-t border-border/50">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">
+                            Broadcast List ({broadcastUsers.length} members)
+                          </p>
+                          {broadcastUsers.length > 0 && (
+                            <Button 
+                              type="button"
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setShowBroadcastList(!showBroadcastList);
+                              }}
+                              className="h-6 text-[10px] px-2"
+                            >
+                              {showBroadcastList ? 'Hide Members' : 'Show Members'}
+                            </Button>
+                          )}
+                        </div>
+                        {showBroadcastList && broadcastUsers.length > 0 && (
+                          <div className="mt-2 space-y-1 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                            {broadcastUsers.map(u => (
+                              <div key={u.id} className="flex items-center gap-2 text-xs py-1.5 border-b border-border/30 last:border-0">
+                                <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0">
+                                  {u.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-foreground font-medium leading-none">{u.name}</span>
+                                  <span className="text-muted-foreground text-[10px] mt-0.5 leading-none">
+                                    {campuses.find(c => c.id === u.campusId)?.name || 'Unknown Campus'}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {!showBroadcastList && broadcastUsers.length === 0 && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            No members will receive this broadcast
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 

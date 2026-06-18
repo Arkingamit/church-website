@@ -60,20 +60,24 @@ const emptyForm = {
   reactions: 0,
   targetCampuses: ['all'] as string[],
   targetGroups: ['all'] as string[],
+  excludeCampuses: [] as string[],
+  excludeGroups: [] as string[],
   isRecurring: false,
   recurrencePattern: 'weekly' as 'weekly' | 'biweekly' | 'monthly' | 'custom',
   recurrenceDay: 'Sunday',
   recurrenceEndDate: '',
   recurrenceNote: '',
+  customReminders: [] as { daysBefore: number, hoursBefore: number, minutesBefore: number }[],
 };
 
 export default function AnnouncementsPage() {
-  const { announcements, campuses, groups, groupScopes, addAnnouncement, updateAnnouncement, deleteAnnouncement, currentUser } = useAdminData();
+  const { announcements, campuses, groups, groupScopes, users, addAnnouncement, updateAnnouncement, deleteAnnouncement, currentUser } = useAdminData();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [search, setSearch] = useState('');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [showBroadcastList, setShowBroadcastList] = useState(false);
 
   const isCampusLeader = currentUser.role === 'campus_leader';
   const isGroupLeader = currentUser.role === 'group_leader';
@@ -114,11 +118,14 @@ export default function AnnouncementsPage() {
       reactions: announcement.reactions,
       targetCampuses: announcement.targetCampuses || ['all'],
       targetGroups: announcement.targetGroups || ['all'],
+      excludeCampuses: announcement.excludeCampuses || [],
+      excludeGroups: announcement.excludeGroups || [],
       isRecurring: announcement.isRecurring || false,
       recurrencePattern: announcement.recurrencePattern || 'weekly',
       recurrenceDay: announcement.recurrenceDay || 'Sunday',
       recurrenceEndDate: announcement.recurrenceEndDate || '',
       recurrenceNote: announcement.recurrenceNote || '',
+      customReminders: announcement.customReminders || [],
     });
     setDialogOpen(true);
   };
@@ -141,14 +148,15 @@ export default function AnnouncementsPage() {
   };
 
   // ── Audience helpers ──
-  const isAllCampuses = form.targetCampuses.includes('all');
-  const isAllGroups = form.targetGroups.includes('all');
+  // ── Audience helpers ──
+  const campusMode = form.targetCampuses.includes('all') ? 'all' : 'specific';
+  const groupMode = form.targetGroups.includes('all') || (isGroupLeader && form.targetGroups.length === currentUser.groups.length && currentUser.groups.length > 0) ? 'all' : 'specific';
 
-  const toggleCampusMode = (all: boolean) => {
+  const setCampusMode = (mode: 'all' | 'specific') => {
     if (isCampusLeader || isGroupLeader) return; // locked
     setForm(f => ({
       ...f,
-      targetCampuses: all ? ['all'] : [],
+      targetCampuses: mode === 'specific' ? [] : ['all'],
     }));
   };
 
@@ -156,26 +164,45 @@ export default function AnnouncementsPage() {
     if (isCampusLeader || isGroupLeader) return;
     setForm(f => {
       const has = f.targetCampuses.includes(campusId);
-      const next = has
-        ? f.targetCampuses.filter(c => c !== campusId)
-        : [...f.targetCampuses.filter(c => c !== 'all'), campusId];
+      const next = has ? f.targetCampuses.filter(c => c !== campusId) : [...f.targetCampuses.filter(c => c !== 'all'), campusId];
       return { ...f, targetCampuses: next.length === 0 ? ['all'] : next };
     });
   };
 
-  const toggleGroupMode = (all: boolean) => {
-    if (isGroupLeader) return;
-    setForm(f => ({ ...f, targetGroups: all ? ['all'] : [] }));
+  const toggleExcludeCampus = (campusId: string) => {
+    if (isCampusLeader || isGroupLeader) return;
+    setForm(f => {
+      const has = f.excludeCampuses.includes(campusId);
+      const next = has ? f.excludeCampuses.filter(c => c !== campusId) : [...f.excludeCampuses, campusId];
+      return { ...f, excludeCampuses: next };
+    });
+  };
+
+  const setGroupMode = (mode: 'all' | 'specific') => {
+    setForm(f => {
+      let nextTarget = ['all'];
+      if (isGroupLeader) {
+        nextTarget = mode === 'specific' ? [] : currentUser.groups;
+      } else if (mode === 'specific') {
+        nextTarget = [];
+      }
+      return { ...f, targetGroups: nextTarget };
+    });
   };
 
   const toggleGroup = (group: string) => {
-    if (isGroupLeader) return;
     setForm(f => {
       const has = f.targetGroups.includes(group);
-      const next = has
-        ? f.targetGroups.filter(g => g !== group)
-        : [...f.targetGroups.filter(g => g !== 'all'), group];
-      return { ...f, targetGroups: next.length === 0 ? ['all'] : next };
+      const next = has ? f.targetGroups.filter(g => g !== group) : [...f.targetGroups.filter(g => g !== 'all'), group];
+      return { ...f, targetGroups: next.length === 0 ? (isGroupLeader ? currentUser.groups : ['all']) : next };
+    });
+  };
+
+  const toggleExcludeGroup = (group: string) => {
+    setForm(f => {
+      const has = f.excludeGroups.includes(group);
+      const next = has ? f.excludeGroups.filter(g => g !== group) : [...f.excludeGroups, group];
+      return { ...f, excludeGroups: next };
     });
   };
 
@@ -380,7 +407,6 @@ export default function AnnouncementsPage() {
                           <SelectItem value="weekly">Every Week</SelectItem>
                           <SelectItem value="biweekly">Every 2 Weeks</SelectItem>
                           <SelectItem value="monthly">Every Month</SelectItem>
-                          <SelectItem value="custom">Custom</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -420,6 +446,77 @@ export default function AnnouncementsPage() {
                     />
                     <p className="text-[10px] text-muted-foreground">Leave empty for indefinite recurring</p>
                   </div>
+
+                  {/* ── Custom Reminders ── */}
+                  <div className="space-y-3 pt-4 border-t border-border/50">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label className="flex items-center gap-2">
+                          <Megaphone className="w-4 h-4 text-primary" />
+                          Push Notification Reminders
+                        </Label>
+                        <p className="text-[10px] text-muted-foreground">Automatically push notifications before the scheduled recurring time.</p>
+                      </div>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm" 
+                        className="h-8 text-xs gap-1"
+                        onClick={() => {
+                          setForm(f => ({
+                            ...f, 
+                            customReminders: [...(f.customReminders || []), { daysBefore: 0, hoursBefore: 1, minutesBefore: 0 }]
+                          }));
+                        }}
+                      >
+                        <Plus className="w-3 h-3" /> Add Reminder
+                      </Button>
+                    </div>
+                    
+                    {(form.customReminders || []).map((rem, i) => (
+                      <div key={i} className="flex items-center gap-2 bg-muted/30 p-2 rounded-lg border border-border/50 animate-in fade-in slide-in-from-top-2">
+                        <div className="grid grid-cols-3 gap-2 flex-1">
+                          <div className="space-y-1">
+                            <Label className="text-[10px] text-muted-foreground">Days Before</Label>
+                            <Input type="number" min="0" value={rem.daysBefore} onChange={e => {
+                              const newRem = [...form.customReminders];
+                              newRem[i].daysBefore = parseInt(e.target.value) || 0;
+                              setForm({ ...form, customReminders: newRem });
+                            }} className="h-7 text-xs" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[10px] text-muted-foreground">Hours</Label>
+                            <Input type="number" min="0" max="23" value={rem.hoursBefore} onChange={e => {
+                              const newRem = [...form.customReminders];
+                              newRem[i].hoursBefore = parseInt(e.target.value) || 0;
+                              setForm({ ...form, customReminders: newRem });
+                            }} className="h-7 text-xs" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[10px] text-muted-foreground">Minutes</Label>
+                            <Input type="number" min="0" max="59" value={rem.minutesBefore} onChange={e => {
+                              const newRem = [...form.customReminders];
+                              newRem[i].minutesBefore = parseInt(e.target.value) || 0;
+                              setForm({ ...form, customReminders: newRem });
+                            }} className="h-7 text-xs" />
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive hover:bg-destructive/10 shrink-0 mt-4"
+                          onClick={() => {
+                            const newRem = [...form.customReminders];
+                            newRem.splice(i, 1);
+                            setForm({ ...form, customReminders: newRem });
+                          }}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -447,23 +544,23 @@ export default function AnnouncementsPage() {
                 <div className="flex items-center gap-4">
                   <label className="flex items-center gap-2 text-sm cursor-pointer">
                     <Checkbox
-                      checked={isAllCampuses}
-                      onCheckedChange={() => toggleCampusMode(true)}
+                      checked={campusMode === 'all'}
+                      onCheckedChange={() => setCampusMode('all')}
                       disabled={isCampusLeader || isGroupLeader}
                     />
                     All Campuses
                   </label>
                   <label className="flex items-center gap-2 text-sm cursor-pointer">
                     <Checkbox
-                      checked={!isAllCampuses}
-                      onCheckedChange={() => toggleCampusMode(false)}
+                      checked={campusMode === 'specific'}
+                      onCheckedChange={() => setCampusMode('specific')}
                       disabled={isCampusLeader || isGroupLeader}
                     />
                     Specific
                   </label>
                 </div>
-                {!isAllCampuses && (
-                  <div className="grid grid-cols-1 gap-1.5 pl-2">
+                {campusMode !== 'all' && (
+                  <div className="grid grid-cols-1 gap-1.5 pl-2 mt-2">
                     {campuses.map(campus => (
                       <label key={campus.id} className="flex items-center gap-2 text-sm cursor-pointer">
                         <Checkbox
@@ -479,10 +576,29 @@ export default function AnnouncementsPage() {
                     ))}
                   </div>
                 )}
+
+                <div className="pt-2">
+                  <Label className="text-xs text-muted-foreground">Exclude Campuses (Optional)</Label>
+                  <div className="grid grid-cols-1 gap-1.5 pl-2 mt-2">
+                    {campuses.map(campus => (
+                      <label key={`ex-${campus.id}`} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <Checkbox
+                          checked={form.excludeCampuses.includes(campus.id)}
+                          onCheckedChange={() => toggleExcludeCampus(campus.id)}
+                          disabled={(isCampusLeader || isGroupLeader) && campus.id !== currentUser.campusId}
+                        />
+                        {campus.name}
+                        {(isCampusLeader || isGroupLeader) && campus.id !== currentUser.campusId && (
+                          <span className="text-[10px] text-muted-foreground">(restricted)</span>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               {/* Group Targeting */}
-              <div className="space-y-2">
+              <div className="space-y-2 pt-2">
                 <Label className="text-xs text-muted-foreground">Visible to Groups</Label>
                 {isGroupLeader && (
                   <p className="text-[10px] text-emerald-500">
@@ -491,19 +607,19 @@ export default function AnnouncementsPage() {
                 )}
                 <div className="flex items-center gap-4">
                   <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <Checkbox checked={isAllGroups} onCheckedChange={() => toggleGroupMode(true)} disabled={isGroupLeader} />
+                    <Checkbox checked={groupMode === 'all'} onCheckedChange={() => setGroupMode('all')} />
                     All Groups
                   </label>
                   <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <Checkbox checked={!isAllGroups} onCheckedChange={() => toggleGroupMode(false)} disabled={isGroupLeader} />
+                    <Checkbox checked={groupMode === 'specific'} onCheckedChange={() => setGroupMode('specific')} />
                     Specific
                   </label>
                 </div>
-                {!isAllGroups && (
-                  <div className="grid grid-cols-2 gap-1.5 pl-2">
+                {groupMode !== 'all' && (
+                  <div className="grid grid-cols-2 gap-1.5 pl-2 mt-2">
                     {(() => {
-                      const selectedCampusIds = isAllCampuses ? ['global'] : form.targetCampuses;
-                      const visibleGroups = isAllCampuses
+                      const selectedCampusIds = campusMode === 'all' ? ['global'] : form.targetCampuses;
+                      const visibleGroups = campusMode === 'all'
                         ? groups
                         : [...new Set(selectedCampusIds.flatMap(cid => getGroupsForCampus(groupScopes, cid)))];
                       return visibleGroups.map(group => (
@@ -519,16 +635,97 @@ export default function AnnouncementsPage() {
                     })()}
                   </div>
                 )}
+
+                <div className="pt-2">
+                  <Label className="text-xs text-muted-foreground">Exclude Groups (Optional)</Label>
+                  <div className="grid grid-cols-2 gap-1.5 pl-2 mt-2">
+                    {(() => {
+                      const selectedCampusIds = campusMode === 'all' ? ['global'] : form.targetCampuses;
+                      const visibleGroups = campusMode === 'all'
+                        ? groups
+                        : [...new Set(selectedCampusIds.flatMap(cid => getGroupsForCampus(groupScopes, cid)))];
+                      return visibleGroups.map(group => (
+                        <label key={`ex-${group}`} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={form.excludeGroups.includes(group)}
+                            onCheckedChange={() => toggleExcludeGroup(group)}
+                            disabled={isGroupLeader && !currentUser.groups.includes(group)}
+                          />
+                          {group}
+                        </label>
+                      ));
+                    })()}
+                  </div>
+                </div>
               </div>
 
               {/* Preview */}
               <div className="bg-muted/30 rounded-lg p-3">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">Audience Preview</p>
                 <p className="text-xs">
-                  {isAllCampuses ? '🌐 All Campuses' : `🏢 ${form.targetCampuses.map(id => campuses.find(c => c.id === id)?.name || id).join(', ') || 'None selected'}`}
+                  {campusMode === 'all' ? '🌐 All Campuses' : `🏢 ${form.targetCampuses.map(id => campuses.find(c => c.id === id)?.name || id).join(', ') || 'None'}`}
+                  {form.excludeCampuses.length > 0 && ` (excluding: ${form.excludeCampuses.map(id => campuses.find(c => c.id === id)?.name || id).join(', ')})`}
                   {' · '}
-                  {isAllGroups ? '👥 All Groups' : `👤 ${form.targetGroups.join(', ') || 'None selected'}`}
+                  {groupMode === 'all' ? '👥 All Groups' : `👤 ${form.targetGroups.join(', ') || 'None'}`}
+                  {form.excludeGroups.length > 0 && ` (excluding: ${form.excludeGroups.join(', ')})`}
                 </p>
+                {(() => {
+                  const broadcastUsers = users.filter(u => {
+                    if (form.excludeCampuses.includes(u.campusId)) return false;
+                    const tc = form.targetCampuses;
+                    const campusMatch = tc.includes('all') || tc.includes(u.campusId);
+                    if (!campusMatch) return false;
+                    if (u.groups.some(g => form.excludeGroups.includes(g))) return false;
+                    const tg = form.targetGroups;
+                    const groupMatch = tg.includes('all') || tg.some(g => u.groups.includes(g));
+                    return groupMatch;
+                  });
+                  return (
+                    <div className="mt-2 pt-2 border-t border-border/50">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">
+                          Broadcast List ({broadcastUsers.length} members)
+                        </p>
+                        {broadcastUsers.length > 0 && (
+                          <Button 
+                            type="button"
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setShowBroadcastList(!showBroadcastList);
+                            }}
+                            className="h-6 text-[10px] px-2"
+                          >
+                            {showBroadcastList ? 'Hide Members' : 'Show Members'}
+                          </Button>
+                        )}
+                      </div>
+                      {showBroadcastList && broadcastUsers.length > 0 && (
+                        <div className="mt-2 space-y-1 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                          {broadcastUsers.map(u => (
+                            <div key={u.id} className="flex items-center gap-2 text-xs py-1.5 border-b border-border/30 last:border-0">
+                              <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0">
+                                {u.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-foreground font-medium leading-none">{u.name}</span>
+                                <span className="text-muted-foreground text-[10px] mt-0.5 leading-none">
+                                  {campuses.find(c => c.id === u.campusId)?.name || 'Unknown Campus'}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {!showBroadcastList && broadcastUsers.length === 0 && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          No members will receive this broadcast
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </div>

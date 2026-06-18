@@ -1,0 +1,77 @@
+import { NextResponse } from 'next/server';
+import connectToDatabase from '@/lib/db';
+import PrayerRequest from '@/models/PrayerRequest';
+import { verifySession } from '@/lib/auth-utils';
+import User from '@/models/User';
+
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    await connectToDatabase();
+    
+    const session = await verifySession();
+    if (!session.isAuth || !session.userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const user = await User.findById(session.userId);
+    if (!user || !['campus_leader', 'admin', 'super_admin'].includes(user.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const body = await req.json();
+    const prayer = await PrayerRequest.findById(id);
+
+    if (!prayer) {
+      return NextResponse.json({ error: 'Prayer request not found' }, { status: 404 });
+    }
+
+    // Ensure campus leader can only update their campus prayers
+    if (user.role === 'campus_leader' && prayer.campusId !== user.campusId) {
+      return NextResponse.json({ error: 'Forbidden: Different campus' }, { status: 403 });
+    }
+
+    if (body.status) {
+      prayer.status = body.status;
+    }
+
+    await prayer.save();
+    return NextResponse.json(prayer);
+  } catch (error) {
+    console.error('Error updating prayer:', error);
+    return NextResponse.json({ error: 'Failed to update prayer' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    await connectToDatabase();
+    
+    const session = await verifySession();
+    if (!session.isAuth || !session.userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const user = await User.findById(session.userId);
+    if (!user || !['campus_leader', 'admin', 'super_admin'].includes(user.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const prayer = await PrayerRequest.findById(id);
+
+    if (!prayer) {
+      return NextResponse.json({ error: 'Prayer request not found' }, { status: 404 });
+    }
+
+    if (user.role === 'campus_leader' && prayer.campusId !== user.campusId) {
+      return NextResponse.json({ error: 'Forbidden: Different campus' }, { status: 403 });
+    }
+
+    await PrayerRequest.findByIdAndDelete(id);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting prayer:', error);
+    return NextResponse.json({ error: 'Failed to delete prayer' }, { status: 500 });
+  }
+}

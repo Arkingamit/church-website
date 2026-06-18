@@ -47,6 +47,12 @@ export async function GET() {
     const userGroups = user.groups || [];
 
     const filtered = notifications.filter((n: any) => {
+      const ec = n.excludeCampuses || [];
+      const eg = n.excludeGroups || [];
+
+      if (userCampusId && ec.includes(userCampusId)) return false;
+      if (userGroups.some((g: string) => eg.includes(g))) return false;
+
       const campusMatch =
         !n.targetCampuses?.length ||
         n.targetCampuses.includes('all') ||

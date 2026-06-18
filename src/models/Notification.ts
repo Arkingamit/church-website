@@ -9,6 +9,8 @@ export interface INotification extends Document {
   isRead: boolean;
   targetCampuses: string[];
   targetGroups: string[];
+  excludeCampuses?: string[];
+  excludeGroups?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,6 +25,8 @@ const NotificationSchema = new Schema<INotification>(
     isRead: { type: Boolean, default: false },
     targetCampuses: [{ type: String }],
     targetGroups: [{ type: String }],
+    excludeCampuses: [{ type: String }],
+    excludeGroups: [{ type: String }],
   },
   { timestamps: true }
 );

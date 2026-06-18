@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Heart, MessageCircle, Plus, Shield, Clock, Users, Loader2 } from 'lucide-react';
+import { Heart, MessageCircle, Plus, Shield, Clock, Users, Loader2, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/lib/auth-context';
 
 interface PrayerRequest {
   id: string;
@@ -43,8 +44,22 @@ export const PrayerWall = () => {
     authorName: '',
     isAnonymous: false,
     privacy: 'public',
-    category: 'General'
+    category: 'General',
+    campusId: ''
   });
+
+  const { getSessionMember } = useAuth();
+  const sessionMember = getSessionMember();
+  const [campuses, setCampuses] = useState<{id: string, name: string}[]>([]);
+
+  useEffect(() => {
+    fetch('/api/campuses')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setCampuses(data.map(c => ({ id: c._id || c.id, name: c.name })));
+      })
+      .catch(console.error);
+  }, []);
 
   const fetchPrayers = async () => {
     try {
@@ -67,20 +82,33 @@ export const PrayerWall = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // If not logged in, require campus selection
+    if (!sessionMember && !newRequest.campusId) {
+      toast.error('Please select a campus');
+      return;
+    }
+    
     setSubmitting(true);
 
     try {
+      const payload = { ...newRequest };
+      // If logged in, the backend will auto-assign their campus, but we can send it explicitly too
+      if (sessionMember) {
+        payload.campusId = sessionMember.campusId;
+      }
+
       const res = await fetch('/api/prayers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newRequest)
+        body: JSON.stringify(payload)
       });
 
       if (res.ok) {
-        toast.success('Prayer request shared successfully!');
+        toast.success('Prayer request submitted! It will appear once approved by your campus leader.');
         setShowForm(false);
-        setNewRequest({ title: '', content: '', authorName: '', isAnonymous: false, privacy: 'public', category: 'General' });
-        fetchPrayers(); // Reload the list
+        setNewRequest({ title: '', content: '', authorName: '', isAnonymous: false, privacy: 'public', category: 'General', campusId: '' });
+        fetchPrayers(); // Reload the list (it won't show up until approved though)
       } else {
         const data = await res.json();
         toast.error(data.error || 'Failed to submit prayer request');
@@ -184,6 +212,26 @@ export const PrayerWall = () => {
                         <option value="Church">Church</option>
                       </select>
                     </div>
+                    
+                    {!sessionMember && (
+                      <div className="sm:col-span-2">
+                        <select
+                          value={newRequest.campusId}
+                          onChange={(e) => setNewRequest(prev => ({ ...prev, campusId: e.target.value }))}
+                          className="w-full text-sm border rounded px-3 py-2 bg-transparent"
+                          required
+                        >
+                          <option value="">Select your Campus *</option>
+                          {campuses.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          <Building2 className="w-3 h-3 inline mr-1" />
+                          Required so we can route your request to the correct campus leader for approval.
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-4 pt-2">

@@ -104,38 +104,12 @@ export default function SeriesDetailPage({ params }: { params: Promise<{ id: str
                           <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {activeSermon.duration}</span>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="icon" className="rounded-full h-10 w-10 border-border/50">
-                          <Heart className="w-4 h-4" />
-                        </Button>
-                        <Button variant="outline" size="icon" className="rounded-full h-10 w-10 border-border/50">
-                          <Share2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+
                     </div>
                     <p className="text-muted-foreground leading-relaxed text-lg italic border-l-2 border-primary/20 pl-4">
                       {activeSermon.description}
                     </p>
-                    <div className="flex flex-wrap gap-6 pt-2">
-                       <div className="flex items-center gap-2">
-                         <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                           <Eye className="w-4 h-4 text-emerald-600" />
-                         </div>
-                         <div className="flex flex-col">
-                           <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter leading-none mb-1">Total Views</span>
-                           <span className="text-sm font-bold">{activeSermon.views.toLocaleString()}</span>
-                         </div>
-                       </div>
-                       <div className="flex items-center gap-2">
-                         <div className="w-8 h-8 rounded-lg bg-pink-500/10 flex items-center justify-center">
-                           <Heart className="w-4 h-4 text-pink-600" />
-                         </div>
-                         <div className="flex flex-col">
-                           <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter leading-none mb-1">Likes</span>
-                           <span className="text-sm font-bold">{activeSermon.likes}</span>
-                         </div>
-                       </div>
-                    </div>
+
                   </div>
                 )}
               </div>

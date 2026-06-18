@@ -4,13 +4,11 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 export interface ISermonSeries extends Document {
   title: string;
   description: string;
-  category: string;
 }
 
 const SermonSeriesSchema = new Schema<ISermonSeries>({
   title: { type: String, required: true },
   description: { type: String, required: true },
-  category: { type: String, required: true },
 }, { timestamps: true });
 
 export const SermonSeries: Model<ISermonSeries> = mongoose.models.SermonSeries || mongoose.model<ISermonSeries>('SermonSeries', SermonSeriesSchema);
@@ -24,7 +22,6 @@ export interface ISermon extends Document {
   duration: string;
   videoId: string;
   description: string;
-  category: string;
   views: number;
   likes: number;
   isFeatured: boolean;
@@ -39,7 +36,6 @@ const SermonSchema = new Schema<ISermon>({
   duration: { type: String, required: true },
   videoId: { type: String, required: true },
   description: { type: String, required: true },
-  category: { type: String, required: true },
   views: { type: Number, default: 0 },
   likes: { type: Number, default: 0 },
   isFeatured: { type: Boolean, default: false },
@@ -51,20 +47,14 @@ export const Sermon: Model<ISermon> = mongoose.models.Sermon || mongoose.model<I
 // ── Worship Video ──────────────────────────────────────────────
 export interface IWorshipVideo extends Document {
   title: string;
-  artist: string;
-  album: string;
-  duration: string;
-  categories: string[];
   videoId: string;
+  isFeatured: boolean;
 }
 
 const WorshipVideoSchema = new Schema<IWorshipVideo>({
   title: { type: String, required: true },
-  artist: { type: String, required: true },
-  album: { type: String, required: true },
-  duration: { type: String, required: true },
-  categories: [{ type: String }],
   videoId: { type: String, required: true },
+  isFeatured: { type: Boolean, default: false },
 }, { timestamps: true });
 
 export const WorshipVideo: Model<IWorshipVideo> = mongoose.models.WorshipVideo || mongoose.model<IWorshipVideo>('WorshipVideo', WorshipVideoSchema);
@@ -79,6 +69,8 @@ export interface IGalleryAlbum extends Document {
   sortOrder: number;
   targetCampuses: string[];
   targetGroups: string[];
+  excludeCampuses?: string[];
+  excludeGroups?: string[];
 }
 
 const GalleryAlbumSchema = new Schema<IGalleryAlbum>({
@@ -90,6 +82,8 @@ const GalleryAlbumSchema = new Schema<IGalleryAlbum>({
   sortOrder: { type: Number, default: 0 },
   targetCampuses: [{ type: String }],
   targetGroups: [{ type: String }],
+  excludeCampuses: [{ type: String }],
+  excludeGroups: [{ type: String }],
 }, { timestamps: true });
 
 export const GalleryAlbum: Model<IGalleryAlbum> = mongoose.models.GalleryAlbum || mongoose.model<IGalleryAlbum>('GalleryAlbum', GalleryAlbumSchema);

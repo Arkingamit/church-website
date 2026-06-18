@@ -10,11 +10,11 @@ import { Play, Calendar, Clock, ArrowRight, Heart, Eye } from 'lucide-react';
 
 export function SermonsPreview() {
   const { sermons, sermonSeries } = useAdminData();
-  
+
   const sortedSermons = React.useMemo(() => {
     return [...sermons].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
   }, [sermons]);
-  
+
   // Get featured sermon or fallback to first in sorted list
   const featuredSermon = sortedSermons.find(s => s.isFeatured) || sortedSermons[0];
   const moreSermons = sortedSermons.filter(s => s.id !== (featuredSermon?.id || -1)).slice(0, 2);
@@ -44,8 +44,8 @@ export function SermonsPreview() {
               <div className="grid md:grid-cols-2 gap-0">
                 {/* Video Thumbnail */}
                 <div className="relative aspect-video md:aspect-auto bg-muted overflow-hidden group cursor-pointer">
-                  <img 
-                    src={`https://img.youtube.com/vi/${featuredSermon.videoId}/maxresdefault.jpg`}
+                  <img
+                    src={`https://img.youtube.com/vi/${featuredSermon.videoId}/hqdefault.jpg`}
                     alt={featuredSermon.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
@@ -96,7 +96,7 @@ export function SermonsPreview() {
               <div className="flex gap-0 h-full">
                 {/* Mini Thumbnail */}
                 <div className="relative w-44 shrink-0 bg-muted overflow-hidden">
-                  <img 
+                  <img
                     src={`https://img.youtube.com/vi/${sermon.videoId}/mqdefault.jpg`}
                     alt={sermon.title}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"

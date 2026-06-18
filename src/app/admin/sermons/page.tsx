@@ -56,7 +56,6 @@ export default function SermonManagementPage() {
     videoId: '',
     youtubeUrl: '',
     description: '',
-    category: 'Worship',
     isFeatured: false,
   });
 
@@ -66,7 +65,7 @@ export default function SermonManagementPage() {
   const [seriesForm, setSeriesForm] = useState({
     title: '',
     description: '',
-    category: 'General',
+    category: 'Sunday Services',
   });
 
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'sermon' | 'series', id: string } | null>(null);
@@ -123,7 +122,6 @@ export default function SermonManagementPage() {
       videoId: '',
       youtubeUrl: '',
       description: '',
-      category: 'Worship',
       isFeatured: false,
     });
     setSermonDialogOpen(true);
@@ -141,7 +139,7 @@ export default function SermonManagementPage() {
 
   const openAddSeries = () => {
     setEditingSeriesId(null);
-    setSeriesForm({ title: '', description: '', category: 'General' });
+    setSeriesForm({ title: '', description: '', category: 'Sunday Services' });
     setSeriesDialogOpen(true);
   };
 
@@ -263,9 +261,6 @@ export default function SermonManagementPage() {
                       Featured
                     </Badge>
                   )}
-                  <Badge variant="secondary" className="absolute top-2 right-2 text-[10px]">
-                    {sermon.category}
-                  </Badge>
                 </div>
                 <CardContent className="p-4 space-y-3">
                   <div>
@@ -317,9 +312,6 @@ export default function SermonManagementPage() {
                       </Button>
                     </div>
                   </div>
-                  <Badge variant="secondary" className="w-fit mb-2 text-[10px]">
-                    {series.category}
-                  </Badge>
                   <CardTitle className="text-lg">{series.title}</CardTitle>
                   <CardDescription className="line-clamp-2">{series.description}</CardDescription>
                 </CardHeader>
@@ -396,14 +388,6 @@ export default function SermonManagementPage() {
               </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
-              <Input 
-                id="category" 
-                value={sermonForm.category}
-                onChange={(e) => setSermonForm({ ...sermonForm, category: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="date">Date *</Label>
               <Input 
                 id="date" 
@@ -465,20 +449,22 @@ export default function SermonManagementPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="seriesCategory">Category</Label>
-              <Input 
-                id="seriesCategory" 
-                value={seriesForm.category}
-                onChange={(e) => setSeriesForm({ ...seriesForm, category: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="seriesDescription">Description</Label>
+              <Label htmlFor="seriesDescription">Description *</Label>
               <textarea 
                 id="seriesDescription" 
                 className="w-full min-h-[100px] p-3 rounded-md border border-input bg-background text-sm"
                 value={seriesForm.description}
                 onChange={(e) => setSeriesForm({ ...seriesForm, description: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="category">Category *</Label>
+              <Input 
+                id="category" 
+                value={seriesForm.category}
+                onChange={(e) => setSeriesForm({ ...seriesForm, category: e.target.value })}
+                required
               />
             </div>
             <DialogFooter className="pt-4">

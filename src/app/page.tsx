@@ -64,11 +64,10 @@ function RevealSection({
   return (
     <div
       ref={ref}
-      className={`transition-all duration-1000 ease-out ${
-        isVisible
+      className={`transition-all duration-1000 ease-out ${isVisible
           ? "opacity-100 translate-y-0 translate-x-0"
           : `opacity-0 ${directionStyles[direction]}`
-      }`}
+        }`}
       style={{ transitionDelay: `${delay}ms` }}
     >
       {children}

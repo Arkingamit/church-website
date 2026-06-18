@@ -9,6 +9,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { AdminDataProvider } from "@/lib/admin-data-context";
 import { AuthProvider } from "@/lib/auth-context";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import { LiveStreamPoller } from "@/components/live-stream-poller";
 import "@/index.css";
 
 const inter = Inter({
@@ -26,6 +27,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <AdminDataProvider>
           <AuthProvider>
+            <LiveStreamPoller />
             <TooltipProvider>
               <Toaster />
               <Sonner />

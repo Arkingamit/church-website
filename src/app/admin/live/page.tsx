@@ -31,6 +31,12 @@ export default function AdminLiveStreamsPage() {
         isLive: stream.isLive,
         title: stream.title,
         description: stream.description,
+        isAutoEnabled: stream.isAutoEnabled || false,
+        youtubeChannelId: stream.youtubeChannelId || '',
+        recurrencePattern: stream.recurrencePattern || 'weekly',
+        recurrenceDay: stream.recurrenceDay || 'Sunday',
+        recurrenceWeekOfMonth: stream.recurrenceWeekOfMonth || '1st',
+        time: stream.time || '10:00',
       });
     } else {
       setFormData({
@@ -38,6 +44,12 @@ export default function AdminLiveStreamsPage() {
         isLive: false,
         title: '',
         description: '',
+        isAutoEnabled: false,
+        youtubeChannelId: '',
+        recurrencePattern: 'weekly',
+        recurrenceDay: 'Sunday',
+        recurrenceWeekOfMonth: '1st',
+        time: '10:00',
       });
     }
   }, [selectedCampus, liveStreams]);
@@ -107,6 +119,130 @@ export default function AdminLiveStreamsPage() {
                   <Badge variant="secondary" className="gap-2">
                     <EyeOff className="w-3 h-3" /> OFFLINE
                   </Badge>
+                )}
+              </div>
+
+              <div className="space-y-4 p-5 bg-muted/30 rounded-xl border border-border/50">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-base font-semibold">Automated Stream Checker</Label>
+                    <p className="text-sm text-muted-foreground">Automatically ping YouTube and go live based on a schedule.</p>
+                  </div>
+                  <Switch 
+                    checked={formData.isAutoEnabled || false} 
+                    onCheckedChange={(c) => setFormData({ ...formData, isAutoEnabled: c })}
+                  />
+                </div>
+                
+                {formData.isAutoEnabled && (
+                  <div className="grid gap-4 pt-4 border-t border-border/50">
+                    <div className="space-y-2">
+                      <Label htmlFor="youtubeChannelId">YouTube Channel Handle</Label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground bg-muted px-3 py-2 rounded-md border text-sm">youtube.com/</span>
+                        <Input 
+                          id="youtubeChannelId" 
+                          placeholder="e.g. @GraceCommunityChurch" 
+                          value={formData.youtubeChannelId || ''}
+                          onChange={(e) => setFormData({ ...formData, youtubeChannelId: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Recurrence</Label>
+                        <Select 
+                          value={formData.recurrencePattern || 'weekly'} 
+                          onValueChange={(val: any) => setFormData({ ...formData, recurrencePattern: val })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pattern" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="weekly">Weekly</SelectItem>
+                            <SelectItem value="custom_monthly">Custom Monthly (e.g. 1st Sunday)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      {formData.recurrencePattern === 'weekly' && (
+                        <div className="space-y-2">
+                          <Label>Day of Week</Label>
+                          <Select 
+                            value={formData.recurrenceDay || 'Sunday'} 
+                            onValueChange={(val) => setFormData({ ...formData, recurrenceDay: val })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Day" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Sunday">Sunday</SelectItem>
+                              <SelectItem value="Monday">Monday</SelectItem>
+                              <SelectItem value="Tuesday">Tuesday</SelectItem>
+                              <SelectItem value="Wednesday">Wednesday</SelectItem>
+                              <SelectItem value="Thursday">Thursday</SelectItem>
+                              <SelectItem value="Friday">Friday</SelectItem>
+                              <SelectItem value="Saturday">Saturday</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      
+                      {formData.recurrencePattern === 'custom_monthly' && (
+                        <div className="col-span-2 grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Week of Month</Label>
+                            <Select 
+                              value={formData.recurrenceWeekOfMonth || '1st'} 
+                              onValueChange={(val) => setFormData({ ...formData, recurrenceWeekOfMonth: val })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Week" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="1st">First</SelectItem>
+                                <SelectItem value="2nd">Second</SelectItem>
+                                <SelectItem value="3rd">Third</SelectItem>
+                                <SelectItem value="4th">Fourth</SelectItem>
+                                <SelectItem value="last">Last</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Day of Week</Label>
+                            <Select 
+                              value={formData.recurrenceDay || 'Sunday'} 
+                              onValueChange={(val) => setFormData({ ...formData, recurrenceDay: val })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Day" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Sunday">Sunday</SelectItem>
+                                <SelectItem value="Monday">Monday</SelectItem>
+                                <SelectItem value="Tuesday">Tuesday</SelectItem>
+                                <SelectItem value="Wednesday">Wednesday</SelectItem>
+                                <SelectItem value="Thursday">Thursday</SelectItem>
+                                <SelectItem value="Friday">Friday</SelectItem>
+                                <SelectItem value="Saturday">Saturday</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Check Time</Label>
+                      <Input 
+                        type="time"
+                        value={formData.time || '10:00'}
+                        onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                      />
+                      <p className="text-xs text-muted-foreground">The system will check for a live video every 30 seconds for 30 minutes around this time.</p>
+                    </div>
+                  </div>
                 )}
               </div>
 

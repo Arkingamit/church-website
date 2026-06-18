@@ -31,8 +31,10 @@ export interface IEvent extends Document {
   lastTriggered?: string;
   mapUrl?: string;
   host: string;
-  targetCampuses: string[];
-  targetGroups: string[];
+  targetCampuses?: string[];
+  targetGroups?: string[];
+  excludeCampuses?: string[];
+  excludeGroups?: string[];
   googlePhotosUrl?: string;
   formFields?: FormField[];
   isMultiDay: boolean;
@@ -83,6 +85,10 @@ const EventSchema = new Schema<IEvent>(
     location: { type: String, required: true },
     category: { type: String, required: true },
     capacity: { type: Number, required: true, default: 0 },
+    targetCampuses: { type: [String], default: [] },
+    targetGroups: { type: [String], default: [] },
+    excludeCampuses: { type: [String], default: [] },
+    excludeGroups: { type: [String], default: [] },
     registered: { type: Number, default: 0 },
     image: { type: String },
     recurring: { type: Boolean, default: false },
@@ -97,8 +103,7 @@ const EventSchema = new Schema<IEvent>(
     lastTriggered: { type: String },
     mapUrl: { type: String },
     host: { type: String, required: true },
-    targetCampuses: [{ type: String }],
-    targetGroups: [{ type: String }],
+
     googlePhotosUrl: { type: String },
     formFields: [FormFieldSchema],
     isMultiDay: { type: Boolean, default: false },

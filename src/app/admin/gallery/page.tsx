@@ -29,12 +29,13 @@ import {
 import { Badge } from '@/components/ui/badge';
 
 export default function GalleryManagementPage() {
-  const { galleryAlbums, addGalleryAlbum, updateGalleryAlbum, deleteGalleryAlbum, reorderGalleryAlbums, campuses, groups, groupScopes, currentUser } = useAdminData();
+  const { galleryAlbums, addGalleryAlbum, updateGalleryAlbum, deleteGalleryAlbum, reorderGalleryAlbums, campuses, groups, groupScopes, currentUser, users } = useAdminData();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [draggedItem, setDraggedItem] = useState<GalleryAlbum | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [showBroadcastList, setShowBroadcastList] = useState(false);
 
   const [form, setForm] = useState<Omit<GalleryAlbum, 'id'>>({
     title: '',
@@ -43,6 +44,8 @@ export default function GalleryManagementPage() {
     category: 'Worship',
     targetCampuses: ['all'],
     targetGroups: ['all'],
+    excludeCampuses: [],
+    excludeGroups: [],
   });
 
   const categories = ['Worship', 'Youth', 'Fellowship', 'Outreach', 'Baptism', 'Group', 'Event'];
@@ -51,40 +54,64 @@ export default function GalleryManagementPage() {
   const isGroupLeader = currentUser.role === 'group_leader';
 
   // ── Audience helpers ──
-  const isAllCampuses = (form.targetCampuses || ['all']).includes('all');
-  const isAllGroups = (form.targetGroups || ['all']).includes('all');
+  const campusMode = form.targetCampuses?.includes('all') ? 'all' : 'specific';
+  const groupMode = form.targetGroups?.includes('all') || (isGroupLeader && form.targetGroups?.length === currentUser.groups.length && currentUser.groups.length > 0) ? 'all' : 'specific';
 
-  const toggleCampusMode = (all: boolean) => {
+  const setCampusMode = (mode: 'all' | 'specific') => {
     if (isCampusLeader || isGroupLeader) return;
-    setForm(f => ({ ...f, targetCampuses: all ? ['all'] : [] }));
+    setForm(f => ({
+      ...f,
+      targetCampuses: mode === 'specific' ? [] : ['all'],
+    }));
   };
 
-  const toggleCampus = (campusId: string) => {
+  const toggleCampus = (id: string) => {
     if (isCampusLeader || isGroupLeader) return;
     setForm(f => {
       const tc = f.targetCampuses || [];
-      const has = tc.includes(campusId);
-      const next = has
-        ? tc.filter(c => c !== campusId)
-        : [...tc.filter(c => c !== 'all'), campusId];
+      const has = tc.includes(id);
+      const next = has ? tc.filter(c => c !== id) : [...tc.filter(c => c !== 'all'), id];
       return { ...f, targetCampuses: next.length === 0 ? ['all'] : next };
     });
   };
 
-  const toggleGroupMode = (all: boolean) => {
-    if (isGroupLeader) return;
-    setForm(f => ({ ...f, targetGroups: all ? ['all'] : [] }));
+  const toggleExcludeCampus = (id: string) => {
+    if (isCampusLeader || isGroupLeader) return;
+    setForm(f => {
+      const ec = f.excludeCampuses || [];
+      const has = ec.includes(id);
+      const next = has ? ec.filter(c => c !== id) : [...ec, id];
+      return { ...f, excludeCampuses: next };
+    });
   };
 
-  const toggleGroup = (group: string) => {
-    if (isGroupLeader) return;
+  const setGroupMode = (mode: 'all' | 'specific') => {
+    setForm(f => {
+      let nextTarget = ['all'];
+      if (isGroupLeader) {
+        nextTarget = mode === 'specific' ? [] : currentUser.groups;
+      } else if (mode === 'specific') {
+        nextTarget = [];
+      }
+      return { ...f, targetGroups: nextTarget };
+    });
+  };
+
+  const toggleGroup = (g: string) => {
     setForm(f => {
       const tg = f.targetGroups || [];
-      const has = tg.includes(group);
-      const next = has
-        ? tg.filter(g => g !== group)
-        : [...tg.filter(g => g !== 'all'), group];
-      return { ...f, targetGroups: next.length === 0 ? ['all'] : next };
+      const has = tg.includes(g);
+      const next = has ? tg.filter(x => x !== g) : [...tg.filter(x => x !== 'all'), g];
+      return { ...f, targetGroups: next.length === 0 ? (isGroupLeader ? currentUser.groups : ['all']) : next };
+    });
+  };
+
+  const toggleExcludeGroup = (g: string) => {
+    setForm(f => {
+      const eg = f.excludeGroups || [];
+      const has = eg.includes(g);
+      const next = has ? eg.filter(x => x !== g) : [...eg, g];
+      return { ...f, excludeGroups: next };
     });
   };
 
@@ -111,7 +138,7 @@ export default function GalleryManagementPage() {
       addGalleryAlbum(form);
       setIsAdding(false);
     }
-    setForm({ title: '', description: '', url: '', category: 'Worship', targetCampuses: ['all'], targetGroups: ['all'] });
+    setForm({ title: '', description: '', url: '', category: 'Worship', targetCampuses: ['all'], targetGroups: ['all'], excludeCampuses: [], excludeGroups: [] });
   };
 
   const handleEdit = (album: GalleryAlbum) => {
@@ -122,6 +149,8 @@ export default function GalleryManagementPage() {
       category: album.category,
       targetCampuses: album.targetCampuses || ['all'],
       targetGroups: album.targetGroups || ['all'],
+      excludeCampuses: album.excludeCampuses || [],
+      excludeGroups: album.excludeGroups || [],
     });
     setEditingId(album.id);
     setIsAdding(true);
@@ -168,6 +197,8 @@ export default function GalleryManagementPage() {
               title: '', description: '', url: '', category: 'Worship',
               targetCampuses: (isCampusLeader || isGroupLeader) ? [currentUser.campusId] : ['all'],
               targetGroups: isGroupLeader ? currentUser.groups : ['all'],
+              excludeCampuses: [],
+              excludeGroups: [],
             });
             setEditingId(null);
             setIsAdding(true);
@@ -250,111 +281,185 @@ export default function GalleryManagementPage() {
                 />
               </div>
 
-              {/* ── Audience Targeting ── */}
-              <div className="border-t border-border/50 pt-6 space-y-4">
+              {/* Audience Targeting */}
+              <div className="border-t border-border/50 pt-4 space-y-4">
                 <h4 className="text-sm font-semibold flex items-center gap-2">
-                  <Megaphone className="w-4 h-4 text-primary" />
-                  Audience Targeting
+                  <Megaphone className="w-4 h-4 text-primary" /> Audience Targeting
                 </h4>
-
-                {/* Campus Targeting */}
+                {/* Campus */}
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground">Broadcast to Campuses</Label>
                   {isCampusLeader && (
-                    <p className="text-[10px] text-amber-500">
-                      As a Campus Leader, you can only broadcast to your campus: {campuses.find(c => c.id === currentUser.campusId)?.name}
-                    </p>
+                    <p className="text-[10px] text-amber-500">Campus Leader: restricted to {campuses.find(c => c.id === currentUser.campusId)?.name}</p>
                   )}
                   {isGroupLeader && (
-                    <p className="text-[10px] text-emerald-500">
-                      As a Group Leader, you can only broadcast to your campus: {campuses.find(c => c.id === currentUser.campusId)?.name}
-                    </p>
+                    <p className="text-[10px] text-emerald-500">Group Leader: restricted to {campuses.find(c => c.id === currentUser.campusId)?.name}</p>
                   )}
                   <div className="flex items-center gap-4">
                     <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <Checkbox
-                        checked={isAllCampuses}
-                        onCheckedChange={() => toggleCampusMode(true)}
-                        disabled={isCampusLeader || isGroupLeader}
-                      />
-                      All Campuses
+                      <Checkbox checked={campusMode === 'all'} onCheckedChange={() => setCampusMode('all')} disabled={isCampusLeader || isGroupLeader} /> All
                     </label>
                     <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <Checkbox
-                        checked={!isAllCampuses}
-                        onCheckedChange={() => toggleCampusMode(false)}
-                        disabled={isCampusLeader || isGroupLeader}
-                      />
-                      Specific
+                      <Checkbox checked={campusMode === 'specific'} onCheckedChange={() => setCampusMode('specific')} disabled={isCampusLeader || isGroupLeader} /> Specific
                     </label>
                   </div>
-                  {!isAllCampuses && (
-                    <div className="grid grid-cols-1 gap-1.5 pl-2">
-                      {campuses.map(campus => (
-                        <label key={campus.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                  {campusMode !== 'all' && (
+                    <div className="grid grid-cols-1 gap-1.5 pl-2 mt-2">
+                      {campuses.map(c => (
+                        <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer">
                           <Checkbox
-                            checked={(form.targetCampuses || []).includes(campus.id)}
-                            onCheckedChange={() => toggleCampus(campus.id)}
-                            disabled={(isCampusLeader || isGroupLeader) && campus.id !== currentUser.campusId}
+                            checked={(form.targetCampuses || []).includes(c.id)}
+                            onCheckedChange={() => toggleCampus(c.id)}
+                            disabled={(isCampusLeader || isGroupLeader) && c.id !== currentUser.campusId}
                           />
-                          {campus.name}
-                          {(isCampusLeader || isGroupLeader) && campus.id !== currentUser.campusId && (
-                            <span className="text-[10px] text-muted-foreground">(restricted)</span>
-                          )}
+                          {c.name}
                         </label>
                       ))}
                     </div>
                   )}
-                </div>
 
-                {/* Group Targeting */}
-                <div className="space-y-2">
+                  <div className="pt-2">
+                    <Label className="text-xs text-muted-foreground">Exclude Campuses (Optional)</Label>
+                    <div className="grid grid-cols-1 gap-1.5 pl-2 mt-2">
+                      {campuses.map(c => (
+                        <label key={`ex-${c.id}`} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={(form.excludeCampuses || []).includes(c.id)}
+                            onCheckedChange={() => toggleExcludeCampus(c.id)}
+                            disabled={(isCampusLeader || isGroupLeader) && c.id !== currentUser.campusId}
+                          />
+                          {c.name}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                {/* Groups */}
+                <div className="space-y-2 pt-2">
                   <Label className="text-xs text-muted-foreground">Visible to Groups</Label>
                   {isGroupLeader && (
-                    <p className="text-[10px] text-emerald-500">
-                      As a Group Leader, you can only broadcast to your assigned groups.
-                    </p>
+                    <p className="text-[10px] text-emerald-500">Group Leader: restricted to your assigned groups</p>
                   )}
                   <div className="flex items-center gap-4">
                     <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <Checkbox checked={isAllGroups} onCheckedChange={() => toggleGroupMode(true)} disabled={isGroupLeader} />
-                      All Groups
+                      <Checkbox checked={groupMode === 'all'} onCheckedChange={() => setGroupMode('all')} /> All
                     </label>
                     <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <Checkbox checked={!isAllGroups} onCheckedChange={() => toggleGroupMode(false)} disabled={isGroupLeader} />
-                      Specific
+                      <Checkbox checked={groupMode === 'specific'} onCheckedChange={() => setGroupMode('specific')} /> Specific
                     </label>
                   </div>
-                  {!isAllGroups && (
-                    <div className="grid grid-cols-2 gap-1.5 pl-2">
+                  {groupMode !== 'all' && (
+                    <div className="grid grid-cols-2 gap-1.5 pl-2 mt-2">
                       {(() => {
-                        const selectedCampusIds = isAllCampuses ? ['global'] : (form.targetCampuses || []);
-                        const visibleGroups = isAllCampuses
+                        // Filter groups based on selected campuses
+                        const selectedCampusIds = campusMode === 'all' ? ['global'] : (form.targetCampuses || []);
+                        const visibleGroups = campusMode === 'all'
                           ? groups
                           : [...new Set(selectedCampusIds.flatMap(cid => getGroupsForCampus(groupScopes, cid)))];
-                        return visibleGroups.map(group => (
-                          <label key={group} className="flex items-center gap-2 text-sm cursor-pointer">
-                            <Checkbox
-                              checked={(form.targetGroups || []).includes(group)}
-                              onCheckedChange={() => toggleGroup(group)}
-                              disabled={isGroupLeader && !currentUser.groups.includes(group)}
+                        return visibleGroups.map(g => (
+                          <label key={g} className="flex items-center gap-2 text-sm cursor-pointer">
+                            <Checkbox 
+                              checked={(form.targetGroups || []).includes(g)} 
+                              onCheckedChange={() => toggleGroup(g)} 
+                              disabled={isGroupLeader && !currentUser.groups.includes(g)}
                             />
-                            {group}
+                            {g}
                           </label>
                         ));
                       })()}
                     </div>
                   )}
-                </div>
 
+                  <div className="pt-2">
+                    <Label className="text-xs text-muted-foreground">Exclude Groups (Optional)</Label>
+                    <div className="grid grid-cols-2 gap-1.5 pl-2 mt-2">
+                      {(() => {
+                        // Filter groups based on selected campuses
+                        const selectedCampusIds = campusMode === 'all' ? ['global'] : (form.targetCampuses || []);
+                        const visibleGroups = campusMode === 'all'
+                          ? groups
+                          : [...new Set(selectedCampusIds.flatMap(cid => getGroupsForCampus(groupScopes, cid)))];
+                        return visibleGroups.map(g => (
+                          <label key={`ex-${g}`} className="flex items-center gap-2 text-sm cursor-pointer">
+                            <Checkbox 
+                              checked={(form.excludeGroups || []).includes(g)} 
+                              onCheckedChange={() => toggleExcludeGroup(g)} 
+                              disabled={isGroupLeader && !currentUser.groups.includes(g)}
+                            />
+                            {g}
+                          </label>
+                        ));
+                      })()}
+                    </div>
+                  </div>
+                </div>
                 {/* Preview */}
                 <div className="bg-muted/30 rounded-lg p-3">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">Audience Preview</p>
                   <p className="text-xs">
-                    {isAllCampuses ? '🌐 All Campuses' : `🏢 ${(form.targetCampuses || []).map(id => campuses.find(c => c.id === id)?.name || id).join(', ') || 'None selected'}`}
+                    {campusMode === 'all' ? '🌐 All Campuses' : `🏢 ${(form.targetCampuses || []).map(id => campuses.find(c => c.id === id)?.name || id).join(', ') || 'None'}`}
+                    {(form.excludeCampuses || []).length > 0 && ` (excluding: ${(form.excludeCampuses || []).map(id => campuses.find(c => c.id === id)?.name || id).join(', ')})`}
                     {' · '}
-                    {isAllGroups ? '👥 All Groups' : `👤 ${(form.targetGroups || []).join(', ') || 'None selected'}`}
+                    {groupMode === 'all' ? '👥 All Groups' : `👤 ${(form.targetGroups || []).join(', ') || 'None'}`}
+                    {(form.excludeGroups || []).length > 0 && ` (excluding: ${(form.excludeGroups || []).join(', ')})`}
                   </p>
+                  {(() => {
+                    const broadcastUsers = users.filter(u => {
+                      if ((form.excludeCampuses || []).includes(u.campusId)) return false;
+                      const tc = form.targetCampuses || [];
+                      const campusMatch = tc.includes('all') || tc.includes(u.campusId);
+                      if (!campusMatch) return false;
+                      if (u.groups.some(g => (form.excludeGroups || []).includes(g))) return false;
+                      const tg = form.targetGroups || [];
+                      const groupMatch = tg.includes('all') || tg.some(g => u.groups.includes(g));
+                      return groupMatch;
+                    });
+                    return (
+                      <div className="mt-2 pt-2 border-t border-border/50">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">
+                            Broadcast List ({broadcastUsers.length} members)
+                          </p>
+                          {broadcastUsers.length > 0 && (
+                            <Button 
+                              type="button"
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setShowBroadcastList(!showBroadcastList);
+                              }}
+                              className="h-6 text-[10px] px-2"
+                            >
+                              {showBroadcastList ? 'Hide Members' : 'Show Members'}
+                            </Button>
+                          )}
+                        </div>
+                        {showBroadcastList && broadcastUsers.length > 0 && (
+                          <div className="mt-2 space-y-1 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                            {broadcastUsers.map(u => (
+                              <div key={u.id} className="flex items-center gap-2 text-xs py-1.5 border-b border-border/30 last:border-0">
+                                <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold shrink-0">
+                                  {u.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-foreground font-medium leading-none">{u.name}</span>
+                                  <span className="text-muted-foreground text-[10px] mt-0.5 leading-none">
+                                    {campuses.find(c => c.id === u.campusId)?.name || 'Unknown Campus'}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {!showBroadcastList && broadcastUsers.length === 0 && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            No members will receive this broadcast
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 

@@ -56,6 +56,7 @@ export async function POST(req: Request) {
     
     let authorName = data.isAnonymous ? 'Anonymous' : (data.authorName || 'Anonymous');
     let authorId = undefined;
+    let campusId = data.campusId || 'global'; // Fallback for guest if they don't select one
     
     // If logged in, we can attribute it to the user if not anonymous
     if (session.isAuth && session.userId) {
@@ -65,6 +66,7 @@ export async function POST(req: Request) {
           authorName = `${user.firstName} ${user.lastName}`;
         }
         authorId = user._id;
+        campusId = user.campusId; // Overwrite with actual session campus
       }
     }
     
@@ -76,7 +78,8 @@ export async function POST(req: Request) {
       category: data.category || 'General',
       authorName: authorName,
       authorId: authorId,
-      status: 'approved' // Defaulting to approved per our plan
+      campusId: campusId,
+      status: 'pending' // Defaulting to pending for admin approval
     });
 
     return NextResponse.json(prayer, { status: 201 });

@@ -44,6 +44,8 @@ export const eventSchema = z.object({
   host: z.string().optional(),
   targetCampuses: z.array(z.string()),
   targetGroups: z.array(z.string()),
+  excludeCampuses: z.array(z.string()).optional(),
+  excludeGroups: z.array(z.string()).optional(),
   googlePhotosUrl: z.string().url().optional().or(z.literal('')),
   formFields: z.array(z.any()).optional(),
   isMultiDay: z.boolean().optional(),
@@ -74,6 +76,7 @@ export const prayerRequestSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
   content: z.string().min(10, 'Prayer request must be at least 10 characters'),
   authorName: z.string().optional(),
+  campusId: z.string().optional(), // Added for guest selection, overridden by session for members
   isAnonymous: z.boolean().optional(),
   privacy: z.enum(['public', 'members', 'staff']).optional(),
   category: z.string().optional(),

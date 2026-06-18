@@ -111,10 +111,7 @@ export const AnnouncementsSection = () => {
                         <Heart className="w-4 h-4" />
                         <span>{announcement.reactions}</span>
                       </Button>
-                      <Button variant="ghost" size="sm" className="gap-2">
-                        <Share2 className="w-4 h-4" />
-                        Share
-                      </Button>
+
                     </div>
                     <Button variant="outline" size="sm">
                       Read More

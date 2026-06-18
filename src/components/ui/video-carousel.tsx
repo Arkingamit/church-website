@@ -125,7 +125,7 @@ export const VideoCarousel: React.FC<VideoCarouselProps> = ({ className }) => {
                 stretch: 0,
                 depth: 120,
                 modifier: 2.5,
-                slideShadows: true
+                slideShadows: false
               }}
               navigation={{
                 nextEl: '.swiper-button-next',
@@ -271,6 +271,19 @@ export const VideoCarousel: React.FC<VideoCarouselProps> = ({ className }) => {
           .sermon-carousel:hover .swiper-button-prev,
           .sermon-carousel:hover .swiper-button-next {
             opacity: 1;
+          }
+          
+          .sermon-carousel .swiper-slide {
+            width: 370px !important;
+            background: transparent !important;
+          }
+
+          .sermon-carousel .swiper-slide-shadow-left,
+          .sermon-carousel .swiper-slide-shadow-right,
+          .sermon-carousel .swiper-slide-shadow-top,
+          .sermon-carousel .swiper-slide-shadow-bottom {
+            display: none !important;
+            opacity: 0 !important;
           }
         `
       }} />

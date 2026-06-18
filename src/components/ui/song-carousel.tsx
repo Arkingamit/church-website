@@ -36,7 +36,7 @@ export const SongCarousel: React.FC<SongCarouselProps> = ({ className }) => {
   const handlePlayPause = (songId: string, videoId: string) => {
     setIsTransitioning(true);
     setCurrentlyPlaying(songId);
-    
+
     // Start the transition
     setTimeout(() => {
       setFullscreenVideo(videoId);
@@ -106,7 +106,7 @@ export const SongCarousel: React.FC<SongCarouselProps> = ({ className }) => {
               stretch: 0,
               depth: 120,
               modifier: 2.5,
-              slideShadows: true
+              slideShadows: false
             }}
             navigation={{
               nextEl: '.song-swiper-button-next',
@@ -125,14 +125,14 @@ export const SongCarousel: React.FC<SongCarouselProps> = ({ className }) => {
                   <div className="relative h-full">
                     {/* Song Thumbnail */}
                     <div className="relative h-80 overflow-hidden">
-                      <img 
-                        src={`https://img.youtube.com/vi/${song.videoId}/maxresdefault.jpg`}
+                      <img
+                        src={`https://img.youtube.com/vi/${song.videoId}/hqdefault.jpg`}
                         alt={song.title}
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
-                      
+
                       {/* Invisible Play Button Overlay - Covers entire image */}
-                      <div 
+                      <div
                         className="absolute inset-0 cursor-pointer flex items-center justify-center group-hover:bg-black/20 transition-colors duration-300"
                         onClick={() => handlePlayPause(song.id, song.videoId)}
                       >
@@ -187,18 +187,18 @@ export const SongCarousel: React.FC<SongCarouselProps> = ({ className }) => {
 
           {/* Enhanced Transparent Hovering Navigation Buttons */}
           <Button
-          variant="ghost"
-          size="lg"
-          className="song-swiper-button-prev absolute left-6 top-1/2 -translate-y-1/2 z-20 w-16 h-12 rounded-lg bg-black/21 backdrop-blur-md border border-white/30 hover:bg-black/40 hover:border-white/50 text-white transition-all duration-300 transform hover:scale-110 shadow-xl opacity-0 group-hover/carousel:opacity-50"
-        >
-          <ChevronLeft className="w-7 h-7" />
-          <span className="sr-only">Previous</span>
-        </Button>
+            variant="ghost"
+            size="lg"
+            className="song-swiper-button-prev absolute left-6 top-1/2 -translate-y-1/2 z-20 w-16 h-12 rounded-lg bg-black/21 backdrop-blur-md border border-white/30 hover:bg-black/40 hover:border-white/50 text-white transition-all duration-300 transform hover:scale-110 shadow-xl opacity-0 group-hover/carousel:opacity-50"
+          >
+            <ChevronLeft className="w-7 h-7" />
+            <span className="sr-only">Previous</span>
+          </Button>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          className="song-swiper-button-next absolute right-6 top-1/2 -translate-y-1/2 z-20 w-16 h-12 rounded-lg bg-black/20 backdrop-blur-md border border-white/30 hover:bg-black/40 hover:border-white/50 text-white transition-all duration-300 transform hover:scale-110 shadow-xl opacity-0 group-hover/carousel:opacity-100"
+          <Button
+            variant="ghost"
+            size="icon"
+            className="song-swiper-button-next absolute right-6 top-1/2 -translate-y-1/2 z-20 w-16 h-12 rounded-lg bg-black/20 backdrop-blur-md border border-white/30 hover:bg-black/40 hover:border-white/50 text-white transition-all duration-300 transform hover:scale-110 shadow-xl opacity-0 group-hover/carousel:opacity-100"
           >
             <ChevronRight className="w-7 h-7" />
             <span className="sr-only">Next</span>
@@ -220,7 +220,7 @@ export const SongCarousel: React.FC<SongCarouselProps> = ({ className }) => {
 
       {/* Enhanced Fullscreen Video Modal with Custom Animation */}
       {(fullscreenVideo || isTransitioning) && (
-        <div 
+        <div
           className={`fullscreen-modal ${isTransitioning && !fullscreenVideo ? 'closing' : ''}`}
           onClick={closeFullscreen}
         >
@@ -233,8 +233,8 @@ export const SongCarousel: React.FC<SongCarouselProps> = ({ className }) => {
           >
             ✕
           </button>
-          
-          <div 
+
+          <div
             className="video-wrapper"
             onClick={(e) => e.stopPropagation()}
           >
@@ -275,6 +275,16 @@ export const SongCarousel: React.FC<SongCarouselProps> = ({ className }) => {
           
           .song-carousel .swiper-slide {
             transition: transform 0.3s ease;
+            width: 350px !important;
+            background: transparent !important;
+          }
+          
+          .song-carousel .swiper-slide-shadow-left,
+          .song-carousel .swiper-slide-shadow-right,
+          .song-carousel .swiper-slide-shadow-top,
+          .song-carousel .swiper-slide-shadow-bottom {
+            display: none !important;
+            opacity: 0 !important;
           }
           
           .song-carousel .swiper-slide-active {

@@ -18,6 +18,10 @@ export interface Announcement {
   reminderTime?: string;
   image?: string;
   reactions: number;
+  targetCampuses?: string[];
+  targetGroups?: string[];
+  excludeCampuses?: string[];
+  excludeGroups?: string[];
 }
 
 export interface Event {

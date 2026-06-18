@@ -67,6 +67,8 @@ export interface Event {
   host: string;
   targetCampuses: string[];
   targetGroups: string[];
+  excludeCampuses?: string[];
+  excludeGroups?: string[];
   createdAt: string;
   googlePhotosUrl?: string;
   formFields?: FormField[];
@@ -100,6 +102,8 @@ export interface Announcement {
   reactions: number;
   targetCampuses: string[];
   targetGroups: string[];
+  excludeCampuses?: string[];
+  excludeGroups?: string[];
   createdAt: string;
   isRecurring?: boolean;
   recurrencePattern?: 'weekly' | 'biweekly' | 'monthly' | 'custom';
@@ -108,17 +112,19 @@ export interface Announcement {
   recurrenceNote?: string; // e.g. 'Every Sunday at 10 AM'
   nextOccurrence?: string;
   lastTriggered?: string;
+  customReminders?: { daysBefore: number; hoursBefore: number; minutesBefore: number; }[];
 }
 
 export interface WorshipVideo {
   id: string;
   _id?: string;
   title: string;
-  artist: string;
-  album: string;
-  duration: string;
-  categories: string[];
   videoId: string;
+  isFeatured?: boolean;
+  categories?: string[];
+  artist?: string;
+  album?: string;
+  duration?: string;
 }
 
 export interface Sermon {
@@ -131,11 +137,11 @@ export interface Sermon {
   duration: string;
   videoId: string;
   description: string;
-  category: string;
   views: number;
   likes: number;
   isFeatured?: boolean;
   sortOrder?: number;
+  category?: string;
 }
 
 export interface SermonSeries {
@@ -144,6 +150,21 @@ export interface SermonSeries {
   title: string;
   description: string;
   category: string;
+}
+
+export interface FlipCardItem {
+  id: string;
+  type: 'event' | 'announcement' | 'prayer' | 'sermon' | 'worship_video' | 'custom';
+  itemId?: string;
+  title?: string;
+  description?: string;
+  buttonText?: string;
+  buttonLink?: string;
+}
+
+export interface FlipCardConfig {
+  isActive: boolean;
+  items: FlipCardItem[];
 }
 
 export interface GalleryAlbum {
@@ -157,6 +178,24 @@ export interface GalleryAlbum {
   sortOrder?: number;
   targetCampuses?: string[];
   targetGroups?: string[];
+  excludeCampuses?: string[];
+  excludeGroups?: string[];
+}
+
+export interface PrayerRequest {
+  id: string;
+  _id?: string;
+  title: string;
+  content: string;
+  authorName: string;
+  campusId: string;
+  isAnonymous: boolean;
+  privacy: 'public' | 'members' | 'staff';
+  category: string;
+  prayedCount: number;
+  comments: number;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
 }
 
 export interface LiveStream {
@@ -167,6 +206,12 @@ export interface LiveStream {
   isLive: boolean;
   title: string;
   description: string;
+  isAutoEnabled?: boolean;
+  youtubeChannelId?: string;
+  recurrencePattern?: 'weekly' | 'custom' | 'custom_monthly';
+  recurrenceDay?: string;
+  recurrenceWeekOfMonth?: string;
+  time?: string;
 }
 
 export interface UserProfile {
@@ -279,6 +324,8 @@ interface AdminDataContextType {
   galleryAlbumUrl: string;
   galleryAlbums: GalleryAlbum[];
   liveStreams: LiveStream[];
+  prayerRequests: PrayerRequest[];
+  flipCardConfig: FlipCardConfig;
 
   // Setters
   setCurrentUser: (user: UserProfile) => void;
@@ -333,6 +380,12 @@ interface AdminDataContextType {
   addGroup: (name: string, scope?: string) => void;
   deleteGroup: (name: string) => void;
   updateGroupScope: (name: string, scope: string) => void;
+  updateFlipCardConfig: (config: FlipCardConfig) => void;
+
+  // Prayer Requests
+  approvePrayerRequest: (id: string) => void;
+  deletePrayerRequest: (id: string) => void;
+  getPendingPrayerRequests: (campusId?: string) => PrayerRequest[];
 
   // Filtering
   getVisibleAnnouncements: (campusId: string, groups: string[]) => Announcement[];
@@ -355,8 +408,83 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
   const [sermonSeries, setSermonSeriesState] = useState<SermonSeries[]>([]);
   const [galleryAlbums, setGalleryAlbums] = useState<GalleryAlbum[]>([]);
   const [liveStreams, setLiveStreams] = useState<LiveStream[]>([]);
+  const [prayerRequests, setPrayerRequests] = useState<PrayerRequest[]>([]);
   const [currentUser, setCurrentUserState] = useState<UserProfile>(defaultCurrentUser);
   const [galleryAlbumUrl, setGalleryAlbumUrlState] = useState<string>('');
+  const [flipCardConfig, setFlipCardConfig] = useState<FlipCardConfig>({
+    isActive: false,
+    items: [
+      {
+        id: '1',
+        type: 'custom',
+        title: 'Special Event',
+        description: 'Join us for our upcoming special event.',
+        buttonText: 'Read More',
+        buttonLink: '/events'
+      },
+      {
+        id: '2',
+        type: 'custom',
+        title: 'Join a Connect Group',
+        description: 'Find community and grow together in one of our weekly connect groups.',
+        buttonText: 'Find a Group',
+        buttonLink: '/groups'
+      },
+      {
+        id: '3',
+        type: 'custom',
+        title: 'Submit a Prayer Request',
+        description: 'We would love to pray with you. Let us know how we can support you this week.',
+        buttonText: 'Pray With Us',
+        buttonLink: '/prayer-wall'
+      }
+    ]
+  });
+
+  // Load flip card config from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedConfig = localStorage.getItem('grace_flipCardConfig');
+      if (storedConfig) {
+        try {
+          const parsed = JSON.parse(storedConfig);
+          // Migrate old config that doesn't have an items array or only has 1 default item
+          if (!parsed.items || parsed.items.length === 1) {
+            parsed.items = [
+              {
+                id: parsed.items ? parsed.items[0].id : 'migrated-1',
+                type: parsed.items ? parsed.items[0].type : (parsed.type || 'custom'),
+                itemId: parsed.items ? parsed.items[0].itemId : parsed.itemId,
+                title: (parsed.items ? parsed.items[0].title : parsed.title) || 'Special Event',
+                description: (parsed.items ? parsed.items[0].description : parsed.description) || 'Join us for our upcoming special event.',
+                buttonText: (parsed.items ? parsed.items[0].buttonText : parsed.buttonText) || 'Read More',
+                buttonLink: (parsed.items ? parsed.items[0].buttonLink : parsed.buttonLink) || '/events'
+              },
+              {
+                id: 'migrated-2',
+                type: 'custom',
+                title: 'Join a Connect Group',
+                description: 'Find community and grow together in one of our weekly connect groups.',
+                buttonText: 'Find a Group',
+                buttonLink: '/groups'
+              },
+              {
+                id: 'migrated-3',
+                type: 'custom',
+                title: 'Submit a Prayer Request',
+                description: 'We would love to pray with you. Let us know how we can support you this week.',
+                buttonText: 'Pray With Us',
+                buttonLink: '/prayer-wall'
+              }
+            ];
+          }
+          setFlipCardConfig(parsed);
+        } catch (e) {
+          console.error("Failed to parse flip card config", e);
+        }
+      }
+    }
+  }, []);
 
   // ── Fetch all data from API on mount ──────────────────────────────────
   useEffect(() => {
@@ -378,6 +506,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
           fetch('/api/admin/media/livestreams').catch(() => null),
           fetch('/api/admin/event-registrations').catch(() => null),
           fetch('/api/admin/groups').catch(() => null),
+          fetch('/api/admin/prayers').catch(() => null),
         ]);
 
         if (campusesRes?.ok) setCampuses(mapIds(await campusesRes.json()));
@@ -396,6 +525,8 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
         if (galleryRes?.ok) setGalleryAlbums(mapIds(await galleryRes.json()));
         if (livestreamRes?.ok) setLiveStreams(mapIds(await livestreamRes.json()));
         if (eventRegistrationsRes?.ok) setEventRegistrations(mapIds(await eventRegistrationsRes.json()));
+        const prayersResponse = await fetch('/api/admin/prayers').catch(() => null);
+        if (prayersResponse?.ok) setPrayerRequests(mapIds(await prayersResponse.json()));
         if (groupsRes?.ok) {
           const rawGroups = await groupsRes.json();
           const mappedGroups = mapIds(rawGroups);
@@ -411,6 +542,13 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
 
   const setCurrentUser = useCallback((u: UserProfile) => setCurrentUserState(u), []);
   const setGalleryAlbumUrl = useCallback((url: string) => setGalleryAlbumUrlState(url), []);
+
+  const updateFlipCardConfig = (config: FlipCardConfig) => {
+    setFlipCardConfig(config);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('grace_flipCardConfig', JSON.stringify(config));
+    }
+  };
 
   // ── Live Streams ──────────────────────────────────────────────────────
   const updateLiveStream = useCallback(async (campusId: string, updates: Partial<LiveStream>) => {
@@ -758,11 +896,38 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
     }
   }, [groupScopes]);
 
+  // ── Prayers CRUD ────────────────────────────────────────────────────────
+  const approvePrayerRequest = useCallback(async (id: string) => {
+    const res = await fetch(`/api/admin/prayers/${id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'approved' }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setPrayerRequests(prev => prev.map(p => p.id === id ? mapId(updated) : p));
+    }
+  }, []);
+
+  const deletePrayerRequest = useCallback(async (id: string) => {
+    const res = await fetch(`/api/admin/prayers/${id}`, { method: 'DELETE' });
+    if (res.ok) setPrayerRequests(prev => prev.filter(p => p.id !== id));
+  }, []);
+
+  const getPendingPrayerRequests = useCallback((campusId?: string) => {
+    return prayerRequests.filter(p => p.status === 'pending' && (!campusId || p.campusId === campusId));
+  }, [prayerRequests]);
+
   // ── Filtering ─────────────────────────────────────────────────────────
   const getVisibleAnnouncements = useCallback((campusId: string, userGroups: string[]) => {
     return announcements.filter(a => {
       const tc = a.targetCampuses ?? ['all'];
       const tg = a.targetGroups ?? ['all'];
+      const ec = a.excludeCampuses ?? [];
+      const eg = a.excludeGroups ?? [];
+
+      if (campusId !== 'all' && ec.includes(campusId)) return false;
+      if (userGroups.some(g => eg.includes(g))) return false;
+
       const campusMatch = campusId === 'all' || tc.includes('all') || tc.includes(campusId);
       const groupMatch = tg.includes('all') || tg.some(g => userGroups.includes(g));
       return campusMatch && groupMatch;
@@ -773,6 +938,12 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
     return events.filter(e => {
       const tc = e.targetCampuses ?? ['all'];
       const tg = e.targetGroups ?? ['all'];
+      const ec = e.excludeCampuses ?? [];
+      const eg = e.excludeGroups ?? [];
+
+      if (campusId !== 'all' && ec.includes(campusId)) return false;
+      if (userGroups.some(g => eg.includes(g))) return false;
+
       const campusMatch = campusId === 'all' || tc.includes('all') || tc.includes(campusId);
       const groupMatch = tg.includes('all') || tg.some(g => userGroups.includes(g));
       return campusMatch && groupMatch;
@@ -783,6 +954,12 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
     return galleryAlbums.filter(a => {
       const tc = a.targetCampuses ?? ['all'];
       const tg = a.targetGroups ?? ['all'];
+      const ec = a.excludeCampuses ?? [];
+      const eg = a.excludeGroups ?? [];
+
+      if (campusId !== 'all' && ec.includes(campusId)) return false;
+      if (userGroups.some(g => eg.includes(g))) return false;
+
       const campusMatch = campusId === 'all' || tc.includes('all') || tc.includes(campusId);
       const groupMatch = tg.includes('all') || tg.some(g => userGroups.includes(g));
       return campusMatch && groupMatch;
@@ -791,11 +968,13 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AdminDataContext.Provider value={{
+      flipCardConfig,
       campuses, groups, groupScopes, events, eventRegistrations, announcements, users, currentUser, setCurrentUser,
       addEvent, updateEvent, deleteEvent, addEventRegistration, getEventRegistrations,
       addAnnouncement, updateAnnouncement, deleteAnnouncement,
       addUser, updateUser, deleteUser,
       addCampus, updateCampus, deleteCampus, addGroup, deleteGroup, updateGroupScope,
+      updateFlipCardConfig,
       getVisibleAnnouncements, getVisibleEvents, getVisibleGalleryAlbums,
       galleryAlbumUrl, setGalleryAlbumUrl,
       worshipVideos, addWorshipVideo, updateWorshipVideo, deleteWorshipVideo,
@@ -803,6 +982,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
       sermonSeries: sermonSeries, addSermonSeries, updateSermonSeries, deleteSermonSeries,
       galleryAlbums, addGalleryAlbum, updateGalleryAlbum, deleteGalleryAlbum, reorderGalleryAlbums,
       liveStreams, updateLiveStream,
+      prayerRequests, approvePrayerRequest, deletePrayerRequest, getPendingPrayerRequests,
     }}>
       {children}
     </AdminDataContext.Provider>

@@ -60,38 +60,94 @@ export async function POST(req: Request) {
 
     // Process Announcements
     for (const announcement of recurringAnnouncements) {
-      if (announcement.lastTriggered === today) {
-        skipped++;
-        continue;
-      }
+      let triggeredKeys = announcement.lastTriggered ? announcement.lastTriggered.split(',') : [];
+      let didTriggerAnything = false;
 
-      if (!isTodayMatchingSchedule(announcement)) {
-        skipped++;
-        continue;
-      }
-
-      await Notification.create({
-        title: `📢 ${announcement.title}`,
-        message: announcement.content,
-        type: 'recurring_announcement',
-        sourceId: announcement._id.toString(),
-        targetCampuses: announcement.targetCampuses || ['all'],
-        targetGroups: announcement.targetGroups || ['all'],
-      });
-
-      const nextOccurrence = calculateNextOccurrence(
+      const nextOccurrenceDateStr = announcement.nextOccurrence || calculateNextOccurrence(
         announcement.recurrencePattern || 'weekly',
         announcement.recurrenceDay,
         today,
         announcement.recurrenceEndDate
       );
 
-      await Announcement.findByIdAndUpdate(announcement._id, {
-        lastTriggered: today,
-        nextOccurrence: nextOccurrence,
-      });
+      if (!nextOccurrenceDateStr) {
+        skipped++;
+        continue;
+      }
 
-      triggered++;
+      // If reminderTime is not set, default to 09:00 for the sake of relative math
+      const targetTime = announcement.reminderTime || '09:00';
+      const targetDateTime = new Date(`${nextOccurrenceDateStr}T${targetTime}:00`);
+      const now = new Date();
+
+      // 1. Process customReminders
+      if (announcement.customReminders && announcement.customReminders.length > 0) {
+        for (const rem of announcement.customReminders) {
+           if (typeof rem.daysBefore !== 'number' || typeof rem.hoursBefore !== 'number' || typeof rem.minutesBefore !== 'number') continue;
+           
+           const customReminderKey = `custom_rem_${rem.daysBefore}d_${rem.hoursBefore}h_${rem.minutesBefore}m_${announcement._id}_${nextOccurrenceDateStr}`;
+           
+           const offsetMs = (rem.daysBefore * 24 * 60 * 60 * 1000) + (rem.hoursBefore * 60 * 60 * 1000) + (rem.minutesBefore * 60 * 1000);
+           const reminderDateTime = new Date(targetDateTime.getTime() - offsetMs);
+           
+           // We trigger if we have passed the reminder time, but the main announcement hasn't fired yet
+           if (now >= reminderDateTime && now <= targetDateTime && !triggeredKeys.includes(customReminderKey)) {
+             await Notification.create({
+               title: `📢 Reminder: ${announcement.title}`,
+               message: announcement.content,
+               type: 'recurring_announcement',
+               sourceId: announcement._id.toString(),
+               targetCampuses: announcement.targetCampuses || ['all'],
+               targetGroups: announcement.targetGroups || ['all'],
+               excludeCampuses: announcement.excludeCampuses || [],
+               excludeGroups: announcement.excludeGroups || [],
+             });
+             triggeredKeys.push(customReminderKey);
+             didTriggerAnything = true;
+             triggered++;
+           }
+        }
+      }
+
+      // 2. Process actual recurring push
+      const actualPushKey = `actual_push_${nextOccurrenceDateStr}_${announcement._id}`;
+      // Fallback for backwards compatibility: If it doesn't have reminderTime, trigger it anytime today matching the old logic.
+      const shouldPushActual = announcement.reminderTime ? (now >= targetDateTime) : isTodayMatchingSchedule(announcement);
+
+      // If the old logic stored just the date 'YYYY-MM-DD' in lastTriggered, handle that gracefully
+      if (triggeredKeys.includes(today)) {
+        triggeredKeys.push(actualPushKey); // normalize to new format
+      }
+
+      if (shouldPushActual && !triggeredKeys.includes(actualPushKey)) {
+        await Notification.create({
+          title: `📢 ${announcement.title}`,
+          message: announcement.content,
+          type: 'recurring_announcement',
+          sourceId: announcement._id.toString(),
+          targetCampuses: announcement.targetCampuses || ['all'],
+          targetGroups: announcement.targetGroups || ['all'],
+          excludeCampuses: announcement.excludeCampuses || [],
+          excludeGroups: announcement.excludeGroups || [],
+        });
+
+        // We will leave nextOccurrence as is. Tomorrow, calculateNextOccurrence will yield the next cycle.
+        triggeredKeys.push(actualPushKey);
+        didTriggerAnything = true;
+        triggered++;
+      }
+      
+      // Update the record if we triggered something
+      if (didTriggerAnything) {
+        // If the actual push occurred, calculate the next one (it will return next week once tomorrow hits, but we can proactively trigger recalculation on the next cron run by unsetting it, or we can just save it)
+        // Let's just save the triggered keys. 
+        await Announcement.findByIdAndUpdate(announcement._id, {
+          lastTriggered: triggeredKeys.join(','),
+          nextOccurrence: nextOccurrenceDateStr, // Ensure it is set
+        });
+      } else {
+        skipped++;
+      }
     }
 
     // Process Scheduled Announcements
@@ -112,6 +168,8 @@ export async function POST(req: Request) {
           sourceId: announcement._id.toString(),
           targetCampuses: announcement.targetCampuses || ['all'],
           targetGroups: announcement.targetGroups || ['all'],
+          excludeCampuses: announcement.excludeCampuses || [],
+          excludeGroups: announcement.excludeGroups || [],
         });
 
         await Announcement.findByIdAndUpdate(announcement._id, {
@@ -149,6 +207,8 @@ export async function POST(req: Request) {
           sourceId: event._id.toString(),
           targetCampuses: event.targetCampuses || ['all'],
           targetGroups: event.targetGroups || ['all'],
+          excludeCampuses: event.excludeCampuses || [],
+          excludeGroups: event.excludeGroups || [],
         });
         triggeredKeys.push(legacyReminderKey);
         triggered++;
@@ -178,6 +238,8 @@ export async function POST(req: Request) {
               sourceId: event._id.toString(),
               targetCampuses: event.targetCampuses || ['all'],
               targetGroups: event.targetGroups || ['all'],
+              excludeCampuses: event.excludeCampuses || [],
+              excludeGroups: event.excludeGroups || [],
             });
             triggeredKeys.push(customReminderKey);
             triggered++;

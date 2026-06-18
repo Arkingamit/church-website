@@ -32,6 +32,8 @@ import {
   QrCode,
   Music,
   UserCheck,
+  Heart,
+  BookOpen,
 } from 'lucide-react';
 
 const roleIcons: Record<UserRole, React.ElementType> = {
@@ -61,6 +63,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pendingCount = isCampusLeader
     ? getPendingRequests(currentUser.campusId).length
     : getPendingRequests().length;
+    
+  const { getPendingPrayerRequests } = useAdminData();
+  const pendingPrayersCount = isCampusLeader
+    ? getPendingPrayerRequests(currentUser.campusId).length
+    : getPendingPrayerRequests().length;
 
   // Build sidebar items based on role
   const sidebarItems = [
@@ -68,6 +75,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { label: 'Events', href: '/admin/events', icon: Calendar, minRole: 'group_leader' as UserRole },
     { label: 'Announcements', href: '/admin/announcements', icon: Megaphone, minRole: 'group_leader' as UserRole },
     { label: 'Worship Videos', href: '/admin/worship', icon: Music, minRole: 'admin' as UserRole },
+    { label: 'Prayer Wall', href: '/admin/prayers', icon: Heart, minRole: 'campus_leader' as UserRole, badge: pendingPrayersCount },
+    { label: 'Daily Verses', href: '/admin/verses', icon: BookOpen, minRole: 'admin' as UserRole },
     { label: 'Requests', href: '/admin/requests', icon: UserPlus, minRole: 'campus_leader' as UserRole, badge: pendingCount },
     { label: 'QR Codes', href: '/admin/qr-codes', icon: QrCode, minRole: 'campus_leader' as UserRole },
     { label: 'Users', href: '/admin/users', icon: Users, minRole: 'campus_leader' as UserRole },

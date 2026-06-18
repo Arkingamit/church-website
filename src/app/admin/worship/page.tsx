@@ -25,9 +25,11 @@ import {
   ExternalLink,
   Search,
   History,
+  Star,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
-const CATEGORIES = ['Worship', 'Praise Song', 'Hindi Worship', 'Christmas Song', 'Worship song'];
+
 
 export default function WorshipManagementPage() {
   const { worshipVideos, addWorshipVideo, updateWorshipVideo, deleteWorshipVideo } = useAdminData();
@@ -38,10 +40,6 @@ export default function WorshipManagementPage() {
 
   const initialForm = {
     title: '',
-    artist: '',
-    album: 'Grace Ahmedabad',
-    duration: '4:00',
-    categories: ['Worship'] as string[],
     videoId: '',
     youtubeUrl: '',
   };
@@ -63,7 +61,6 @@ export default function WorshipManagementPage() {
   const handleOpenEdit = (video: WorshipVideo) => {
     setForm({
       ...video,
-      categories: video.categories || [],
       youtubeUrl: `https://youtube.com/watch?v=${video.videoId}`,
     });
     setEditingId(video.id);
@@ -80,10 +77,6 @@ export default function WorshipManagementPage() {
 
     const videoData = {
       title: form.title,
-      artist: form.artist,
-      album: form.album,
-      duration: form.duration,
-      categories: form.categories,
       videoId: videoId,
     };
 
@@ -97,11 +90,19 @@ export default function WorshipManagementPage() {
   };
 
   const filtered = worshipVideos.filter(v => 
-    v.title.toLowerCase().includes(search.toLowerCase()) ||
-    v.artist.toLowerCase().includes(search.toLowerCase())
+    v.title.toLowerCase().includes(search.toLowerCase())
   );
 
-  const isMinRequirementMet = worshipVideos.length >= 8;
+  const featuredCount = worshipVideos.filter(v => v.isFeatured).length;
+  const isMinRequirementMet = featuredCount >= 8;
+
+  const handleToggleFeatured = (video: WorshipVideo) => {
+    if (!video.isFeatured && featuredCount >= 10) {
+      toast.error('Maximum 10 videos can be featured. Unfeature one first.');
+      return;
+    }
+    updateWorshipVideo(video.id, { isFeatured: !video.isFeatured });
+  };
 
   return (
     <div className="space-y-6">
@@ -130,7 +131,7 @@ export default function WorshipManagementPage() {
                 {isMinRequirementMet ? 'Requirement Met' : 'Requirement Not Met'}
               </p>
               <p className="text-sm text-muted-foreground">
-                Minimum <strong>8 videos</strong> required for the home page carousel. Current: <strong>{worshipVideos.length}</strong>
+                Minimum <strong>8 videos</strong> required for the home page carousel (Max 10). Current featured: <strong>{featuredCount}</strong> / 10
               </p>
             </div>
           </div>
@@ -138,7 +139,7 @@ export default function WorshipManagementPage() {
             <div className="w-48 h-2 bg-muted rounded-full overflow-hidden">
               <div 
                 className={`h-full transition-all duration-500 ${isMinRequirementMet ? 'bg-emerald-500' : 'bg-amber-500'}`}
-                style={{ width: `${Math.min((worshipVideos.length / 8) * 100, 100)}%` }}
+                style={{ width: `${Math.min((featuredCount / 10) * 100, 100)}%` }}
               />
             </div>
           </div>
@@ -149,7 +150,7 @@ export default function WorshipManagementPage() {
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input 
-          placeholder="Search by title or artist..." 
+          placeholder="Search by title..." 
           value={search} 
           onChange={(e) => setSearch(e.target.value)} 
           className="pl-9"
@@ -174,22 +175,20 @@ export default function WorshipManagementPage() {
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
-              <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/70 rounded text-[10px] text-white font-mono">
-                {video.duration}
-              </div>
-              <div className="absolute top-2 left-2 flex flex-wrap gap-1 max-w-[80%]">
-                {(video.categories || []).map(cat => (
-                  <Badge key={cat} className="bg-primary/90 hover:bg-primary text-[10px]">
-                    {cat}
-                  </Badge>
-                ))}
-              </div>
             </div>
-            <CardContent className="p-3">
+            <CardContent className="p-3 space-y-3">
               <h3 className="font-semibold text-sm line-clamp-1">{video.title}</h3>
-              <p className="text-xs text-muted-foreground">{video.artist}</p>
+              
+              <Button 
+                variant={video.isFeatured ? "default" : "outline"}
+                className={`w-full text-xs h-8 ${video.isFeatured ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-500' : ''}`}
+                onClick={() => handleToggleFeatured(video)}
+              >
+                <Star className={`w-3 h-3 mr-2 ${video.isFeatured ? 'fill-current' : ''}`} />
+                {video.isFeatured ? 'In Carousel' : 'Add to Carousel'}
+              </Button>
+
               <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
-                <span className="text-[10px] text-muted-foreground uppercase">{video.album}</span>
                 <a href={`https://youtube.com/watch?v=${video.videoId}`} target="_blank" rel="noopener noreferrer">
                   <Youtube className="w-4 h-4 text-red-500 hover:scale-110 transition-transform" />
                 </a>
@@ -226,77 +225,16 @@ export default function WorshipManagementPage() {
               />
               <p className="text-[10px] text-muted-foreground">Supported: youtube.com, youtu.be, embed links</p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Title *</Label>
-                <Input 
-                  id="title" 
-                  value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="artist">Artist *</Label>
-                <Input 
-                  id="artist" 
-                  value={form.artist}
-                  onChange={(e) => setForm({ ...form, artist: e.target.value })}
-                  required
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2 col-span-2">
-                <Label>Categories *</Label>
-                <div className="flex flex-wrap gap-2">
-                  {CATEGORIES.map(c => {
-                    const isSelected = form.categories.includes(c);
-                    return (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => {
-                          setForm(prev => ({
-                            ...prev,
-                            categories: isSelected
-                              ? prev.categories.filter(cat => cat !== c)
-                              : [...prev.categories, c],
-                          }));
-                        }}
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 ${
-                          isSelected
-                            ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                            : 'bg-background text-muted-foreground border-input hover:border-primary/50 hover:text-foreground'
-                        }`}
-                      >
-                        {c}
-                      </button>
-                    );
-                  })}
-                </div>
-                {form.categories.length === 0 && (
-                  <p className="text-[10px] text-destructive">Select at least one category</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="duration">Duration</Label>
-                <Input 
-                  id="duration" 
-                  placeholder="e.g. 4:30"
-                  value={form.duration}
-                  onChange={(e) => setForm({ ...form, duration: e.target.value })}
-                />
-              </div>
-            </div>
             <div className="space-y-2">
-              <Label htmlFor="album">Album/Church</Label>
+              <Label htmlFor="title">Title *</Label>
               <Input 
-                id="album" 
-                value={form.album}
-                onChange={(e) => setForm({ ...form, album: e.target.value })}
+                id="title" 
+                value={form.title}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+                required
               />
             </div>
+
             <DialogFooter className="pt-4">
               <Button type="button" variant="ghost" onClick={() => setDialogOpen(false)}>Cancel</Button>
               <Button type="submit">{editingId ? 'Save Changes' : 'Add Video'}</Button>

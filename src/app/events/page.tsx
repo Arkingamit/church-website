@@ -10,8 +10,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar, Clock, MapPin, Users, ArrowRight, Images, ChevronLeft } from 'lucide-react';
 import { EventPhotoModal, EventRSVPModal, categoryColors, formatTime, getAvailabilityStatus } from '@/components/ui/events-section';
 
+import { useAuth } from '@/lib/auth-context';
+
 export default function EventsPage() {
-  const { events, eventRegistrations, currentUser } = useAdminData();
+  const { events, eventRegistrations, currentUser, getVisibleEvents } = useAdminData();
+  const { getSessionMember, getEffectiveGroups } = useAuth();
   const [albumEvent, setAlbumEvent] = useState<Event | null>(null);
   const [rsvpEvent, setRsvpEvent] = useState<Event | null>(null);
 
@@ -28,15 +31,29 @@ export default function EventsPage() {
     return events.filter(e => uniqueIds.includes(e.id));
   }, [events, eventRegistrations, currentUser]);
 
+  const visibleEvents = useMemo(() => {
+    const sessionMember = getSessionMember();
+    if (!sessionMember) {
+      // If not logged in, only see "all" campus / "all" groups events (or maybe guest-allowed)
+      // We'll treat guest as having 'global' campus and no special groups
+      return getVisibleEvents('global', []);
+    }
+    const effectiveGroups = getEffectiveGroups(sessionMember);
+    const isAdminOrLeader = sessionMember.role === 'admin' || sessionMember.role === 'super_admin' || sessionMember.role === 'campus_leader';
+    const userGroups = isAdminOrLeader ? ['all'] : Array.from(new Set([...effectiveGroups, 'all']));
+    
+    return getVisibleEvents(sessionMember.campusId || 'all', userGroups);
+  }, [getSessionMember, getEffectiveGroups, getVisibleEvents]);
+
   const upcomingEvents = useMemo(() => {
-    return events.filter(e => new Date(e.date) >= today)
+    return visibleEvents.filter(e => new Date(e.date) >= today)
                  .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [events]);
+  }, [visibleEvents]);
 
   const pastEvents = useMemo(() => {
-    return events.filter(e => new Date(e.date) < today)
+    return visibleEvents.filter(e => new Date(e.date) < today)
                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [events]);
+  }, [visibleEvents]);
 
   const renderEventGrid = (eventList: Event[]) => {
     if (eventList.length === 0) {
