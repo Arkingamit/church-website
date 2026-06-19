@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAdminData } from "@/lib/admin-data-context";
+import { GoldRule } from "@/components/ui/gold-rule";
 
 
 const categoryColors: Record<string, string> = {
@@ -100,9 +101,10 @@ export default function MusicPage() {
     <section className="py-16 bg-background">
       <div className="container mx-auto px-4 space-y-8">
         {/* Header Section */}
-        <div className="text-center space-y-4">
-          <h2 className="text-4xl font-bold text-gray-900">Music Library</h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+        <div className="text-center space-y-4 flex flex-col items-center">
+          <h2 className="text-4xl font-bold">Music Library</h2>
+          <GoldRule />
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Discover our complete collection of worship music, hymns, and
             spiritual songs. Find the perfect melody to lift your spirit and
             connect with God.
@@ -110,9 +112,9 @@ export default function MusicPage() {
         </div>
 
         {/* Search and Filter Section */}
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-6 rounded-lg shadow-sm border">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between glass-card p-6">
+          <div className="relative flex-1 max-w-md w-full">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               type="text"
               placeholder="Search songs, artists, or albums..."

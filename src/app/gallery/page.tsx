@@ -145,7 +145,7 @@ export default function GalleryPage() {
   }, [filteredAlbums]);
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-transparent">
       {/* Navigation Header */}
       <div 
         className={`sticky top-0 z-50 glass-header border-b border-primary/10 transition-all duration-300 ease-in-out ${

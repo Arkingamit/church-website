@@ -20,7 +20,7 @@ export default function ProfilePage() {
 
   if (!session || !member) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-screen bg-transparent flex items-center justify-center p-4">
         <Card className="max-w-md w-full border-border/50 shadow-elevated">
           <CardContent className="p-8 text-center space-y-4">
             <Shield className="w-12 h-12 text-muted-foreground mx-auto" />
@@ -41,7 +41,7 @@ export default function ProfilePage() {
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(member.qrCode)}&bgcolor=0a0a0a&color=ffffff`;
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-transparent flex items-center justify-center p-4">
       {/* Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/3 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />

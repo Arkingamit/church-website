@@ -3,6 +3,7 @@
 import React from "react";
 import { usePathname } from "next/navigation";
 import { Navigation } from "@/components/ui/navigation";
+import { MobileBottomNav } from "@/components/ui/mobile-bottom-nav";
 import { Footer } from "@/components/ui/footer";
 
 export function PublicLayoutWrapper({ children }: { children: React.ReactNode }) {
@@ -18,8 +19,9 @@ export function PublicLayoutWrapper({ children }: { children: React.ReactNode })
   return (
     <div className="flex min-h-screen flex-col">
       <Navigation />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 pb-16 md:pb-0">{children}</main>
       <Footer />
+      <MobileBottomNav />
     </div>
   );
 }

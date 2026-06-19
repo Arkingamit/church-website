@@ -77,7 +77,7 @@ function RevealSection({
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-background selection:bg-primary/10">
+    <div className="min-h-screen bg-transparent selection:bg-primary/10">
 
       {/* Hero — parallax background blobs */}
       <ParallaxSection speed={0.15}>
@@ -103,8 +103,8 @@ export default function HomePage() {
         </RevealSection>
       </ParallaxSection>
 
-      {/* Announcements — reveal from left */}
-      <RevealSection direction="left" delay={50}>
+      {/* Announcements — reveal from bottom */}
+      <RevealSection delay={50}>
         <AnnouncementsSection />
       </RevealSection>
 
@@ -115,8 +115,8 @@ export default function HomePage() {
         </RevealSection>
       </ParallaxSection>
 
-      {/* Events — reveal from right */}
-      <RevealSection direction="right" delay={50}>
+      {/* Events — reveal from bottom */}
+      <RevealSection delay={50}>
         <EventsSection />
       </RevealSection>
 

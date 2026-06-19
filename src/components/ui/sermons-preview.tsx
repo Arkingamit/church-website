@@ -22,7 +22,7 @@ export function SermonsPreview() {
   if (sermons.length === 0) return null;
 
   return (
-    <section className="py-20 relative">
+    <section className="py-20 relative bg-background z-10">
       <div className="container mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-14">

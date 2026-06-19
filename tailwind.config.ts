@@ -20,8 +20,8 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				'heading': ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-				'body': ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+				'heading': ['var(--font-heading)', 'serif'],
+				'body': ['var(--font-body)', 'sans-serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
@@ -80,13 +80,16 @@ export default {
 				}
 			},
 			boxShadow: {
-				'elegant': 'var(--shadow-elegant)',
+				'elegant': 'var(--shadow-elevated)',
 				'glow': 'var(--shadow-glow)',
+				'soft': 'var(--shadow-soft)',
 			},
 			borderRadius: {
-				lg: 'var(--radius)',
-				md: 'calc(var(--radius) - 2px)',
-				sm: 'calc(var(--radius) - 4px)'
+				xl: '1.5rem',
+				lg: '1rem',
+				md: '0.75rem',
+				DEFAULT: '0.5rem',
+				sm: '0.25rem',
 			},
 			keyframes: {
 				'accordion-down': {

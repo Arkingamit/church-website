@@ -158,7 +158,7 @@ export default function EventsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pt-24 pb-12">
+    <div className="min-h-screen bg-transparent pt-24 pb-12">
       <main className="flex-1">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto space-y-8">

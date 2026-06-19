@@ -103,42 +103,45 @@ export const HeroSection = () => {
       <div className="container mx-auto px-6 relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Hero Content */}
-          <div className="space-y-8">
-            <div className="space-y-6 animate-slide-up">
-              <h1 className="text-6xl lg:text-7xl font-bold leading-tight">
-                Welcome to{' '}
-                <span className="gradient-text animate-gradient-shift">
-                  Grace Community
-                </span>
+          <div className="space-y-8 lg:space-y-12">
+            
+            {/* White Card Container */}
+            <div className="bg-white/80 dark:bg-card/80 backdrop-blur-md rounded-[2.5rem] p-8 sm:p-12 shadow-xl border border-white/20 animate-slide-up flex flex-col items-center text-center space-y-8">
+              
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.15] font-heading text-primary">
+                Welcome to <br className="block" />
+                Grace Community
               </h1>
-              <p className="text-xl lg:text-2xl text-muted-foreground leading-relaxed max-w-2xl">
+              
+              <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed max-w-2xl">
                 A place where faith grows, hearts connect, and lives are transformed. 
                 Join our vibrant community in worship, fellowship, and service.
               </p>
-            </div>
 
-            <div className="flex flex-col sm:flex-row gap-6 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-              <Button variant="gradient" size="xl" className="hover-lift shadow-2xl">
-                Join Us Sunday
-              </Button>
-              <Button variant="glass" size="xl" className="hover-lift">
-                Watch Live
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 w-full sm:w-auto pt-2">
+                <Button variant="gradient" size="xl" className="hover-lift shadow-xl w-full sm:w-auto rounded-2xl text-lg font-semibold py-7">
+                  Join Us Sunday
+                </Button>
+                <Button variant="ghost" size="xl" className="hover-lift w-full sm:w-auto text-primary font-bold text-lg py-7">
+                  Watch Live
+                </Button>
+              </div>
+
             </div>
 
             {/* Quick Stats */}
-            <div className="grid grid-cols-3 gap-8 pt-12 animate-slide-up" style={{ animationDelay: '0.4s' }}>
+            <div className="grid grid-cols-3 gap-2 sm:gap-8 pt-4 animate-slide-up" style={{ animationDelay: '0.4s' }}>
               <div className="text-center group">
-                <div className="text-4xl lg:text-5xl font-bold gradient-text group-hover:scale-110 transition-transform duration-300">2,500+</div>
-                <div className="text-sm font-semibold text-muted-foreground mt-2">Members</div>
+                <div className="text-4xl lg:text-5xl font-bold text-primary group-hover:scale-110 transition-transform duration-300">2,500</div>
+                <div className="text-xs sm:text-sm font-semibold text-muted-foreground mt-2">Members</div>
               </div>
               <div className="text-center group">
-                <div className="text-4xl lg:text-5xl font-bold gradient-text group-hover:scale-110 transition-transform duration-300">25+</div>
-                <div className="text-sm font-semibold text-muted-foreground mt-2">Small Groups</div>
+                <div className="text-4xl lg:text-5xl font-bold text-primary group-hover:scale-110 transition-transform duration-300">25+</div>
+                <div className="text-xs sm:text-sm font-semibold text-muted-foreground mt-2">Small Groups</div>
               </div>
               <div className="text-center group">
-                <div className="text-4xl lg:text-5xl font-bold gradient-text group-hover:scale-110 transition-transform duration-300">15</div>
-                <div className="text-sm font-semibold text-muted-foreground mt-2">Years Serving</div>
+                <div className="text-4xl lg:text-5xl font-bold text-primary group-hover:scale-110 transition-transform duration-300">15</div>
+                <div className="text-xs sm:text-sm font-semibold text-muted-foreground mt-2">Years Serving</div>
               </div>
             </div>
           </div>
