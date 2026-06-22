@@ -96,7 +96,7 @@ export const VideoCarousel: React.FC<VideoCarouselProps> = ({ className }) => {
 
   return (
     <>
-      <section className={`py-24 bg-gradient-to-br from-background via-background/95 to-primary/5 ${className}`}>
+      <section className={`py-12 sm:py-24 bg-gradient-to-br from-background via-background/95 to-primary/5 ${className}`}>
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-primary-glow to-accent bg-clip-text text-transparent mb-6">

@@ -121,7 +121,7 @@ export const HeroSection = () => {
   }, [flipCardConfig.isActive, flipItems.length]);
 
   return (
-    <section className="relative py-32 overflow-hidden">
+    <section className="relative py-20 sm:py-32 overflow-hidden">
       {/* Advanced Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-prayer/5" />
       <div className="absolute inset-0" style={{ backgroundImage: 'var(--gradient-mesh)' }} />

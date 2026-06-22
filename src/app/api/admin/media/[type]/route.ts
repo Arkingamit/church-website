@@ -3,6 +3,8 @@ import { requireAdmin } from '@/lib/api-auth';
 import connectToDatabase from '@/lib/db';
 import { Sermon, SermonSeries, WorshipVideo, GalleryAlbum, LiveStream } from '@/models/Media';
 
+export const dynamic = 'force-dynamic';
+
 const models: any = {
   sermons: Sermon,
   'sermon-series': SermonSeries,

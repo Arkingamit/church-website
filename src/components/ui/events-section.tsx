@@ -94,7 +94,7 @@ export function EventPhotoModal({ event, onClose }: { event: Event; onClose: () 
               <p className="text-sm text-muted-foreground">No photos could be loaded from this album.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {photos.map((photo) => (
                 <div
                   key={photo.id}
@@ -217,9 +217,9 @@ export function EventRSVPModal({ event, onClose }: { event: Event; onClose: () =
           <DialogTitle>RSVP: {event.title}</DialogTitle>
         </DialogHeader>
         <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4 bg-muted/30 p-3 rounded-lg">
-          <div className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5"/> {new Date(event.date).toLocaleDateString()}</div>
-          <div className="flex items-center gap-1"><Clock className="w-3.5 h-3.5"/> {event.time}</div>
-          <div className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5"/> {event.location}</div>
+          <div className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {new Date(event.date).toLocaleDateString()}</div>
+          <div className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {event.time}</div>
+          <div className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {event.location}</div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6 py-2">
@@ -247,9 +247,9 @@ export function EventRSVPModal({ event, onClose }: { event: Event; onClose: () =
                   <Label className="text-sm font-medium">
                     {field.label} <span className="text-destructive">*</span>
                   </Label>
-                  
+
                   {field.type === 'text' && (
-                    <Input 
+                    <Input
                       required
                       value={(responses[field.id] as string) || ''}
                       onChange={e => { setResponses(prev => ({ ...prev, [field.id]: e.target.value })); setErrorMsg(''); }}
@@ -258,7 +258,7 @@ export function EventRSVPModal({ event, onClose }: { event: Event; onClose: () =
                   )}
 
                   {field.type === 'textarea' && (
-                    <Textarea 
+                    <Textarea
                       required
                       value={(responses[field.id] as string) || ''}
                       onChange={e => { setResponses(prev => ({ ...prev, [field.id]: e.target.value })); setErrorMsg(''); }}
@@ -268,7 +268,7 @@ export function EventRSVPModal({ event, onClose }: { event: Event; onClose: () =
                   )}
 
                   {field.type === 'date' && (
-                    <Input 
+                    <Input
                       type="date"
                       required
                       value={(responses[field.id] as string) || ''}
@@ -277,7 +277,7 @@ export function EventRSVPModal({ event, onClose }: { event: Event; onClose: () =
                   )}
 
                   {field.type === 'select' && (
-                    <Select 
+                    <Select
                       required
                       value={(responses[field.id] as string) || ''}
                       onValueChange={v => { setResponses(prev => ({ ...prev, [field.id]: v })); setErrorMsg(''); }}
@@ -292,7 +292,7 @@ export function EventRSVPModal({ event, onClose }: { event: Event; onClose: () =
                   )}
 
                   {field.type === 'radio' && (
-                    <RadioGroup 
+                    <RadioGroup
                       required
                       value={(responses[field.id] as string) || ''}
                       onValueChange={v => { setResponses(prev => ({ ...prev, [field.id]: v })); setErrorMsg(''); }}
@@ -313,8 +313,8 @@ export function EventRSVPModal({ event, onClose }: { event: Event; onClose: () =
                         const isChecked = ((responses[field.id] as string[]) || []).includes(opt.label);
                         return (
                           <div key={opt.id} className="flex items-center space-x-2">
-                            <Checkbox 
-                              id={`${field.id}-${opt.id}`} 
+                            <Checkbox
+                              id={`${field.id}-${opt.id}`}
                               checked={isChecked}
                               onCheckedChange={(c) => handleCheckboxChange(field.id, opt.label, !!c)}
                             />
@@ -392,12 +392,12 @@ export const EventsSection = () => {
   const effectiveGroups = sessionMember ? getEffectiveGroups(sessionMember) : [];
 
   const isAdminOrLeader = sessionMember?.role === 'admin' || sessionMember?.role === 'super_admin' || sessionMember?.role === 'campus_leader';
-  const allowedGroups = isAdminOrLeader 
-    ? groups 
+  const allowedGroups = isAdminOrLeader
+    ? groups
     : Array.from(new Set([...effectiveGroups, 'all']));
 
-  const userGroups = selectedGroup === 'all' 
-    ? allowedGroups 
+  const userGroups = selectedGroup === 'all'
+    ? allowedGroups
     : (allowedGroups.includes(selectedGroup) || isAdminOrLeader ? [selectedGroup] : []);
 
   const visibleEvents = getVisibleEvents(
@@ -406,7 +406,7 @@ export const EventsSection = () => {
   );
 
   return (
-    <section id="events" className="py-16 bg-muted/30">
+    <section id="events" className="py-10 sm:py-16 bg-muted/30">
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
@@ -419,10 +419,10 @@ export const EventsSection = () => {
 
           {/* Campus & Group Selector */}
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-8">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-start">
               <Building2 className="w-4 h-4 text-primary shrink-0" />
               <Select value={selectedCampus} onValueChange={setSelectedCampus}>
-                <SelectTrigger className="w-[180px] h-9 text-sm">
+                <SelectTrigger className="w-full sm:w-[180px] h-9 text-sm">
                   <SelectValue placeholder="Select Campus" />
                 </SelectTrigger>
                 <SelectContent>
@@ -433,10 +433,10 @@ export const EventsSection = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-center sm:justify-start">
               <Users className="w-4 h-4 text-primary shrink-0" />
               <Select value={selectedGroup} onValueChange={setSelectedGroup}>
-                <SelectTrigger className="w-[180px] h-9 text-sm">
+                <SelectTrigger className="w-full sm:w-[180px] h-9 text-sm">
                   <SelectValue placeholder="Select Group" />
                 </SelectTrigger>
                 <SelectContent>
@@ -453,78 +453,83 @@ export const EventsSection = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {visibleEvents.map((event) => {
               return (
-                <div key={event.id} className="relative flex bg-card shadow-lg rounded-2xl overflow-hidden hover:shadow-elevated transition-all duration-300 group border border-border/50">
-                  
-                  {/* Left side: Date Block (Solid Color) */}
-                  <div className={`w-24 sm:w-28 shrink-0 flex flex-col items-center justify-center p-3 text-center relative ${ticketColors[event.category] || 'bg-primary text-primary-foreground'}`}>
-                    <span className="text-sm font-bold uppercase tracking-wider opacity-90">
-                      {new Date(event.date).toLocaleDateString('en-US', { month: 'short' })}
-                    </span>
-                    <span className="text-3xl sm:text-4xl font-black leading-none my-1">
-                      {new Date(event.date).toLocaleDateString('en-US', { day: '2-digit' })}
-                    </span>
-                    <span className="text-[10px] sm:text-xs font-medium opacity-90">
-                      {formatTime(event.time)}
-                    </span>
-                    
-                    {/* Right border dashed effect to simulate ticket stub */}
-                    <div className="absolute right-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-white/30 to-transparent border-r-2 border-dashed border-white/20"></div>
-                  </div>
+                <div key={event.id} className="relative bg-card shadow-lg rounded-2xl overflow-hidden hover:shadow-elevated transition-all duration-300 group border border-border/50">
+                  <div className="flex flex-col sm:flex-row">
+                    {/* Left side: Date Block (Solid Color) */}
+                    <div className={`w-full sm:w-24 sm:h-auto shrink-0 flex sm:flex-col flex-row sm:flex-none items-center justify-between sm:justify-center p-3 sm:p-3 text-center relative ${ticketColors[event.category] || 'bg-primary text-primary-foreground'}`}>
+                      <div className="flex flex-col items-start sm:items-center">
+                        <span className="text-sm font-bold uppercase tracking-wider opacity-90">
+                          {new Date(event.date).toLocaleDateString('en-US', { month: 'short' })}
+                        </span>
+                        <span className="text-3xl sm:text-4xl font-black leading-none my-1 sm:my-1">
+                          {new Date(event.date).toLocaleDateString('en-US', { day: '2-digit' })}
+                        </span>
+                      </div>
+                      <span className="text-[10px] sm:text-xs font-medium opacity-90 sm:opacity-90 sm:text-center px-2 sm:px-0">
+                        {formatTime(event.time)}
+                      </span>
 
-                  {/* Right side: Event Details */}
-                  <div className="flex-1 p-4 sm:p-5 flex flex-col justify-between relative bg-card">
-                    {/* Ticket Cutouts */}
-                    <div className="absolute top-0 bottom-0 left-0 w-4 flex flex-col justify-between -translate-x-1/2 pointer-events-none z-10">
-                      <div className="w-4 h-2 bg-muted/30 rounded-b-full border-b border-border/50"></div>
-                      <div className="w-4 h-2 bg-muted/30 rounded-t-full border-t border-border/50"></div>
+                      {/* Right border dashed effect to simulate ticket stub (desktop only) */}
+                      <div className="hidden sm:block absolute right-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-white/30 to-transparent border-r-2 border-dashed border-white/20"></div>
                     </div>
 
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="outline" className={`${categoryColors[event.category]} border-current opacity-90 text-[10px] px-2 py-0.5`}>
-                          {event.category}
-                        </Badge>
-                        {event.recurring && (
-                          <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-border">Recurring</Badge>
+                    {/* Event Details */}
+                    <div className="flex-1 p-4 sm:p-5 flex flex-col justify-between relative bg-card">
+                      {/* Ticket Cutouts (desktop only) */}
+                      <div className="hidden sm:block absolute top-0 bottom-0 left-0 w-4 flex flex-col justify-between -translate-x-1/2 pointer-events-none z-10">
+                        <div className="w-4 h-2 bg-muted/30 rounded-b-full border-b border-border/50"></div>
+                        <div className="w-4 h-2 bg-muted/30 rounded-t-full border-t border-border/50"></div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="outline" className={`${categoryColors[event.category]} border-current opacity-90 text-[10px] px-2 py-0.5`}>
+                            {event.category}
+                          </Badge>
+                          {event.recurring && (
+                            <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-border">Recurring</Badge>
+                          )}
+                        </div>
+                        <h3 className="text-lg font-bold leading-tight group-hover:text-primary transition-colors line-clamp-2">
+                          {event.title}
+                        </h3>
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {event.description}
+                        </p>
+                      </div>
+
+                      <div className="space-y-1.5 mt-4 mb-4">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <MapPin className="w-3.5 h-3.5 shrink-0 text-primary/70" />
+                          <span className="truncate">{event.location}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Users className="w-3.5 h-3.5 shrink-0 text-primary/70" />
+                          <span>{event.registered} registered</span>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mt-auto">
+                        <Button
+                          onClick={() => setRsvpEvent(event)}
+                          className="w-full sm:flex-1 h-9 text-xs group-hover:bg-primary group-hover:text-primary-foreground transition-all"
+                        >
+                          RSVP <ArrowRight className="w-3.5 h-3.5 ml-1.5 group-hover:translate-x-1 transition-transform" />
+                        </Button>
+                        {event.googlePhotosUrl && (
+                          <Button
+                            variant="outline"
+                            size="lg"
+                            className="w-full sm:w-9 h-9 sm:flex-none text-primary hover:bg-primary/10"
+                            onClick={() => setAlbumEvent(event)}
+                            title="View Event Photos"
+                          >
+                            <Images className="w-4 h-4" />
+                            <span className="hidden sm:inline ml-2">Photos</span>
+                          </Button>
                         )}
                       </div>
-                      <h3 className="text-lg font-bold leading-tight group-hover:text-primary transition-colors line-clamp-2">
-                        {event.title}
-                      </h3>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {event.description}
-                      </p>
-                    </div>
-
-                    <div className="space-y-1.5 mt-4 mb-4">
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <MapPin className="w-3.5 h-3.5 shrink-0 text-primary/70" />
-                        <span className="truncate">{event.location}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Users className="w-3.5 h-3.5 shrink-0 text-primary/70" />
-                        <span>{event.registered} registered</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 mt-auto">
-                      <Button 
-                        onClick={() => setRsvpEvent(event)}
-                        className="flex-1 h-9 text-xs group-hover:bg-primary group-hover:text-primary-foreground transition-all"
-                      >
-                        RSVP <ArrowRight className="w-3.5 h-3.5 ml-1.5 group-hover:translate-x-1 transition-transform" />
-                      </Button>
-                      {event.googlePhotosUrl && (
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-9 w-9 shrink-0 text-primary hover:bg-primary/10"
-                          onClick={() => setAlbumEvent(event)}
-                          title="View Event Photos"
-                        >
-                          <Images className="w-4 h-4" />
-                        </Button>
-                      )}
                     </div>
                   </div>
                 </div>

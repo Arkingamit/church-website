@@ -8,7 +8,7 @@ import { Heart, MapPin, Phone, Mail, Facebook, Instagram, Youtube, Clock } from 
 export const Footer = () => {
   return (
     <footer className="bg-primary text-primary-foreground">
-      <div className="container mx-auto px-4 py-16">
+      <div className="container mx-auto px-4 py-10 sm:py-16">
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Church Info */}
           <div className="space-y-6">

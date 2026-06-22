@@ -42,7 +42,7 @@ export const AnnouncementsSection = () => {
   const visibleAnnouncements = getVisibleAnnouncements(campusForFilter, userGroups as string[]);
 
   return (
-    <section id="announcements" className="py-16 bg-muted/30">
+    <section id="announcements" className="py-10 sm:py-16 bg-muted/30">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           {/* Section Header */}

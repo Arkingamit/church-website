@@ -138,7 +138,7 @@ export const PrayerWall = () => {
   };
 
   return (
-    <section id="prayers" className="py-16">
+    <section id="prayers" className="py-10 sm:py-16">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           {/* Section Header */}

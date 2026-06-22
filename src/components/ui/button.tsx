@@ -5,29 +5,29 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium ring-offset-background transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 transform-gpu",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-semibold tracking-wide ring-offset-background transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-5 [&_svg]:shrink-0 active:scale-95 shadow-sm hover:-translate-y-0.5",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary-dark hover:scale-105 hover:shadow-lg transition-all duration-300",
+        default: "bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-lg shadow-primary/25",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:scale-105",
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:shadow-lg",
         outline:
-          "border border-border bg-background/50 backdrop-blur-sm hover:bg-accent hover:text-accent-foreground hover:border-accent/50 hover:scale-105",
+          "border-2 border-border bg-background/50 backdrop-blur-sm hover:bg-accent hover:text-accent-foreground hover:border-accent/80 hover:shadow-md",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80 hover:scale-105",
-        ghost: "hover:bg-accent hover:text-accent-foreground hover:scale-105",
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80 hover:shadow-md",
+        ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline hover:text-primary-glow",
-        glass: "glass text-foreground hover:bg-background/20 hover:scale-105",
-        gradient: "bg-gradient-to-r from-primary to-accent text-primary-foreground hover:from-primary-glow hover:to-accent hover:scale-105 shadow-lg hover:shadow-xl",
-        glow: "bg-primary text-primary-foreground hover:bg-primary-glow hover:scale-105 shadow-lg hover:shadow-primary/50 animate-pulse-glow",
+        glass: "glass-panel text-foreground box-border border hover:bg-white/10 hover:shadow-lg",
+        gradient: "bg-gradient-to-r from-primary to-accent text-primary-foreground hover:from-primary/90 hover:to-accent/90 shadow-md hover:shadow-lg",
+        glow: "bg-primary text-primary-foreground hover:bg-primary-glow shadow-[0_0_15px_rgba(129,0,8,0.5)] hover:shadow-[0_0_25px_rgba(129,0,8,0.7)] hover:scale-105",
       },
       size: {
-        default: "h-11 px-6 py-2 rounded-lg",
-        sm: "h-9 rounded px-4 text-sm",
-        lg: "h-13 rounded-lg px-8 text-base font-semibold",
-        xl: "h-16 rounded-xl px-12 text-lg font-semibold",
-        icon: "h-11 w-11 rounded-lg",
+        default: "h-11 px-8 py-2",
+        sm: "h-9 px-5 text-xs",
+        lg: "h-12 px-10 text-base",
+        xl: "h-14 px-12 text-lg",
+        icon: "h-11 w-11",
       },
     },
     defaultVariants: {
@@ -39,7 +39,7 @@ const buttonVariants = cva(
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  VariantProps<typeof buttonVariants> {
   asChild?: boolean
 }
 

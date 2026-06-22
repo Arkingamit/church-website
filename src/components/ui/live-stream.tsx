@@ -20,7 +20,7 @@ export const LiveStreamSection = () => {
   const youtubeEmbedUrl = youtubeVideoId ? `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&mute=0&controls=1&rel=0&modestbranding=1` : '';
 
   return (
-    <section id="live-stream" className="py-16">
+    <section id="live-stream" className="py-10 sm:py-16">
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto">
           {/* Section Header */}
