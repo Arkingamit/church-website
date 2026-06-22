@@ -12,7 +12,15 @@ import { Church, AlertTriangle, ArrowRight } from 'lucide-react';
 export default function CampusRegisterPage() {
   const params = useParams();
   const campusId = params.campusId as string;
-  const { campuses } = useAdminData();
+  const { campuses, isLoading } = useAdminData();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   const campus = campuses.find(c => c.id === campusId);
 
