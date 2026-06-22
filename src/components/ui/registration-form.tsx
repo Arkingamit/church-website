@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth, type ChurchMember } from '@/lib/auth-context';
 import { useAdminData } from '@/lib/admin-data-context';
@@ -26,10 +26,22 @@ interface RegistrationFormProps {
 
 export function RegistrationForm({ lockedCampusId }: RegistrationFormProps) {
   const { register, getApprovedMembers } = useAuth();
-  const { campuses } = useAdminData();
+  const { campuses: adminCampuses } = useAdminData();
+
+  // Also fetch from public API so QR registration works for non-logged-in users
+  const [publicCampuses, setPublicCampuses] = useState<{ _id: string; id?: string; name: string; pastor: string }[]>([]);
+  useEffect(() => {
+    fetch('/api/campuses')
+      .then(res => res.ok ? res.json() : [])
+      .then(data => setPublicCampuses(data.map((c: any) => ({ ...c, id: c._id }))))
+      .catch(() => {});
+  }, []);
+
+  // Merge: prefer admin campuses (they have id mapped), fall back to public
+  const campuses = adminCampuses.length > 0 ? adminCampuses : publicCampuses;
 
   const lockedCampus = lockedCampusId
-    ? campuses.find(c => c.id === lockedCampusId)
+    ? campuses.find(c => c.id === lockedCampusId || (c as any)._id === lockedCampusId)
     : undefined;
 
   const [form, setForm] = useState({
