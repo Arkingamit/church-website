@@ -29,7 +29,7 @@ export async function POST(req: Request) {
 
     const email = payload.email.toLowerCase();
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).sort({ createdAt: 1 });
     
     if (!user) {
       return NextResponse.json({ error: 'No account found with this Google account. Please register first.' }, { status: 404 });

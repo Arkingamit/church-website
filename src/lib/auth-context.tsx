@@ -8,6 +8,7 @@ export type MemberStatus = 'pending' | 'approved' | 'rejected';
 export interface ChurchMember {
   id: string; // Updated to string for MongoDB _id
   _id?: string;
+  name?: string;
   firstName: string;
   middleName?: string;
   lastName: string;
@@ -49,6 +50,8 @@ interface AuthContextType {
   rejectMember: (id: string) => Promise<void>;
   getApprovedMembers: () => ChurchMember[];
   getEffectiveGroups: (member: ChurchMember) => string[];
+  profiles: ChurchMember[];
+  switchProfile: (userId: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -56,6 +59,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [members, setMembers] = useState<ChurchMember[]>([]);
   const [session, setSession] = useState<AuthSession | null>(null);
+  const [profiles, setProfiles] = useState<ChurchMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Use a ref or simple boolean to prevent infinite loops if we decouple admin context later
@@ -63,9 +67,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchSessionAndMembers = async () => {
     try {
-      const [sessionRes, membersRes] = await Promise.all([
+      const [sessionRes, membersRes, profilesRes] = await Promise.all([
         fetch('/api/auth/me').catch(() => null),
-        fetch('/api/admin/users').catch(() => null)
+        fetch('/api/admin/users').catch(() => null),
+        fetch('/api/auth/profiles').catch(() => null)
       ]);
 
       if (sessionRes?.ok) {
@@ -86,6 +91,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const users = await membersRes.json();
         // Map _id to id for backwards compatibility with the UI
         setMembers(users.map((u: any) => ({ ...u, id: u._id })));
+      }
+
+      if (profilesRes?.ok) {
+        const p = await profilesRes.json();
+        setProfiles(p.map((u: any) => ({ ...u, id: u._id })));
       }
     } catch (error) {
       console.error('Failed to fetch auth state', error);
@@ -135,6 +145,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     setSession(null);
+    setProfiles([]);
+  }, []);
+
+  const switchProfile = useCallback(async (userId: string) => {
+    try {
+      const res = await fetch('/api/auth/switch-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      const result = await res.json();
+      if (!res.ok) return { success: false, error: result.error || 'Failed to switch profile' };
+      
+      await fetchSessionAndMembers();
+      // Force reload to refresh global app state
+      window.location.reload();
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: 'Network error switching profile' };
+    }
   }, []);
 
   const getMember = useCallback((id: string) => members.find(m => m.id === id || m._id === id), [members]);
@@ -207,8 +237,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      session, members, isLoading,
-      register, login, logout,
+      session, members, isLoading, profiles,
+      register, login, logout, switchProfile,
       getMember, getSessionMember,
       getPendingRequests, approveMember, rejectMember,
       getApprovedMembers, getEffectiveGroups,

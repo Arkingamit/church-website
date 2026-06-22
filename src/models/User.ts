@@ -35,7 +35,7 @@ const UserSchema = new Schema<IUser>(
     maritalStatus: { type: String, enum: ['single', 'married'] },
     marriageDate: { type: String },
     campusId: { type: String, required: true },
-    email: { type: String, required: true, unique: true, lowercase: true },
+    email: { type: String, required: true, lowercase: true },
     phone: { type: String },
     whatsapp: { type: String },
     password: { type: String }, // Optional for dummy users initially created by admin

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import connectToDatabase from '@/lib/db';
 import User from '@/models/User';
 import { OAuth2Client } from 'google-auth-library';
@@ -29,10 +30,17 @@ export async function POST(req: Request) {
 
     await connectToDatabase();
     
-    // Check if user exists
-    const existingUser = await User.findOne({ email });
+    // Drop the unique email index if it exists (one-time operation to migrate DB)
+    try {
+      await mongoose.connection.db?.collection('users').dropIndex('email_1');
+    } catch (err: any) {
+      // Ignore errors if index doesn't exist
+    }
+
+    // Check if user exists with SAME email AND SAME name to prevent double-clicks
+    const existingUser = await User.findOne({ email, firstName, lastName });
     if (existingUser) {
-      return NextResponse.json({ error: 'This Google account is already registered' }, { status: 400 });
+      return NextResponse.json({ error: 'This person is already registered under this Google account' }, { status: 400 });
     }
 
     const newUser = await User.create({
