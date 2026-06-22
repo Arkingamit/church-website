@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar, Clock, MapPin, Users, ArrowRight, Images, ChevronLeft } from 'lucide-react';
-import { EventPhotoModal, EventRSVPModal, categoryColors, formatTime, getAvailabilityStatus } from '@/components/ui/events-section';
+import { EventPhotoModal, EventRSVPModal, categoryColors, ticketColors, formatTime, getAvailabilityStatus } from '@/components/ui/events-section';
 
 import { useAuth } from '@/lib/auth-context';
 
@@ -73,54 +73,59 @@ export default function EventsPage() {
           const isPast = new Date(event.date) < today;
 
           return (
-            <Card key={event.id} className="overflow-hidden hover:shadow-elevated transition-all duration-300 group">
-              <CardHeader className="pb-4">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Badge className={`${categoryColors[event.category] || 'bg-muted text-muted-foreground'} text-xs`}>
-                      {event.category}
-                    </Badge>
-                    <div className="flex items-center gap-2">
-                      {event.recurring && (
-                        <Badge variant="outline" className="text-xs">Recurring</Badge>
-                      )}
-                      {event.googlePhotosUrl && (
-                        <button
-                          onClick={() => setAlbumEvent(event)}
-                          className="flex items-center gap-1 text-[10px] text-primary font-semibold bg-primary/10 hover:bg-primary/20 rounded-full px-2 py-0.5 transition-colors"
-                        >
-                          <Images className="w-3 h-3" />
-                          Photos
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <h3 className="text-lg font-semibold leading-tight group-hover:text-primary transition-colors">
-                    {event.title}
-                  </h3>
-                </div>
-              </CardHeader>
+            <div key={event.id} className="relative flex bg-card shadow-lg rounded-2xl overflow-hidden hover:shadow-elevated transition-all duration-300 group border border-border/50">
+              
+              {/* Left side: Date Block (Solid Color) */}
+              <div className={`w-24 sm:w-28 shrink-0 flex flex-col items-center justify-center p-3 text-center relative ${ticketColors[event.category] || 'bg-primary text-primary-foreground'} ${isPast ? 'opacity-50 grayscale' : ''}`}>
+                <span className="text-sm font-bold uppercase tracking-wider opacity-90">
+                  {new Date(event.date).toLocaleDateString('en-US', { month: 'short' })}
+                </span>
+                <span className="text-3xl sm:text-4xl font-black leading-none my-1">
+                  {new Date(event.date).toLocaleDateString('en-US', { day: '2-digit' })}
+                </span>
+                <span className="text-[10px] sm:text-xs font-medium opacity-90">
+                  {formatTime(event.time)}
+                </span>
+                
+                {/* Right border dashed effect to simulate ticket stub */}
+                <div className="absolute right-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-white/30 to-transparent border-r-2 border-dashed border-white/20"></div>
+              </div>
 
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
-                  {event.description}
-                </p>
+              {/* Right side: Event Details */}
+              <div className="flex-1 p-4 sm:p-5 flex flex-col justify-between relative bg-card">
+                {/* Ticket Cutouts */}
+                <div className="absolute top-0 bottom-0 left-0 w-4 flex flex-col justify-between -translate-x-1/2 pointer-events-none z-10">
+                  <div className="w-4 h-2 bg-muted/30 rounded-b-full border-b border-border/50"></div>
+                  <div className="w-4 h-2 bg-muted/30 rounded-t-full border-t border-border/50"></div>
+                </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Calendar className="w-4 h-4 text-primary" />
-                    <span>{new Date(event.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="outline" className={`${categoryColors[event.category]} border-current opacity-90 text-[10px] px-2 py-0.5`}>
+                      {event.category}
+                    </Badge>
+                    {event.recurring && (
+                      <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-border">Recurring</Badge>
+                    )}
+                    {isPast && (
+                      <Badge variant="secondary" className="text-[10px] px-2 py-0.5">Ended</Badge>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Clock className="w-4 h-4 text-primary" />
-                    <span>{formatTime(event.time)} - {formatTime(event.endTime)}</span>
+                  <h3 className={`text-lg font-bold leading-tight transition-colors line-clamp-2 ${isPast ? 'text-muted-foreground' : 'group-hover:text-primary'}`}>
+                    {event.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground line-clamp-2">
+                    {event.description}
+                  </p>
+                </div>
+
+                <div className="space-y-1.5 mt-4 mb-2">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <MapPin className={`w-3.5 h-3.5 shrink-0 ${isPast ? '' : 'text-primary/70'}`} />
+                    <span className="truncate">{event.location}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <MapPin className="w-4 h-4 text-primary" />
-                    <span>{event.location}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Users className="w-4 h-4 text-primary" />
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Users className={`w-3.5 h-3.5 shrink-0 ${isPast ? '' : 'text-primary/70'}`} />
                     <span>
                       {event.registered > 0
                         ? `${event.registered}/${event.capacity} registered`
@@ -130,7 +135,7 @@ export default function EventsPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-2">
+                <div className="flex items-center justify-between py-2 border-t border-border/40 mt-2 mb-2">
                   <span className={`text-xs font-medium ${isPast ? 'text-muted-foreground' : availability.color}`}>
                     {isPast ? 'Event Ended' : availability.text}
                   </span>
@@ -139,18 +144,29 @@ export default function EventsPage() {
                   </span>
                 </div>
 
-                <div className="flex gap-2 pt-2">
+                <div className="flex items-center gap-2 mt-auto">
                   <Button 
                     disabled={isPast || event.registered >= event.capacity}
                     onClick={() => setRsvpEvent(event)}
-                    className="flex-1 group-hover:bg-primary group-hover:text-primary-foreground transition-all"
+                    className="flex-1 h-9 text-xs group-hover:bg-primary group-hover:text-primary-foreground transition-all"
                   >
                     {isPast ? 'Ended' : event.registered >= event.capacity ? 'Full' : 'RSVP'}
-                    {!isPast && event.registered < event.capacity && <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />}
+                    {!isPast && event.registered < event.capacity && <ArrowRight className="w-3.5 h-3.5 ml-1.5 group-hover:translate-x-1 transition-transform" />}
                   </Button>
+                  {event.googlePhotosUrl && (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-9 shrink-0 text-primary hover:bg-primary/10"
+                      onClick={() => setAlbumEvent(event)}
+                      title="View Event Photos"
+                    >
+                      <Images className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           );
         })}
       </div>

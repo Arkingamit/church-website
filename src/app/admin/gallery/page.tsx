@@ -41,6 +41,7 @@ export default function GalleryManagementPage() {
     title: '',
     description: '',
     url: '',
+    coverImage: '',
     category: 'Worship',
     targetCampuses: ['all'],
     targetGroups: ['all'],
@@ -138,7 +139,7 @@ export default function GalleryManagementPage() {
       addGalleryAlbum(form);
       setIsAdding(false);
     }
-    setForm({ title: '', description: '', url: '', category: 'Worship', targetCampuses: ['all'], targetGroups: ['all'], excludeCampuses: [], excludeGroups: [] });
+    setForm({ title: '', description: '', url: '', coverImage: '', category: 'Worship', targetCampuses: ['all'], targetGroups: ['all'], excludeCampuses: [], excludeGroups: [] });
   };
 
   const handleEdit = (album: GalleryAlbum) => {
@@ -146,6 +147,7 @@ export default function GalleryManagementPage() {
       title: album.title,
       description: album.description,
       url: album.url,
+      coverImage: album.coverImage || '',
       category: album.category,
       targetCampuses: album.targetCampuses || ['all'],
       targetGroups: album.targetGroups || ['all'],
@@ -194,7 +196,7 @@ export default function GalleryManagementPage() {
         {!isAdding && (
           <Button onClick={() => {
             setForm({
-              title: '', description: '', url: '', category: 'Worship',
+              title: '', description: '', url: '', coverImage: '', category: 'Worship',
               targetCampuses: (isCampusLeader || isGroupLeader) ? [currentUser.campusId] : ['all'],
               targetGroups: isGroupLeader ? currentUser.groups : ['all'],
               excludeCampuses: [],
@@ -268,6 +270,20 @@ export default function GalleryManagementPage() {
                 <p className="text-xs text-muted-foreground italic flex items-center gap-1.5 mt-1">
                   <AlertCircle className="w-3 h-3" /> Make sure the album is shared and anyone with the link can view it.
                 </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="coverImage" className="text-sm font-bold uppercase tracking-wider">Thumbnail Image URL (Optional)</Label>
+                <div className="relative">
+                  <Input
+                    id="coverImage"
+                    value={form.coverImage || ''}
+                    onChange={e => setForm({ ...form, coverImage: e.target.value })}
+                    placeholder="https://... (Leave blank to use first photo)"
+                    className="bg-background/50 border-border/50 focus:ring-primary/20 pl-10"
+                  />
+                  <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                </div>
               </div>
 
               <div className="space-y-2">

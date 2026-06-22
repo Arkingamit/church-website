@@ -71,8 +71,8 @@ export default function GallerySection() {
             }
             const data = await res.json();
             if (data.photos && data.photos.length > 0) {
-              const randomPhoto = data.photos[Math.floor(Math.random() * data.photos.length)];
-              newCovers[album.id] = randomPhoto.src;
+              // Prefer admin-specified coverImage, otherwise default to the FIRST photo (static)
+              newCovers[album.id] = album.coverImage || data.photos[0].src;
               changed = true;
             }
           } catch (err) {
@@ -176,70 +176,83 @@ export default function GallerySection() {
 
           {/* Album Rows */}
           <div className="space-y-4 mb-8 min-h-[400px]">
-            {displayRows.map((row, rowIndex) => (
-              <div key={rowIndex} className="flex gap-4 h-72" onMouseLeave={() => setHoveredId(null)}>
-                {row.map(album => {
-                  const isHovered = hoveredId === album.id;
-                  const isRowHovered = row.some(p => p.id === hoveredId);
-                  const shouldCompress = isRowHovered && !isHovered;
+            {displayRows.map((row, rowIndex) => {
+              const isRowHovered = row.some(p => p.id === hoveredId);
 
-                  return (
-                    <div
-                      key={album.id}
-                      className={`relative overflow-hidden rounded-2xl cursor-pointer transition-all duration-500 ease-out glass-card border-0 ${
-                        isHovered ? 'flex-[2.5]' : shouldCompress ? 'flex-[0.6]' : 'flex-1'
-                      }`}
-                      onMouseEnter={() => setHoveredId(album.id)}
-                      onClick={() => fetchAlbumPreview(album)}
-                    >
-                      {/* Album Cover */}
-                      <div className="w-full h-full bg-primary/5 flex items-center justify-center group overflow-hidden">
-                        {albumCovers[album.id] ? (
-                          <img 
-                            src={albumCovers[album.id]} 
-                            alt={album.title}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                          />
-                        ) : (
-                          <ImageIcon className="w-16 h-16 text-primary/10 group-hover:scale-110 transition-transform duration-700" />
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                      </div>
+              return (
+                <div key={rowIndex} className="flex gap-4 h-72" onMouseLeave={() => setHoveredId(null)}>
+                  {row.map(album => {
+                    const isHovered = hoveredId === album.id;
+                    const shouldCompress = isRowHovered && !isHovered;
 
-                      <Badge 
-                        variant="glass"
-                        className={`absolute top-4 left-4 border-0 transition-opacity duration-300 ${
-                          shouldCompress ? 'opacity-0' : 'opacity-100'
+                    return (
+                      <div
+                        key={album.id}
+                        className={`relative overflow-hidden rounded-2xl cursor-pointer transition-all duration-500 ease-out glass-card border-0 ${
+                          isHovered ? 'flex-[2.5]' : shouldCompress ? 'flex-[0.6]' : 'flex-1'
                         }`}
+                        onMouseEnter={() => setHoveredId(album.id)}
+                        onClick={() => fetchAlbumPreview(album)}
                       >
-                        {album.category}
-                      </Badge>
-
-                      <div className={`absolute inset-0 transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
-                        <div className="absolute bottom-0 left-0 right-0 p-8 text-white space-y-1">
-                          <h3 className="text-2xl font-bold italic tracking-tight">{album.title}</h3>
-                          <p className="text-sm text-white/70 line-clamp-2 leading-relaxed">{album.description}</p>
+                        {/* Album Cover */}
+                        <div className="w-full h-full bg-primary/5 flex items-center justify-center group overflow-hidden">
+                          {albumCovers[album.id] ? (
+                            <img 
+                              src={albumCovers[album.id]} 
+                              alt={album.title}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                            />
+                          ) : (
+                            <ImageIcon className="w-16 h-16 text-primary/10 group-hover:scale-110 transition-transform duration-700" />
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                         </div>
+
+                        <Badge 
+                          variant="glass"
+                          className={`absolute top-4 left-4 border-0 transition-opacity duration-300 ${
+                            shouldCompress ? 'opacity-0' : 'opacity-100'
+                          }`}
+                        >
+                          {album.category}
+                        </Badge>
+
+                        <div className={`absolute inset-0 transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+                          <div className="absolute bottom-0 left-0 right-0 p-8 text-white space-y-1">
+                            <h3 className="text-2xl font-bold italic tracking-tight">{album.title}</h3>
+                            <p className="text-sm text-white/70 line-clamp-2 leading-relaxed">{album.description}</p>
+                          </div>
+                        </div>
+
+                        {!isHovered && (
+                          <div className={`absolute bottom-6 left-6 right-6 transition-opacity duration-300 ${shouldCompress ? 'opacity-0' : 'opacity-100'}`}>
+                             <h3 className="text-xl font-bold text-white italic truncate">{album.title}</h3>
+                          </div>
+                        )}
+
+                        {shouldCompress && (
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                            <h3 className="text-white font-bold text-center px-2 transform -rotate-90 whitespace-nowrap italic text-sm opacity-50">
+                              {album.title}
+                            </h3>
+                          </div>
+                        )}
                       </div>
-
-                      {!isHovered && (
-                        <div className={`absolute bottom-6 left-6 right-6 transition-opacity duration-300 ${shouldCompress ? 'opacity-0' : 'opacity-100'}`}>
-                           <h3 className="text-xl font-bold text-white italic truncate">{album.title}</h3>
-                        </div>
-                      )}
-
-                      {shouldCompress && (
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                          <h3 className="text-white font-bold text-center px-2 transform -rotate-90 whitespace-nowrap italic text-sm opacity-50">
-                            {album.title}
-                          </h3>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
+                    );
+                  })}
+                  
+                  {/* Invisible placeholders to maintain 3-column width */}
+                  {Array.from({ length: 3 - row.length }).map((_, i) => (
+                    <div 
+                      key={`empty-${rowIndex}-${i}`} 
+                      className={`transition-all duration-500 ease-out pointer-events-none opacity-0 ${
+                        isRowHovered ? 'flex-[0.6]' : 'flex-1'
+                      }`} 
+                    />
+                  ))}
+                </div>
+              );
+            })}
             
             {galleryAlbums.length === 0 && (
               <div className="text-center py-32 glass-card rounded-3xl border-0">

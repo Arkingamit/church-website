@@ -92,9 +92,11 @@ export default function HomePage() {
       </ParallaxSection>
 
       {/* Music Carousel — reveal from bottom */}
-      <RevealSection>
-        <SongCarousel />
-      </RevealSection>
+      <section className="bg-background relative z-10 border-y border-border/10">
+        <RevealSection>
+          <SongCarousel />
+        </RevealSection>
+      </section>
 
       {/* Gallery — parallax + reveal */}
       <ParallaxSection speed={0.2} className="bg-muted/20">

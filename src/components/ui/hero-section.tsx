@@ -6,10 +6,27 @@ import { Card } from '@/components/ui/card';
 import { BookOpen, Calendar, Clock, Heart, MapPin, Sparkles, Users, ArrowRight, Bell } from 'lucide-react';
 import { useAdminData, type FlipCardItem } from '@/lib/admin-data-context';
 import Link from 'next/link';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { EffectCards, Autoplay } from 'swiper/modules';
-import 'swiper/css';
-import 'swiper/css/effect-cards';
+
+const christianIcons = [
+  // Cross
+  <svg key="cross" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-primary animate-pulse"><path d="M12 3v18M8 8h8" /></svg>,
+  // Dove
+  <svg key="dove" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-primary animate-pulse"><path d="M15 4c-3 0-6 4-6 4S7 7 4 8c0 0 4 2 4 5 0 3-4 6-4 6s6-3 8-3c2 0 6 3 6 3 0-3-2-6-2-6s2-3 2-5c0-2-3-4-3-4z" /></svg>,
+  // Crown
+  <svg key="crown" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-primary animate-pulse"><path d="M2 20h20M4 20l2-10 4 5 2-8 2 8 4-5 2 10" /></svg>,
+  // Open Bible / Book
+  <svg key="bible" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-primary animate-pulse"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" /></svg>,
+  // Fire / Holy Spirit
+  <svg key="fire" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 text-primary animate-pulse"><path d="M12 22c5 0 9-4 9-9 0-4-3-6-5-9-1-1-2-2-4-2s-3 1-4 2c-2 3-5 5-5 9 0 5 4 9 9 9z M12 22v-6" /></svg>
+];
+
+const cardGradients = [
+  "from-primary/15 via-background to-accent/15",
+  "from-prayer/15 via-background to-success/15",
+  "from-accent/15 via-background to-primary/15",
+  "from-success/15 via-background to-prayer/15",
+  "from-destructive/15 via-background to-accent/15",
+];
 
 export const HeroSection = () => {
   const { flipCardConfig, events, announcements, sermons, worshipVideos, prayerRequests } = useAdminData();
@@ -71,6 +88,7 @@ export const HeroSection = () => {
   });
 
   const [isFlipped, setIsFlipped] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(0);
 
   useEffect(() => {
     fetch('/api/verses/today')
@@ -91,6 +109,16 @@ export const HeroSection = () => {
       setIsFlipped(false);
     }
   }, [flipCardConfig.isActive]);
+
+  // Auto-rotate fanned card stack
+  const flipItems = flipCardConfig.items || [];
+  useEffect(() => {
+    if (!flipCardConfig.isActive || flipItems.length <= 1) return;
+    const interval = setInterval(() => {
+      setActiveIdx(prev => (prev + 1) % flipItems.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [flipCardConfig.isActive, flipItems.length]);
 
   return (
     <section className="relative py-32 overflow-hidden">
@@ -194,57 +222,73 @@ export const HeroSection = () => {
                 </div>
               </Card>
 
-              {/* BACK: Admin Custom Flip Content */}
-              {flipCardConfig.isActive && flipCardConfig.items?.length > 0 && (
-                <div className="absolute inset-0 backface-hidden rotate-y-180">
-                  <Swiper
-                    effect={'cards'}
-                    grabCursor={true}
-                    loop={true}
-                    cardsEffect={{
-                      slideShadows: false,
-                    }}
-                    modules={[EffectCards, Autoplay]}
-                    className="w-full h-full"
-                    autoplay={{
-                      delay: 3000,
-                      disableOnInteraction: false,
-                    }}
-                  >
-                    {flipCardConfig.items.map((item, index) => {
-                      const { displayTitle, displayDesc, displayBtn, displayLink } = getDisplayDetails(item);
-                      return (
-                        <SwiperSlide key={item.id || index}>
-                          <Card className="glass-card p-8 w-full h-full shadow-2xl border-0 flex flex-col justify-center items-center text-center bg-gradient-to-br from-primary/10 via-background to-accent/10">
-                            <div className="space-y-6 w-full">
-                              <div className="mx-auto w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4">
-                                <Bell className="w-8 h-8 text-primary animate-pulse" />
-                              </div>
-                              
-                              <h3 className="text-3xl font-bold text-foreground">
-                                {displayTitle}
-                              </h3>
-                              
-                              <p className="text-muted-foreground text-lg px-2 line-clamp-3">
-                                {displayDesc}
-                              </p>
+              {/* BACK: Admin Custom Flip Content — Fanned Stack */}
+              {flipCardConfig.isActive && flipItems.length > 0 && (() => {
+                // Build visible stack (up to 3 cards)
+                const stackRotations = ['rotate-0', '-rotate-6', 'rotate-6'];
+                const stackScales = ['scale-100', 'scale-95', 'scale-90'];
+                const stackTranslateY = ['translate-y-0', 'translate-y-2', 'translate-y-4'];
+                const stackZIndex = ['z-30', 'z-20', 'z-10'];
+                const stackOpacity = ['opacity-100', 'opacity-80', 'opacity-60'];
+                const borderColors = [
+                  'border-primary',
+                  'border-prayer',
+                  'border-accent',
+                  'border-success',
+                  'border-destructive',
+                ];
 
-                              <div className="pt-6">
-                                <Button variant="gradient" size="lg" className="w-full hover-lift shadow-lg group/btn" asChild>
-                                  <Link href={displayLink}>
-                                    {displayBtn} 
-                                    <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
-                                  </Link>
-                                </Button>
+                const stack: { item: FlipCardItem; originalIndex: number; stackPos: number }[] = [];
+                for (let i = 0; i < Math.min(flipItems.length, 3); i++) {
+                  const idx = (activeIdx + i) % flipItems.length;
+                  stack.push({ item: flipItems[idx], originalIndex: idx, stackPos: i });
+                }
+                const orderedStack = stack.reverse();
+
+                return (
+                  <div
+                    className="absolute inset-0 backface-hidden rotate-y-180 cursor-pointer"
+                    onClick={() => setActiveIdx(prev => (prev + 1) % flipItems.length)}
+                  >
+                    <div className="relative w-full h-full flex items-center justify-center">
+                      {orderedStack.map(({ item, originalIndex, stackPos }) => {
+                        const { displayTitle, displayDesc, displayBtn, displayLink } = getDisplayDetails(item);
+                        return (
+                          <div
+                            key={item.id || originalIndex}
+                            className={`absolute inset-0 transition-all duration-500 ease-out ${stackRotations[stackPos]} ${stackScales[stackPos]} ${stackTranslateY[stackPos]} ${stackZIndex[stackPos]} ${stackOpacity[stackPos]}`}
+                          >
+                            <Card className={`p-8 w-full h-full shadow-2xl border-4 ${borderColors[originalIndex % borderColors.length]} flex flex-col justify-center items-center text-center bg-gradient-to-br ${cardGradients[originalIndex % cardGradients.length]} backdrop-blur-md rounded-2xl`}>
+                              <div className="space-y-5 w-full">
+                                <div className="mx-auto w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
+                                  {christianIcons[originalIndex % christianIcons.length]}
+                                </div>
+
+                                <h3 className="text-2xl sm:text-3xl font-bold text-foreground line-clamp-2">
+                                  {displayTitle}
+                                </h3>
+
+                                <p className="text-muted-foreground text-base px-2 line-clamp-3">
+                                  {displayDesc}
+                                </p>
+
+                                <div className="pt-4">
+                                  <Button variant="gradient" size="lg" className="w-full hover-lift shadow-lg group/btn" asChild>
+                                    <Link href={displayLink} onClick={(e) => e.stopPropagation()}>
+                                      {displayBtn}
+                                      <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                                    </Link>
+                                  </Button>
+                                </div>
                               </div>
-                            </div>
-                          </Card>
-                        </SwiperSlide>
-                      );
-                    })}
-                  </Swiper>
-                </div>
-              )}
+                            </Card>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
 
             </div>
           </div>

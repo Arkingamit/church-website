@@ -73,7 +73,7 @@ export const Footer = () => {
                 <Clock className="w-4 h-4 mt-1 text-primary-foreground/80" />
                 <div>
                   <p className="text-sm font-medium">Service Times</p>
-                  <p className="text-sm">Sunday: 9:0 AM to 12:00 pm</p>
+                  <p className="text-sm">Sunday: 9:00 AM to 12:00 pm</p>
                   
                 </div>
               </div>
@@ -88,7 +88,7 @@ export const Footer = () => {
             </p>
             <div className="space-y-2">
               <Input 
-                placeholder="Your email address"
+                placeholder="Your Email Address"
                 className="bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/60"
               />
               <Button 
@@ -106,7 +106,7 @@ export const Footer = () => {
         {/* Bottom Bar */}
         <div className="border-t border-primary-foreground/20 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-primary-foreground/80">
-            © 2024 Grace Community Church. All rights reserved.
+            © 2026 Grace Community Church. All rights reserved.
           </p>
           <div className="flex gap-6 text-sm">
             <a href="#privacy" className="text-primary-foreground/80 hover:text-primary-foreground transition-colors">

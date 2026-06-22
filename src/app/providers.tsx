@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { ThemeProvider } from "next-themes";
 import { Inter } from "next/font/google";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -24,18 +25,20 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <GoogleOAuthProvider clientId={clientId}>
-      <QueryClientProvider client={queryClient}>
-        <AdminDataProvider>
-          <AuthProvider>
-            <LiveStreamPoller />
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              {children}
-            </TooltipProvider>
-          </AuthProvider>
-        </AdminDataProvider>
-      </QueryClientProvider>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <QueryClientProvider client={queryClient}>
+          <AdminDataProvider>
+            <AuthProvider>
+              <LiveStreamPoller />
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                {children}
+              </TooltipProvider>
+            </AuthProvider>
+          </AdminDataProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
     </GoogleOAuthProvider>
   );
 }

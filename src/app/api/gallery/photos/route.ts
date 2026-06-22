@@ -68,8 +68,8 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'No photos found in the provided album URL. Make sure the album is public.', photos: [] });
       }
 
-      const shuffled = photoUrls.sort(() => Math.random() - 0.5);
-      const limited = shuffled.slice(0, 6);
+      // Do not shuffle to ensure the first photo is deterministic (static thumbnail)
+      const limited = photoUrls.slice(0, 20);
 
       const photos = limited.map((url, index) => ({
         id: index + 100,
