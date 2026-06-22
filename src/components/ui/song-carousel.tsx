@@ -1,43 +1,79 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from 'react';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { EffectCoverflow, Navigation, Pagination, Autoplay } from 'swiper/modules';
-import { Play, Pause, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { useAdminData } from '@/lib/admin-data-context';
+import React, { useEffect, useRef, useState } from "react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import {
+  EffectCoverflow,
+  Navigation,
+  Pagination,
+  Autoplay,
+} from "swiper/modules";
+import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import {
+  useAdminData,
+  type WorshipVideo,
+} from "@/lib/admin-data-context";
 
-// Worship songs data removed (now managed via AdminDataContext)
-
-
-const categoryColors = {
-  'Worship': 'bg-amber-100 text-amber-800 border-amber-200',
-  'Praise Song': 'bg-purple-100 text-purple-800 border-purple-200',
-  'THE RESURRECTION - HINDI SONG': 'bg-blue-100 text-blue-800 border-blue-200',
-  'Hindi Worship': 'bg-green-100 text-green-800 border-green-200',
-  'Christmas Song': 'bg-red-100 text-red-800 border-red-200',
-  'Worship song': 'bg-indigo-100 text-indigo-800 border-indigo-200'
+const categoryColors: Record<string, string> = {
+  Worship: "bg-amber-100 text-amber-800 border-amber-200",
+  "Praise Song": "bg-purple-100 text-purple-800 border-purple-200",
+  "THE RESURRECTION - HINDI SONG":
+    "bg-blue-100 text-blue-800 border-blue-200",
+  "Hindi Worship": "bg-green-100 text-green-800 border-green-200",
+  "Christmas Song": "bg-red-100 text-red-800 border-red-200",
+  "Worship song": "bg-indigo-100 text-indigo-800 border-indigo-200",
 };
 
 interface SongCarouselProps {
   className?: string;
+  videos?: WorshipVideo[];
+  searchTerm?: string;
+  selectedCategory?: string; // "all" or category
 }
 
-export const SongCarousel: React.FC<SongCarouselProps> = ({ className }) => {
+export const SongCarousel: React.FC<SongCarouselProps> = ({
+  className,
+  videos,
+  searchTerm = "",
+  selectedCategory = "all",
+}) => {
   const { worshipVideos } = useAdminData();
-  const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
-  const [fullscreenVideo, setFullscreenVideo] = useState<string | null>(null);
+  const songs = videos ?? worshipVideos;
+
+  const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(
+    null
+  );
+  const [fullscreenVideo, setFullscreenVideo] = useState<string | null>(
+    null
+  );
   const [isTransitioning, setIsTransitioning] = useState(false);
+
   const swiperRef = useRef<any>(null);
+
+  const filteredSongs = songs.filter((song) => {
+    const t = searchTerm.trim().toLowerCase();
+
+    const matchesSearch =
+      t === "" ||
+      (song.title ?? "").toLowerCase().includes(t) ||
+      (song.artist ?? "").toLowerCase().includes(t) ||
+      (song.album ?? "").toLowerCase().includes(t);
+
+    const matchesCategory =
+      selectedCategory === "all" ||
+      (song.categories ?? []).includes(selectedCategory);
+
+    return matchesSearch && matchesCategory;
+  });
 
   const handlePlayPause = (songId: string, videoId: string) => {
     setIsTransitioning(true);
     setCurrentlyPlaying(songId);
 
-    // Start the transition
     setTimeout(() => {
       setFullscreenVideo(videoId);
       setIsTransitioning(false);
@@ -55,137 +91,148 @@ export const SongCarousel: React.FC<SongCarouselProps> = ({ className }) => {
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && fullscreenVideo) {
-        closeFullscreen();
-      }
+      if (e.key === "Escape" && fullscreenVideo) closeFullscreen();
     };
 
     if (fullscreenVideo) {
-      document.addEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'hidden';
+      document.addEventListener("keydown", handleEscape);
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = 'auto';
+      document.body.style.overflow = "auto";
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'auto';
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "auto";
     };
   }, [fullscreenVideo]);
 
-
   return (
-    <section className={`py-12 sm:py-24 bg-gradient-to-br from-background via-background/95 to-secondary/5 ${className}`}>
+    <section
+      className={`py-12 sm:py-24 bg-gradient-to-br from-background via-background/95 to-secondary/5 ${className ?? ""
+        }`}
+    >
       <div className="container mx-auto px-0">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-primary-glow to-accent bg-clip-text text-transparent mb-6">
             Worship Music
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Listen to our collection of worship songs, hymns, and spiritual music. Let these melodies lift your spirit and draw you closer to God.
+            Listen to our collection of worship songs, hymns, and spiritual
+            music. Let these melodies lift your spirit and draw you closer
+            to God.
           </p>
         </div>
 
         <div className="relative group/carousel">
-          <Swiper
-            ref={swiperRef}
-            effect="coverflow"
-            grabCursor={true}
-            centeredSlides={true}
-            loop={true}
-            slidesPerView="auto"
-            speed={1000}
-            initialSlide={0}
-            loopAdditionalSlides={2}
-            autoplay={{
-              delay: 2500,
-              disableOnInteraction: false,
-            }}
-            coverflowEffect={{
-              rotate: 0,
-              stretch: 0,
-              depth: 120,
-              modifier: 2.5,
-              slideShadows: false
-            }}
-            navigation={{
-              nextEl: '.song-swiper-button-next',
-              prevEl: '.song-swiper-button-prev',
-            }}
-            pagination={{
-              el: '.song-swiper-pagination',
-              clickable: true,
-            }}
-            modules={[EffectCoverflow, Navigation, Pagination, Autoplay]}
-            className="song-carousel h-[580px] py-12"
-          >
-            {worshipVideos.map((song, index) => (
-              <SwiperSlide key={song.id} className="w-[350px]">
-                <Card className="group relative h-[480px] overflow-hidden border-0 shadow-elegant hover:shadow-glow transition-all duration-500">
-                  <div className="relative h-full">
-                    {/* Song Thumbnail */}
-                    <div className="relative h-80 overflow-hidden">
-                      <img
-                        src={`https://img.youtube.com/vi/${song.videoId}/hqdefault.jpg`}
-                        alt={song.title}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
+          {filteredSongs.length > 0 ? (
+            <Swiper
+              ref={swiperRef}
+              effect="coverflow"
+              grabCursor={true}
+              centeredSlides={true}
+              loop={true}
+              slidesPerView="auto"
+              speed={1000}
+              initialSlide={0}
+              loopAdditionalSlides={2}
+              autoplay={{
+                delay: 2500,
+                disableOnInteraction: false,
+              }}
+              coverflowEffect={{
+                rotate: 0,
+                stretch: 0,
+                depth: 120,
+                modifier: 2.5,
+                slideShadows: false,
+              }}
+              navigation={{
+                nextEl: ".song-swiper-button-next",
+                prevEl: ".song-swiper-button-prev",
+              }}
+              pagination={{
+                el: ".song-swiper-pagination",
+                clickable: true,
+              }}
+              modules={[EffectCoverflow, Navigation, Pagination, Autoplay]}
+              className="song-carousel h-[580px] py-12"
+            >
+              {filteredSongs.map((song) => (
+                <SwiperSlide key={song.id} className="w-[350px]">
+                  <Card className="group relative h-[480px] overflow-hidden border-0 shadow-elegant hover:shadow-glow transition-all duration-500">
+                    <div className="relative h-full">
+                      <div className="relative h-80 overflow-hidden">
+                        <img
+                          src={`https://img.youtube.com/vi/${song.videoId}/hqdefault.jpg`}
+                          alt={song.title}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
 
-                      {/* Invisible Play Button Overlay - Covers entire image */}
-                      <div
-                        className="absolute inset-0 cursor-pointer flex items-center justify-center group-hover:bg-black/20 transition-colors duration-300"
-                        onClick={() => handlePlayPause(song.id, song.videoId)}
-                      >
-                        {/* Optional: Subtle play icon that appears on hover */}
-                        <div className="opacity-0 group-hover:opacity-30 transition-opacity duration-300">
-                          <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                            {currentlyPlaying === song.id ? (
-                              <Pause className="w-8 h-8 text-black" />
-                            ) : (
-                              <Play className="w-8 h-8 text-black ml-1" />
-                            )}
+                        <div
+                          className="absolute inset-0 cursor-pointer flex items-center justify-center group-hover:bg-black/20 transition-colors duration-300"
+                          onClick={() => handlePlayPause(song.id, song.videoId)}
+                        >
+                          <div className="opacity-0 group-hover:opacity-30 transition-opacity duration-300">
+                            <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                              {currentlyPlaying === song.id ? (
+                                <Pause className="w-8 h-8 text-black" />
+                              ) : (
+                                <Play className="w-8 h-8 text-black ml-1" />
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Category Badges */}
-                      <div className="absolute top-4 left-4 z-10 flex flex-wrap gap-1">
-                        {(song.categories || []).map(cat => (
-                          <Badge key={cat} variant="secondary" className={categoryColors[cat as keyof typeof categoryColors]}>
-                            {cat}
-                          </Badge>
-                        ))}
-                      </div>
-
-                      {/* Audio Visualizer */}
-                      {currentlyPlaying === song.id && (
-                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary/20 z-10">
-                          <div className="h-full bg-primary animate-pulse" style={{ width: '45%' }} />
+                        <div className="absolute top-4 left-4 z-10 flex flex-wrap gap-1">
+                          {(song.categories ?? []).map((cat) => (
+                            <Badge
+                              key={cat}
+                              variant="secondary"
+                              className={
+                                categoryColors[cat] ||
+                                "bg-gray-100 text-gray-800 border-gray-200"
+                              }
+                            >
+                              {cat}
+                            </Badge>
+                          ))}
                         </div>
-                      )}
-                    </div>
 
-                    {/* Song Info */}
-                    <div className="p-6 bg-card">
-                      <div className="mb-4">
-                        <h3 className="text-xl font-bold text-card-foreground mb-1 line-clamp-1">
-                          {song.title}
-                        </h3>
-                        <p className="text-muted-foreground text-sm mb-1">
-                          by {song.artist}
-                        </p>
-                        <p className="text-muted-foreground text-xs">
-                          {song.album} • {song.duration}
-                        </p>
+                        {currentlyPlaying === song.id && (
+                          <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary/20 z-10">
+                            <div
+                              className="h-full bg-primary animate-pulse"
+                              style={{ width: "45%" }}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-6 bg-card">
+                        <div className="mb-4">
+                          <h3 className="text-xl font-bold text-card-foreground mb-1 line-clamp-1">
+                            {song.title}
+                          </h3>
+                          <p className="text-muted-foreground text-sm mb-1">
+                            by {song.artist}
+                          </p>
+                          <p className="text-muted-foreground text-xs">
+                            {song.album} • {song.duration}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Card>
-              </SwiperSlide>
-            ))}
-          </Swiper>
+                  </Card>
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          ) : (
+            <div className="text-center py-16 text-muted-foreground">
+              No songs found for the selected filters.
+            </div>
+          )}
 
-          {/* Enhanced Transparent Hovering Navigation Buttons */}
           <Button
             variant="ghost"
             size="lg"
@@ -204,7 +251,6 @@ export const SongCarousel: React.FC<SongCarouselProps> = ({ className }) => {
             <span className="sr-only">Next</span>
           </Button>
 
-          {/* Custom Pagination */}
           <div className="song-swiper-pagination relative mt-8 text-center" />
         </div>
 
@@ -212,16 +258,18 @@ export const SongCarousel: React.FC<SongCarouselProps> = ({ className }) => {
           <Button variant="outline" size="lg" className="group">
             <a href="/music" className="flex items-center">
               Explore Music Library
-              <div className="ml-2 transform transition-transform group-hover:translate-x-1">→</div>
+              <div className="ml-2 transform transition-transform group-hover:translate-x-1">
+                →
+              </div>
             </a>
           </Button>
         </div>
       </div>
 
-      {/* Enhanced Fullscreen Video Modal with Custom Animation */}
       {(fullscreenVideo || isTransitioning) && (
         <div
-          className={`fullscreen-modal ${isTransitioning && !fullscreenVideo ? 'closing' : ''}`}
+          className={`fullscreen-modal ${isTransitioning && !fullscreenVideo ? "closing" : ""
+            }`}
           onClick={closeFullscreen}
         >
           <button
@@ -234,10 +282,7 @@ export const SongCarousel: React.FC<SongCarouselProps> = ({ className }) => {
             ✕
           </button>
 
-          <div
-            className="video-wrapper"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="video-wrapper" onClick={(e) => e.stopPropagation()}>
             {fullscreenVideo && (
               <iframe
                 src={`https://www.youtube.com/embed/${fullscreenVideo}?autoplay=1&controls=1&modestbranding=1&rel=0&showinfo=0`}
@@ -252,8 +297,9 @@ export const SongCarousel: React.FC<SongCarouselProps> = ({ className }) => {
         </div>
       )}
 
-      <style dangerouslySetInnerHTML={{
-        __html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
           .song-carousel .song-swiper-button-prev::after,
           .song-carousel .song-swiper-button-next::after {
             content: none;
@@ -291,7 +337,6 @@ export const SongCarousel: React.FC<SongCarouselProps> = ({ className }) => {
             transform: translateY(-10px);
           }
           
-          /* Fullscreen Modal Animations */
           .fullscreen-modal {
             position: fixed;
             top: 0;
@@ -308,9 +353,7 @@ export const SongCarousel: React.FC<SongCarouselProps> = ({ className }) => {
           }
           
           @keyframes fadeInBackground {
-            to {
-              background: rgba(0, 0, 0, 0.8);
-            }
+            to { background: rgba(0, 0, 0, 0.8); }
           }
           
           .video-wrapper {
@@ -335,27 +378,17 @@ export const SongCarousel: React.FC<SongCarouselProps> = ({ className }) => {
             }
           }
           
-          @keyframes shrinkFromFullscreen {
-            to {
-              width: 37rem;
-              height: 42rem;
-              box-shadow: 0 12px 25px rgba(0, 0, 0, 0.2);
-              transform: scale(0.8);
-              opacity: 0;
-            }
-          }
-          
           .fullscreen-modal.closing {
             animation: fadeOutBackground 0.4s ease-in forwards;
           }
           
           @keyframes fadeOutBackground {
-            to {
-              background: rgba(0, 0, 0, 0);
-            }
+            to { background: rgba(0, 0, 0, 0); }
           }
-        `
-      }} />
+        `,
+        }}
+      />
     </section>
   );
 };
+

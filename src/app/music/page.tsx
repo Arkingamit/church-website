@@ -73,11 +73,7 @@ export default function MusicPage() {
     });
   };
 
-  // Split filtered videos into rows of 3
-  const videoRows: typeof filteredVideos[] = [];
-  for (let i = 0; i < filteredVideos.length; i += 3) {
-    videoRows.push(filteredVideos.slice(i, i + 3));
-  }
+  const videoCards = filteredVideos;
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -150,123 +146,126 @@ export default function MusicPage() {
           Showing {filteredVideos.length} of {worshipVideos.length} songs
         </div>
 
-        {/* Video Grid */}
-        {videoRows.length > 0 ? (
-          <div className="space-y-6">
-            {videoRows.map((row, rowIndex) => (
-              <div
-                key={rowIndex}
-                className="flex gap-4 h-64"
-                onMouseLeave={() => setHoveredId(null)}
-              >
-                {row.map((video) => {
-                  const isHovered = hoveredId === video.id;
-                  const isRowHovered = row.some((v) => v.id === hoveredId);
-                  const shouldCompress = isRowHovered && !isHovered;
+        {/* Video Grid (no carousel; mobile-first responsive) */}
+        {videoCards.length > 0 ? (
+          <div
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+            onMouseLeave={() => setHoveredId(null)}
+          >
+            {videoCards.map((video) => {
+              const isHovered = hoveredId === video.id;
 
-                  return (
-                    <div
-                      key={video.id}
-                      className={`relative overflow-hidden rounded-lg cursor-pointer transition-all duration-500 ease-out ${
-                        isHovered
-                          ? "flex-[2]"
-                          : shouldCompress
-                          ? "flex-[0.5]"
-                          : "flex-1"
-                      }`}
-                      onMouseEnter={() => setHoveredId(video.id)}
-                    >
-                      <img
-                        src={`https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg`}
-                        alt={video.title}
-                        className="w-full h-full object-cover transition-transform duration-500"
-                        onClick={() => handlePlay(video.videoId)}
-                      />
+              return (
+                <div
+                  key={video.id}
+                  className="relative overflow-hidden rounded-lg cursor-pointer transition-all duration-500 ease-out group"
+                  onMouseEnter={() => setHoveredId(video.id)}
+                >
+                  <div className="h-56 sm:h-64 md:h-72">
+                    <img
+                      src={`https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg`}
+                      alt={video.title}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                      onClick={() => handlePlay(video.videoId)}
+                    />
+                  </div>
 
-                      {/* Category Badge */}
-                      <div className={`absolute top-3 left-3 flex flex-wrap gap-1 ${shouldCompress ? "opacity-0" : "opacity-100"} transition-opacity duration-300 max-w-[80%]`}>
-                        {(video.categories || []).map(cat => (
-                          <Badge
-                            key={cat}
-                            className={`text-xs ${
-                              categoryColors[cat] ||
-                              "bg-gray-100 text-gray-800 border-gray-200"
-                            }`}
-                          >
-                            {cat}
-                          </Badge>
-                        ))}
-                      </div>
-
-                      {/* Play Overlay */}
-                      <div
-                        className={`absolute inset-0 bg-black/40 transition-opacity duration-300 flex items-center justify-center ${
-                          isHovered ? "opacity-100" : "opacity-0"
-                        }`}
+                  {/* Category Badge */}
+                  <div className="absolute top-3 left-3 flex flex-wrap gap-1 transition-opacity duration-300 max-w-[80%]">
+                    {(video.categories || []).map((cat) => (
+                      <Badge
+                        key={cat}
+                        className={`text-xs ${categoryColors[cat] ||
+                          "bg-gray-100 text-gray-800 border-gray-200"
+                          }`}
                       >
+                        {cat}
+                      </Badge>
+                    ))}
+                  </div>
+
+                  {/* Play Overlay */}
+                  <div
+                    className={`absolute inset-0 bg-black/40 transition-opacity duration-300 flex items-center justify-center ${isHovered ? "opacity-100" : "opacity-0 md:group-hover:opacity-100"
+                      }`}
+                  >
+                    <Button
+                      variant="ghost"
+                      size="lg"
+                      className="w-16 h-16 rounded-full bg-white/90 backdrop-blur-sm hover:bg-primary text-primary hover:text-white transition-all duration-300"
+                      onClick={() => handlePlay(video.videoId)}
+                    >
+                      <Play className="w-6 h-6 ml-1" fill="currentColor" />
+                    </Button>
+                  </div>
+
+                  {/* Video Info Overlay on Hover (desktop only) */}
+                  {isHovered && (
+                    <div className="hidden md:block absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                      <h3 className="text-white font-semibold text-lg mb-1">
+                        {video.title}
+                      </h3>
+                      <p className="text-white/80 text-sm mb-2">
+                        {video.artist}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/60 text-xs">
+                          {video.duration}
+                        </span>
                         <Button
                           variant="ghost"
-                          size="lg"
-                          className="w-16 h-16 rounded-full bg-white/90 backdrop-blur-sm hover:bg-primary text-primary hover:text-white transition-all duration-300"
-                          onClick={() => handlePlay(video.videoId)}
+                          size="sm"
+                          className={`text-white hover:text-red-400 transition-colors ${likedVideos.has(video.id) ? "text-red-400" : ""
+                            }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleLike(video.id);
+                          }}
                         >
-                          <Play
-                            className="w-6 h-6 ml-1"
-                            fill="currentColor"
+                          <Heart
+                            className="w-4 h-4"
+                            fill={
+                              likedVideos.has(video.id) ? "currentColor" : "none"
+                            }
                           />
                         </Button>
                       </div>
-
-                      {/* Video Info Overlay on Hover */}
-                      {isHovered && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                          <h3 className="text-white font-semibold text-lg mb-1">
-                            {video.title}
-                          </h3>
-                          <p className="text-white/80 text-sm mb-2">
-                            {video.artist}
-                          </p>
-                          <div className="flex items-center justify-between">
-                            <span className="text-white/60 text-xs">
-                              {video.duration}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className={`text-white hover:text-red-400 transition-colors ${
-                                likedVideos.has(video.id) ? "text-red-400" : ""
-                              }`}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleLike(video.id);
-                              }}
-                            >
-                              <Heart
-                                className="w-4 h-4"
-                                fill={
-                                  likedVideos.has(video.id)
-                                    ? "currentColor"
-                                    : "none"
-                                }
-                              />
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Compressed title */}
-                      {shouldCompress && (
-                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                          <h3 className="text-white font-semibold text-center px-2 transform -rotate-90 whitespace-nowrap">
-                            {video.title}
-                          </h3>
-                        </div>
-                      )}
                     </div>
-                  );
-                })}
-              </div>
-            ))}
+                  )}
+
+                  {/* Mobile info strip */}
+                  <div className="md:hidden absolute bottom-0 left-0 right-0 bg-black/50 p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="text-white font-semibold text-sm truncate">
+                          {video.title}
+                        </h3>
+                        <p className="text-white/70 text-xs truncate">
+                          {video.artist}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`text-white hover:text-red-400 transition-colors flex-shrink-0 ${likedVideos.has(video.id) ? "text-red-400" : ""
+                          }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleLike(video.id);
+                        }}
+                      >
+                        <Heart
+                          className="w-4 h-4"
+                          fill={
+                            likedVideos.has(video.id) ? "currentColor" : "none"
+                          }
+                        />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-12">
@@ -287,9 +286,8 @@ export default function MusicPage() {
       {/* Fullscreen Modal */}
       {fullscreenVideo && (
         <div
-          className={`fixed inset-0 bg-black/80 z-50 flex items-center justify-center transition-opacity duration-400 ${
-            isClosing ? "opacity-0" : "opacity-100"
-          }`}
+          className={`fixed inset-0 bg-black/80 z-50 flex items-center justify-center transition-opacity duration-400 ${isClosing ? "opacity-0" : "opacity-100"
+            }`}
           onClick={closeFullscreen}
         >
           <button
@@ -302,9 +300,8 @@ export default function MusicPage() {
             ✕
           </button>
           <div
-            className={`relative w-[90vw] h-[90vh] max-w-[1200px] max-h-[675px] transition-transform duration-400 ${
-              isClosing ? "scale-95 opacity-0" : "scale-100 opacity-100"
-            }`}
+            className={`relative w-[90vw] h-[90vh] max-w-[1200px] max-h-[675px] transition-transform duration-400 ${isClosing ? "scale-95 opacity-0" : "scale-100 opacity-100"
+              }`}
             onClick={(e) => e.stopPropagation()}
           >
             <iframe
