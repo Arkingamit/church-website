@@ -2,13 +2,13 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAdminData } from '@/lib/admin-data-context';
 import { Camera, X, QrCode, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 /**
  * QR Scanner component that uses the device camera to scan campus QR codes.
  * Loads html5-qrcode from CDN — zero npm dependencies.
- * Uses the public /api/campuses endpoint so it works for non-admin users.
  */
 
 // Declare global type for the CDN-loaded library
@@ -22,38 +22,13 @@ interface QRScannerProps {
   onClose: () => void;
 }
 
-interface PublicCampus {
-  _id: string;
-  name: string;
-  pastor: string;
-}
-
 export function QRScanner({ onClose }: QRScannerProps) {
   const router = useRouter();
+  const { campuses } = useAdminData();
   const scannerRef = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [scannedCampus, setScannedCampus] = useState<string | null>(null);
-  const [campuses, setCampuses] = useState<PublicCampus[]>([]);
-  const campusesRef = useRef<PublicCampus[]>([]);
-
-  // Fetch campuses from the public API (no auth required)
-  useEffect(() => {
-    fetch('/api/campuses')
-      .then(res => res.ok ? res.json() : [])
-      .then((data: PublicCampus[]) => {
-        setCampuses(data);
-        campusesRef.current = data;
-      })
-      .catch(() => {
-        // Silently fail — scanner can still navigate by ID
-      });
-  }, []);
-
-  // Keep ref in sync
-  useEffect(() => {
-    campusesRef.current = campuses;
-  }, [campuses]);
 
   const stopScanner = useCallback(async () => {
     if (scannerRef.current) {
@@ -86,13 +61,12 @@ export function QRScanner({ onClose }: QRScannerProps) {
         return pathParts[1];
       }
     } catch {
-      // Not a URL — maybe just a campus ID (try matching against loaded campuses)
-      const trimmed = text.trim();
-      const campus = campusesRef.current.find(c => c._id === trimmed);
-      if (campus) return campus._id;
+      // Not a URL — maybe just a campus ID
+      const campus = campuses.find(c => c.id === text.toLowerCase().trim());
+      if (campus) return campus.id;
     }
     return null;
-  }, []);
+  }, [campuses]);
 
   useEffect(() => {
     let mounted = true;
@@ -130,16 +104,19 @@ export function QRScanner({ onClose }: QRScannerProps) {
             // On successful scan
             const campusId = extractCampusId(decodedText);
             if (campusId) {
-              // Try to find campus name for the success message
-              const campus = campusesRef.current.find(c => c._id === campusId);
-              setScannedCampus(campus?.name || 'Campus');
-              // Stop scanning and navigate
-              html5QrCode.stop().then(() => {
-                scannerRef.current = null;
-                router.push(`/register/${campusId}`);
-              }).catch(() => {
-                router.push(`/register/${campusId}`);
-              });
+              const campus = campuses.find(c => c.id === campusId);
+              if (campus) {
+                setScannedCampus(campus.name);
+                // Stop scanning and navigate
+                html5QrCode.stop().then(() => {
+                  scannerRef.current = null;
+                  router.push(`/register/${campusId}`);
+                }).catch(() => {
+                  router.push(`/register/${campusId}`);
+                });
+              } else {
+                setError('QR code does not match any campus');
+              }
             } else {
               setError('Invalid QR code. Please scan a campus registration QR code.');
             }
@@ -172,7 +149,7 @@ export function QRScanner({ onClose }: QRScannerProps) {
       mounted = false;
       stopScanner();
     };
-  }, [extractCampusId, router, stopScanner]);
+  }, [campuses, extractCampusId, router, stopScanner]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4">
@@ -249,4 +226,3 @@ export function QRScanner({ onClose }: QRScannerProps) {
     </div>
   );
 }
-

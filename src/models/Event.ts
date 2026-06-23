@@ -118,6 +118,12 @@ const EventSchema = new Schema<IEvent>(
   { timestamps: true }
 );
 
+// Indexes for events list, series lookups, and cron job
+EventSchema.index({ date: 1 });
+EventSchema.index({ date: 1, time: 1 });
+EventSchema.index({ seriesId: 1 });
+EventSchema.index({ date: 1, isSeriesTemplate: 1 });
+
 const EventModel: Model<IEvent> = mongoose.models.Event || mongoose.model<IEvent>('Event', EventSchema);
 
 export default EventModel;

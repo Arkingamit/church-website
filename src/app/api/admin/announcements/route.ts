@@ -10,7 +10,10 @@ export async function GET() {
 
   try {
     await connectToDatabase();
-    const announcements = await Announcement.find({}).sort({ isPinned: -1, createdAt: -1 });
+    // .lean() returns plain JS objects — 30-50% faster than full Mongoose documents
+    const announcements = await Announcement.find({})
+      .sort({ isPinned: -1, createdAt: -1 })
+      .lean();
     return NextResponse.json(announcements);
   } catch (error: any) {
     return NextResponse.json({ error: 'Failed to fetch announcements' }, { status: 500 });

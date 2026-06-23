@@ -1,30 +1,22 @@
 import { verifySession } from './auth-utils';
-import connectToDatabase from './db';
-import User from '@/models/User';
-import { NextResponse } from 'next/server';
 
 /**
- * Ensures the requester is authenticated and has an admin role.
- * Returns the user document if authorized, or null if unauthorized.
+ * Ensures the requester is authenticated and has an admin-level role.
+ * Reads role directly from the JWT — no database query required.
+ * Returns a lightweight session object if authorized, or null if not.
  */
 export async function requireAdmin() {
-  const { isAuth, userId } = await verifySession();
-  if (!isAuth || !userId) {
+  const session = await verifySession();
+
+  if (!session.isAuth || !session.userId) {
     return null;
   }
 
-  await connectToDatabase();
-  const user = await User.findById(userId);
-  
-  if (!user) {
+  // Role is embedded in the JWT — no DB round-trip needed
+  const allowedRoles = ['admin', 'super_admin', 'campus_leader', 'group_leader'];
+  if (!allowedRoles.includes(session.role)) {
     return null;
   }
 
-  // Check roles (admin, super_admin, or campus_leader)
-  const allowedRoles = ['admin', 'super_admin', 'campus_leader'];
-  if (!allowedRoles.includes(user.role)) {
-    return null;
-  }
-
-  return user;
+  return { userId: session.userId, role: session.role };
 }

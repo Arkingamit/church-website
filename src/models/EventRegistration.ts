@@ -21,6 +21,11 @@ const EventRegistrationSchema = new Schema<IEventRegistration>(
   { timestamps: true }
 );
 
+// Index for lookups by eventId and userEmail deduplication
+EventRegistrationSchema.index({ eventId: 1 });
+EventRegistrationSchema.index({ eventId: 1, userEmail: 1 });
+EventRegistrationSchema.index({ registeredAt: -1 });
+
 const EventRegistration: Model<IEventRegistration> = mongoose.models.EventRegistration || mongoose.model<IEventRegistration>('EventRegistration', EventRegistrationSchema);
 
 export default EventRegistration;

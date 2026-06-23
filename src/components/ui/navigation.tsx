@@ -42,7 +42,7 @@ export const Navigation = () => {
   const [lastScrollY, setLastScrollY] = useState(0);
 
   // Existing auth state
-  const { session, logout, profiles, switchProfile } = useAuth();
+  const { session, logout } = useAuth();
   const router = useRouter();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
@@ -148,39 +148,10 @@ export const Navigation = () => {
       {userMenuOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
-          <div className="absolute right-0 top-full mt-3 w-56 py-1 rounded-md border border-border bg-card shadow-2xl z-50 overflow-hidden">
+          <div className="absolute right-0 top-full mt-3 w-48 py-1 rounded-md border border-border bg-card shadow-2xl z-50 overflow-hidden">
             <div className="px-3 py-2.5 border-b border-border bg-muted/30">
               <p className="text-xs text-muted-foreground truncate">{session.email}</p>
             </div>
-            
-            {/* Profile Switcher */}
-            {profiles.length > 1 && (
-              <div className="px-2 py-2 border-b border-border/50 bg-muted/10">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1 px-1">Switch Profile</p>
-                <div className="space-y-0.5">
-                  {profiles.map(p => (
-                    <button
-                      key={p.id}
-                      onClick={() => {
-                        switchProfile(p.id);
-                        setUserMenuOpen(false);
-                      }}
-                      disabled={p.id === session.memberId}
-                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors text-left
-                        ${p.id === session.memberId ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted text-foreground'}
-                      `}
-                    >
-                      <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                        <User className="w-3 h-3" />
-                      </div>
-                      <span className="truncate flex-1">{p.name || `${p.firstName} ${p.lastName}`}</span>
-                      {p.id === session.memberId && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {(session.role === 'admin' || session.role === 'super_admin' || session.role === 'campus_leader') && (
               <Link
                 href="/admin"
@@ -308,35 +279,6 @@ export const Navigation = () => {
                   <span className="text-xs text-muted-foreground">{session.email}</span>
                 </div>
               </div>
-              
-              {/* Profile Switcher Mobile */}
-              {profiles.length > 1 && (
-                <div className="w-full bg-muted/10 rounded-lg p-2 mb-2 border border-border/50">
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Switch Profile</p>
-                  <div className="space-y-1">
-                    {profiles.map(p => (
-                      <button
-                        key={p.id}
-                        onClick={() => {
-                          switchProfile(p.id);
-                          setIsOpen(false);
-                        }}
-                        disabled={p.id === session.memberId}
-                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors text-left
-                          ${p.id === session.memberId ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted text-foreground bg-background border border-border/50'}
-                        `}
-                      >
-                        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                          <User className="w-3.5 h-3.5" />
-                        </div>
-                        <span className="truncate flex-1">{p.name || `${p.firstName} ${p.lastName}`}</span>
-                        {p.id === session.memberId && <div className="w-2 h-2 rounded-full bg-primary" />}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {(session.role === 'admin' || session.role === 'super_admin' || session.role === 'campus_leader') && (
                 <Link href="/admin" onClick={() => setIsOpen(false)} className="w-full">
                   <Button variant="outline" className="w-full">Admin Panel</Button>

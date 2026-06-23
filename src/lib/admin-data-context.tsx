@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
 
 // ── Types ──────────────────────────────────────────────────────────────
 export type UserRole = 'member' | 'group_leader' | 'campus_leader' | 'admin' | 'super_admin';
@@ -189,6 +190,9 @@ export interface PrayerRequest {
   content: string;
   authorName: string;
   campusId: string;
+  isAnonymous: boolean;
+  privacy: 'public' | 'members' | 'staff';
+  category: string;
   prayedCount: number;
   comments: number;
   status: 'pending' | 'approved' | 'rejected';
@@ -483,32 +487,57 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // ── Fetch all data from API on mount ──────────────────────────────────
+  const pathname = usePathname();
+  const isAdminRoute = pathname?.startsWith('/admin') ?? false;
+
+  // ── Fetch public data on every mount (needed by homepage components) ──
   useEffect(() => {
-    const fetchAll = async () => {
+    const fetchPublicData = async () => {
       try {
         const [
-          campusesRes, eventsRes, announcementsRes, usersRes,
+          campusesRes, eventsRes, announcementsRes,
           sermonsRes, seriesRes, worshipRes, galleryRes, livestreamRes,
-          eventRegistrationsRes, groupsRes
         ] = await Promise.all([
           fetch('/api/admin/campuses').catch(() => null),
           fetch('/api/admin/events').catch(() => null),
           fetch('/api/admin/announcements').catch(() => null),
-          fetch('/api/admin/users').catch(() => null),
           fetch('/api/admin/media/sermons').catch(() => null),
           fetch('/api/admin/media/sermon-series').catch(() => null),
           fetch('/api/admin/media/worship-videos').catch(() => null),
           fetch('/api/admin/media/gallery').catch(() => null),
           fetch('/api/admin/media/livestreams').catch(() => null),
-          fetch('/api/admin/event-registrations').catch(() => null),
-          fetch('/api/admin/groups').catch(() => null),
-          fetch('/api/admin/prayers').catch(() => null),
         ]);
 
         if (campusesRes?.ok) setCampuses(mapIds(await campusesRes.json()));
         if (eventsRes?.ok) setEvents(mapIds(await eventsRes.json()));
         if (announcementsRes?.ok) setAnnouncements(mapIds(await announcementsRes.json()));
+        if (sermonsRes?.ok) setSermons(mapIds(await sermonsRes.json()));
+        if (seriesRes?.ok) setSermonSeriesState(mapIds(await seriesRes.json()));
+        if (worshipRes?.ok) setWorshipVideos(mapIds(await worshipRes.json()));
+        if (galleryRes?.ok) setGalleryAlbums(mapIds(await galleryRes.json()));
+        if (livestreamRes?.ok) setLiveStreams(mapIds(await livestreamRes.json()));
+      } catch (err) {
+        console.error('Failed to fetch public data:', err);
+      }
+    };
+    fetchPublicData();
+  }, []); // runs once on mount
+
+  // ── Fetch admin-only data — only when on /admin routes ────────────────
+  // Users, event registrations, groups, and prayer requests are heavy and
+  // not needed by any public-facing component. Skipping them for public
+  // visitors saves 4 API calls + 4 DB queries per page load.
+  useEffect(() => {
+    if (!isAdminRoute) return;
+    const fetchAdminData = async () => {
+      try {
+        const [usersRes, eventRegistrationsRes, groupsRes, prayersRes] = await Promise.all([
+          fetch('/api/admin/users').catch(() => null),
+          fetch('/api/admin/event-registrations').catch(() => null),
+          fetch('/api/admin/groups').catch(() => null),
+          fetch('/api/admin/prayers').catch(() => null),
+        ]);
+
         if (usersRes?.ok) {
           const rawUsers = await usersRes.json();
           setUsers(rawUsers.map((u: any) => ({
@@ -516,14 +545,8 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
             email: u.email, role: u.role, campusId: u.campusId, groups: u.groups || [],
           })));
         }
-        if (sermonsRes?.ok) setSermons(mapIds(await sermonsRes.json()));
-        if (seriesRes?.ok) setSermonSeriesState(mapIds(await seriesRes.json()));
-        if (worshipRes?.ok) setWorshipVideos(mapIds(await worshipRes.json()));
-        if (galleryRes?.ok) setGalleryAlbums(mapIds(await galleryRes.json()));
-        if (livestreamRes?.ok) setLiveStreams(mapIds(await livestreamRes.json()));
         if (eventRegistrationsRes?.ok) setEventRegistrations(mapIds(await eventRegistrationsRes.json()));
-        const prayersResponse = await fetch('/api/admin/prayers').catch(() => null);
-        if (prayersResponse?.ok) setPrayerRequests(mapIds(await prayersResponse.json()));
+        if (prayersRes?.ok) setPrayerRequests(mapIds(await prayersRes.json()));
         if (groupsRes?.ok) {
           const rawGroups = await groupsRes.json();
           const mappedGroups = mapIds(rawGroups);
@@ -534,8 +557,8 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
         console.error('Failed to fetch admin data:', err);
       }
     };
-    fetchAll();
-  }, []);
+    fetchAdminData();
+  }, [isAdminRoute]); // runs when navigating to/from admin routes
 
   const setCurrentUser = useCallback((u: UserProfile) => setCurrentUserState(u), []);
   const setGalleryAlbumUrl = useCallback((url: string) => setGalleryAlbumUrlState(url), []);
@@ -594,12 +617,11 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
   const reorderGalleryAlbums = useCallback((albums: GalleryAlbum[]) => {
     const reordered = albums.map((a, i) => ({ ...a, sortOrder: i }));
     setGalleryAlbums(reordered);
-    // Fire-and-forget updates for sort order
-    reordered.forEach(a => {
-      fetch(`/api/admin/media/gallery/${a.id}`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sortOrder: a.sortOrder }),
-      });
+    // Single batch request instead of N individual PUTs
+    fetch('/api/admin/media/gallery/reorder', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: reordered.map(a => ({ id: a.id, sortOrder: a.sortOrder })) }),
     });
   }, []);
 
@@ -776,11 +798,11 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
   const reorderSermons = useCallback((sermons: Sermon[]) => {
     const reordered = sermons.map((s, i) => ({ ...s, sortOrder: i }));
     setSermons(reordered);
-    reordered.forEach(s => {
-      fetch(`/api/admin/media/sermons/${s.id}`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sortOrder: s.sortOrder }),
-      });
+    // Single batch request instead of N individual PUTs
+    fetch('/api/admin/media/sermons/reorder', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: reordered.map(s => ({ id: s.id, sortOrder: s.sortOrder })) }),
     });
   }, []);
 

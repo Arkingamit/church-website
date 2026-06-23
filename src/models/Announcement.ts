@@ -55,6 +55,12 @@ const AnnouncementSchema = new Schema<IAnnouncement>(
   { timestamps: true }
 );
 
+// Indexes for cron job and reminder queries
+AnnouncementSchema.index({ isRecurring: 1 });
+AnnouncementSchema.index({ reminderDate: 1 });
+AnnouncementSchema.index({ nextOccurrence: 1 });
+AnnouncementSchema.index({ isPinned: -1, createdAt: -1 });
+
 const Announcement: Model<IAnnouncement> = mongoose.models.Announcement || mongoose.model<IAnnouncement>('Announcement', AnnouncementSchema);
 
 export default Announcement;

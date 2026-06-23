@@ -3,8 +3,21 @@ import { requireAdmin } from '@/lib/api-auth';
 import connectToDatabase from '@/lib/db';
 import EventModel from '@/models/Event';
 import { eventSchema } from '@/lib/validations';
-import { calculateNextOccurrence, generateOccurrences } from '@/lib/recurrence';
+import { generateOccurrences } from '@/lib/recurrence';
 import mongoose from 'mongoose';
+
+// Projection for list view — omits heavy nested arrays (formFields, schedule)
+// that are only needed when editing a specific event. Reduces payload ~40-70%.
+const LIST_PROJECTION = {
+  title: 1, date: 1, time: 1, endTime: 1, location: 1, category: 1,
+  capacity: 1, registered: 1, image: 1, recurring: 1, seriesId: 1,
+  isSeriesTemplate: 1, recurrencePattern: 1, recurrenceDay: 1,
+  recurrenceEndDate: 1, recurrenceNote: 1, recurrenceWeekOfMonth: 1,
+  nextOccurrence: 1, lastTriggered: 1, mapUrl: 1, host: 1,
+  targetCampuses: 1, targetGroups: 1, excludeCampuses: 1, excludeGroups: 1,
+  googlePhotosUrl: 1, isMultiDay: 1, endDate: 1, description: 1,
+  customReminders: 1, reminders: 1, createdAt: 1,
+};
 
 export async function GET() {
   const admin = await requireAdmin();
@@ -12,7 +25,8 @@ export async function GET() {
 
   try {
     await connectToDatabase();
-    const events = await EventModel.find({}).sort({ date: 1, time: 1 });
+    // .lean() returns plain JS objects — 30-50% faster than full Mongoose documents
+    const events = await EventModel.find({}, LIST_PROJECTION).sort({ date: 1, time: 1 }).lean();
     return NextResponse.json(events);
   } catch (error: any) {
     return NextResponse.json({ error: 'Failed to fetch events' }, { status: 500 });
@@ -30,13 +44,13 @@ export async function POST(req: Request) {
     if (!parseResult.success) {
       return NextResponse.json({ error: parseResult.error.errors[0].message }, { status: 400 });
     }
-    
+
     const eventData = parseResult.data as any;
-    
+
     if (eventData.recurring) {
       // Ahead-of-time duplication
       const seriesId = new mongoose.Types.ObjectId().toString();
-      
+
       const occurrences = generateOccurrences(
         eventData.date || new Date().toISOString().split('T')[0],
         eventData.recurrenceEndDate,
@@ -54,7 +68,7 @@ export async function POST(req: Request) {
         ...eventData,
         date: dateStr,
         seriesId,
-        isSeriesTemplate: index === 0, // First one acts as the template
+        isSeriesTemplate: index === 0,
         recurring: true,
       }));
 

@@ -71,9 +71,13 @@ export const userSchema = z.object({
   groups: z.array(z.string()).optional(),
 });
 
+// Prayer Request Schema
 export const prayerRequestSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
   content: z.string().min(10, 'Prayer request must be at least 10 characters'),
   authorName: z.string().optional(),
   campusId: z.string().optional(), // Added for guest selection, overridden by session for members
+  isAnonymous: z.boolean().optional(),
+  privacy: z.enum(['public', 'members', 'staff']).optional(),
+  category: z.string().optional(),
 });

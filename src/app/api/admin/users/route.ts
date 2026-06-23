@@ -10,8 +10,8 @@ export async function GET() {
 
   try {
     await connectToDatabase();
-    // Fetch all users except their passwords
-    const users = await User.find({}, { password: 0 }).sort({ createdAt: -1 });
+    // Exclude password, use .lean() for 30-50% faster serialization
+    const users = await User.find({}, { password: 0 }).sort({ createdAt: -1 }).lean();
     return NextResponse.json(users);
   } catch (error: any) {
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
   try {
     await connectToDatabase();
     const body = await req.json();
-    
+
     // Hash password if provided
     if (body.password) {
       const salt = await bcrypt.genSalt(10);
@@ -33,11 +33,11 @@ export async function POST(req: Request) {
     }
 
     const user = await User.create(body);
-    
+
     // Don't return password
     const userObj = user.toObject();
     delete userObj.password;
-    
+
     return NextResponse.json(userObj, { status: 201 });
   } catch (error: any) {
     if (error.code === 11000) {

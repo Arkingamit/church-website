@@ -35,7 +35,7 @@ const UserSchema = new Schema<IUser>(
     maritalStatus: { type: String, enum: ['single', 'married'] },
     marriageDate: { type: String },
     campusId: { type: String, required: true },
-    email: { type: String, required: true, lowercase: true },
+    email: { type: String, required: true, unique: true, lowercase: true },
     phone: { type: String },
     whatsapp: { type: String },
     password: { type: String }, // Optional for dummy users initially created by admin
@@ -55,6 +55,13 @@ const UserSchema = new Schema<IUser>(
   },
   { timestamps: true }
 );
+
+// Indexes for admin filtering and approval workflow
+UserSchema.index({ campusId: 1 });
+UserSchema.index({ status: 1 });
+UserSchema.index({ role: 1 });
+UserSchema.index({ campusId: 1, status: 1 });
+UserSchema.index({ createdAt: -1 });
 
 // Prevent mongoose from recompiling the model upon hot reload
 const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);

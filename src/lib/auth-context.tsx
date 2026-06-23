@@ -1,14 +1,12 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useAdminData } from './admin-data-context';
 
 export type MemberStatus = 'pending' | 'approved' | 'rejected';
 
 export interface ChurchMember {
-  id: string; // Updated to string for MongoDB _id
+  id: string;
   _id?: string;
-  name?: string;
   firstName: string;
   middleName?: string;
   lastName: string;
@@ -50,8 +48,7 @@ interface AuthContextType {
   rejectMember: (id: string) => Promise<void>;
   getApprovedMembers: () => ChurchMember[];
   getEffectiveGroups: (member: ChurchMember) => string[];
-  profiles: ChurchMember[];
-  switchProfile: (userId: string) => Promise<{ success: boolean; error?: string }>;
+  refreshMembers: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -59,19 +56,13 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [members, setMembers] = useState<ChurchMember[]>([]);
   const [session, setSession] = useState<AuthSession | null>(null);
-  const [profiles, setProfiles] = useState<ChurchMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Use a ref or simple boolean to prevent infinite loops if we decouple admin context later
-  const { addUser } = useAdminData();
-
-  const fetchSessionAndMembers = async () => {
+  const fetchSession = async () => {
     try {
-      const [sessionRes, membersRes, profilesRes] = await Promise.all([
-        fetch('/api/auth/me').catch(() => null),
-        fetch('/api/admin/users').catch(() => null),
-        fetch('/api/auth/profiles').catch(() => null)
-      ]);
+      // Only fetch session — no longer fetching /api/admin/users here.
+      // Users list is managed by AdminDataContext (scoped to /admin routes).
+      const sessionRes = await fetch('/api/auth/me').catch(() => null);
 
       if (sessionRes?.ok) {
         const data = await sessionRes.json();
@@ -86,17 +77,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession(null);
         }
       }
-
-      if (membersRes?.ok) {
-        const users = await membersRes.json();
-        // Map _id to id for backwards compatibility with the UI
-        setMembers(users.map((u: any) => ({ ...u, id: u._id })));
-      }
-
-      if (profilesRes?.ok) {
-        const p = await profilesRes.json();
-        setProfiles(p.map((u: any) => ({ ...u, id: u._id })));
-      }
     } catch (error) {
       console.error('Failed to fetch auth state', error);
     } finally {
@@ -104,8 +84,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Separate members fetch — only called when explicitly needed (e.g., admin approval flow)
+  const refreshMembers = useCallback(async () => {
+    try {
+      const membersRes = await fetch('/api/admin/users').catch(() => null);
+      if (membersRes?.ok) {
+        const users = await membersRes.json();
+        setMembers(users.map((u: any) => ({ ...u, id: u._id })));
+      }
+    } catch (error) {
+      console.error('Failed to fetch members', error);
+    }
+  }, []);
+
   useEffect(() => {
-    fetchSessionAndMembers();
+    fetchSession();
+    // Members are only loaded lazily when needed (admin routes)
   }, []);
 
   const register = useCallback(async (data: Partial<ChurchMember> & { credential?: string }) => {
@@ -117,8 +111,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       const result = await res.json();
       if (!res.ok) return { success: false, error: result.error || 'Failed to register' };
-      
-      await fetchSessionAndMembers(); // Refresh members list
+
+      await fetchSession();
       return { success: true };
     } catch (error: any) {
       return { success: false, error: 'Network error during registration' };
@@ -134,8 +128,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       const result = await res.json();
       if (!res.ok) return { success: false, error: result.error || 'Login failed' };
-      
-      await fetchSessionAndMembers(); // Refresh session
+
+      await fetchSession();
       return { success: true };
     } catch (error: any) {
       return { success: false, error: 'Network error during login' };
@@ -145,26 +139,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     setSession(null);
-    setProfiles([]);
-  }, []);
-
-  const switchProfile = useCallback(async (userId: string) => {
-    try {
-      const res = await fetch('/api/auth/switch-profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId }),
-      });
-      const result = await res.json();
-      if (!res.ok) return { success: false, error: result.error || 'Failed to switch profile' };
-      
-      await fetchSessionAndMembers();
-      // Force reload to refresh global app state
-      window.location.reload();
-      return { success: true };
-    } catch (error: any) {
-      return { success: false, error: 'Network error switching profile' };
-    }
   }, []);
 
   const getMember = useCallback((id: string) => members.find(m => m.id === id || m._id === id), [members]);
@@ -195,7 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const approveMember = useCallback(async (id: string, groups: string[]) => {
     try {
-      const qrCode = crypto.randomUUID(); // Optional, depending on your DB logic
+      const qrCode = crypto.randomUUID();
       const res = await fetch(`/api/admin/users/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -204,20 +178,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const updatedUser = await res.json();
         setMembers(prev => prev.map(m => m.id === id ? { ...m, ...updatedUser, id: updatedUser._id } : m));
-        
-        // Ensure admin-data context is also aware (it might fetch on its own soon, but keep this for now)
-        addUser({
-          name: updatedUser.name || `${updatedUser.firstName} ${updatedUser.lastName}`,
-          email: updatedUser.email,
-          role: updatedUser.role || 'member',
-          campusId: updatedUser.campusId,
-          groups,
-        });
       }
     } catch (e) {
       console.error('Failed to approve member', e);
     }
-  }, [addUser]);
+  }, []);
 
   const rejectMember = useCallback(async (id: string) => {
     try {
@@ -237,11 +202,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      session, members, isLoading, profiles,
-      register, login, logout, switchProfile,
+      session, members, isLoading,
+      register, login, logout,
       getMember, getSessionMember,
       getPendingRequests, approveMember, rejectMember,
       getApprovedMembers, getEffectiveGroups,
+      refreshMembers,
     }}>
       {children}
     </AuthContext.Provider>

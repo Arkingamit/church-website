@@ -12,8 +12,10 @@ async function getCurrentUser() {
     if (!token) return null;
     const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret-key');
     const { payload } = await jwtVerify(token, secret);
-    await connectToDatabase();
-    const user = await User.findById(payload.userId);
+    // connectToDatabase already called by caller — no double-connect
+    const user = await User.findById(payload.userId, {
+      campusId: 1, groups: 1, role: 1,
+    }).lean();
     return user;
   } catch {
     return null;
@@ -23,47 +25,45 @@ async function getCurrentUser() {
 /**
  * GET /api/notifications
  * Fetches notifications for the current user based on their campus and groups.
+ * Filtering is pushed into MongoDB to reduce data transfer.
  */
 export async function GET() {
+  await connectToDatabase();
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    await connectToDatabase();
+    const userCampusId = (user as any).campusId || '';
+    const userGroups: string[] = (user as any).groups || [];
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-    // Fetch notifications that target this user's campus/groups
-    // A notification matches if:
-    // 1. targetCampuses includes 'all' OR includes user's campusId
-    // 2. targetGroups includes 'all' OR overlaps with user's groups
+    // Push campus/group targeting into MongoDB — returns only relevant notifications
     const notifications = await Notification.find({
-      createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }, // last 30 days
+      createdAt: { $gte: thirtyDaysAgo },
+      // Exclude notifications that explicitly exclude this campus
+      excludeCampuses: { $nin: [userCampusId] },
+      // Campus must be 'all' or the user's campus
+      $or: [
+        { targetCampuses: 'all' },
+        { targetCampuses: { $size: 0 } },
+        { targetCampuses: userCampusId },
+      ],
     })
       .sort({ createdAt: -1 })
       .limit(50)
       .lean();
 
-    // Filter by targeting
-    const userCampusId = user.campusId || '';
-    const userGroups = user.groups || [];
-
+    // Group filtering still done in JS (MongoDB $in on arrays is less expressive for exclusions)
     const filtered = notifications.filter((n: any) => {
-      const ec = n.excludeCampuses || [];
       const eg = n.excludeGroups || [];
-
-      if (userCampusId && ec.includes(userCampusId)) return false;
       if (userGroups.some((g: string) => eg.includes(g))) return false;
-
-      const campusMatch =
-        !n.targetCampuses?.length ||
-        n.targetCampuses.includes('all') ||
-        n.targetCampuses.includes(userCampusId);
 
       const groupMatch =
         !n.targetGroups?.length ||
         n.targetGroups.includes('all') ||
         n.targetGroups.some((g: string) => userGroups.includes(g));
 
-      return campusMatch && groupMatch;
+      return groupMatch;
     });
 
     return NextResponse.json(filtered);
@@ -78,11 +78,11 @@ export async function GET() {
  * Mark notifications as read. Body: { ids: string[] }
  */
 export async function PATCH(req: Request) {
+  await connectToDatabase();
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    await connectToDatabase();
     const { ids } = await req.json();
     if (ids && ids.length) {
       await Notification.updateMany(

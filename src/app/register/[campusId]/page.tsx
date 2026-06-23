@@ -1,51 +1,23 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { useAdminData } from '@/lib/admin-data-context';
 import { RegistrationForm } from '@/components/ui/registration-form';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Church, AlertTriangle, ArrowRight } from 'lucide-react';
 
-interface PublicCampus {
-  _id: string;
-  name: string;
-  pastor: string;
-}
-
 export default function CampusRegisterPage() {
   const params = useParams();
   const campusId = params.campusId as string;
-  const [isLoading, setIsLoading] = useState(true);
-  const [campusFound, setCampusFound] = useState(false);
+  const { campuses } = useAdminData();
 
-  // Fetch campus data from the PUBLIC API (no auth required)
-  useEffect(() => {
-    fetch('/api/campuses')
-      .then(res => res.ok ? res.json() : [])
-      .then((campuses: PublicCampus[]) => {
-        const found = campuses.some(c => c._id === campusId);
-        setCampusFound(found);
-      })
-      .catch(() => {
-        setCampusFound(false);
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  }, [campusId]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
+  const campus = campuses.find(c => c.id === campusId);
 
   // Invalid campus — show error
-  if (!campusFound) {
+  if (!campus) {
     return (
       <div className="min-h-screen bg-transparent flex items-center justify-center p-4">
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -89,4 +61,3 @@ export default function CampusRegisterPage() {
 
   return <RegistrationForm lockedCampusId={campusId} />;
 }
-

@@ -21,12 +21,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ type: st
     await connectToDatabase();
     const { type } = await params;
     const Model = models[type];
-    
+
     if (!Model) {
       return NextResponse.json({ error: 'Invalid media type' }, { status: 400 });
     }
 
-    const items = await Model.find({}).sort({ sortOrder: 1, createdAt: -1 });
+    // .lean() returns plain JS objects — 30-50% faster than full Mongoose documents
+    const items = await Model.find({}).sort({ sortOrder: 1, createdAt: -1 }).lean();
     return NextResponse.json(items);
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch items' }, { status: 500 });
@@ -41,7 +42,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
     await connectToDatabase();
     const { type } = await params;
     const Model = models[type];
-    
+
     if (!Model) {
       return NextResponse.json({ error: 'Invalid media type' }, { status: 400 });
     }

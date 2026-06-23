@@ -135,7 +135,7 @@ export default function AdminDashboardPage() {
   prayerRequests.forEach(p => {
     activityItems.push({
       type: 'PRAYER',
-      title: `Prayer request from ${p.authorName}`,
+      title: p.isAnonymous ? 'Anonymous Prayer Request' : `Prayer request from ${p.authorName}`,
       timestamp: new Date(p.createdAt),
       rawTime: p.createdAt,
       badge: 'PRAYER',
