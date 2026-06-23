@@ -310,7 +310,6 @@ function mapIds<T extends { _id?: string }>(items: T[]): (T & { id: string })[] 
 // ── Context ────────────────────────────────────────────────────────────
 interface AdminDataContextType {
   // Data
-  isLoading: boolean;
   campuses: Campus[];
   groups: string[];
   groupScopes: Group[];
@@ -397,7 +396,6 @@ interface AdminDataContextType {
 const AdminDataContext = createContext<AdminDataContextType | null>(null);
 
 export function AdminDataProvider({ children }: { children: React.ReactNode }) {
-  const [isLoading, setIsLoading] = useState(true);
   const [campuses, setCampuses] = useState<Campus[]>([]);
   const [groups, setGroups] = useState<string[]>(defaultGroups);
   const [groupScopes, setGroupScopes] = useState<Group[]>(defaultGroupScopes);
@@ -537,8 +535,6 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (err) {
         console.error('Failed to fetch admin data:', err);
-      } finally {
-        setIsLoading(false);
       }
     };
     fetchAll();
@@ -972,7 +968,6 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AdminDataContext.Provider value={{
-      isLoading,
       flipCardConfig,
       campuses, groups, groupScopes, events, eventRegistrations, announcements, users, currentUser, setCurrentUser,
       addEvent, updateEvent, deleteEvent, addEventRegistration, getEventRegistrations,

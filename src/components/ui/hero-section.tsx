@@ -99,26 +99,25 @@ export const HeroSection = () => {
       .catch(console.error);
   }, []);
 
-  useEffect(() => {
-    if (flipCardConfig.isActive) {
-      const timer = setTimeout(() => {
-        setIsFlipped(true);
-      }, 3000);
-      return () => clearTimeout(timer);
-    } else {
-      setIsFlipped(false);
-    }
-  }, [flipCardConfig.isActive]);
-
-  // Auto-rotate fanned card stack
   const flipItems = flipCardConfig.items || [];
+
+  // Show Bible verse for 6 seconds, then flip to back (feature cards)
   useEffect(() => {
-    if (!flipCardConfig.isActive || flipItems.length <= 1) return;
+    if (flipItems.length === 0) return;
+    const timer = setTimeout(() => {
+      setIsFlipped(true);
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, [flipItems.length]);
+
+  // Auto-rotate the fanned card stack on the back side every 2 seconds
+  useEffect(() => {
+    if (flipItems.length <= 1) return;
     const interval = setInterval(() => {
       setActiveIdx(prev => (prev + 1) % flipItems.length);
-    }, 4000);
+    }, 2000);
     return () => clearInterval(interval);
-  }, [flipCardConfig.isActive, flipItems.length]);
+  }, [flipItems.length]);
 
   return (
     <section className="relative py-20 sm:py-32 overflow-hidden">
@@ -176,8 +175,10 @@ export const HeroSection = () => {
 
           {/* Featured Event Card */}
         <div className="lg:justify-self-end animate-slide-up" style={{ animationDelay: '0.6s' }}>
-          <div className="group perspective-1000 floating">
-            <div className={`relative w-full max-w-md mx-auto transition-transform duration-700 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
+          <div className="perspective-1000">
+            <div
+              className={`relative w-full max-w-md mx-auto transform-style-3d transition-transform duration-700 ${isFlipped ? 'rotate-y-180' : ''}`}
+            >
               
               {/* FRONT: Daily Bible Verse */}
               <Card className="glass-card p-8 backface-hidden shadow-2xl border-0">
@@ -193,7 +194,7 @@ export const HeroSection = () => {
 
                   <div className="space-y-4">
                     <h3 className="text-2xl font-bold italic text-primary">
-                      "{verse.text}"
+                      &quot;{verse.text}&quot;
                     </h3>
                     <p className="text-muted-foreground text-right">— {verse.reference}</p>
                   </div>
@@ -209,12 +210,12 @@ export const HeroSection = () => {
                     </div>
                     <div className="flex items-center gap-3 text-sm">
                       <Sparkles className="w-4 h-4 text-primary" />
-                      <span>Share God’s Word</span>
+                      <span>Share God&apos;s Word</span>
                     </div>
                   </div>
 
                   <div className="pt-4">
-                    <Button variant="gradient" className="w-full hover-lift">
+                    <Button variant="gradient" className="w-full hover-lift" onClick={(e) => e.stopPropagation()}>
                       <BookOpen className="w-4 h-4 mr-2" />
                       Read More
                     </Button>
@@ -222,8 +223,8 @@ export const HeroSection = () => {
                 </div>
               </Card>
 
-              {/* BACK: Admin Custom Flip Content — Fanned Stack */}
-              {flipCardConfig.isActive && flipItems.length > 0 && (() => {
+              {/* BACK: Flip Content — Fanned Stack */}
+              {flipItems.length > 0 && (() => {
                 // Build visible stack (up to 3 cards)
                 const stackRotations = ['rotate-0', '-rotate-6', 'rotate-6'];
                 const stackScales = ['scale-100', 'scale-95', 'scale-90'];
