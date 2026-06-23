@@ -10,7 +10,7 @@ const chat = createAgentChat({
 })
 
 export default function AgentPage() {
-    const { messages, input, handleInputChange, handleSubmit, status, stop, error } =
+    const { messages, handleSubmit, status, stop, error } =
         useChat({ chat })
 
     return (
