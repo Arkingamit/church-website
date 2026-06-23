@@ -189,9 +189,6 @@ export interface PrayerRequest {
   content: string;
   authorName: string;
   campusId: string;
-  isAnonymous: boolean;
-  privacy: 'public' | 'members' | 'staff';
-  category: string;
   prayedCount: number;
   comments: number;
   status: 'pending' | 'approved' | 'rejected';

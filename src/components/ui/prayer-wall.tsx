@@ -15,22 +15,12 @@ interface PrayerRequest {
   title: string;
   content: string;
   authorName: string;
-  isAnonymous: boolean;
-  privacy: string;
-  category: string;
   prayedCount: number;
   comments: number;
   createdAt: string;
 }
 
-const categoryColors = {
-  Health: "bg-success/10 text-success",
-  Career: "bg-accent/10 text-accent-foreground",
-  Relationships: "bg-prayer/10 text-prayer",
-  Church: "bg-primary/10 text-primary",
-  Family: "bg-muted text-muted-foreground",
-  General: "bg-gray-100 text-gray-800"
-};
+
 
 export const PrayerWall = () => {
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
@@ -42,9 +32,6 @@ export const PrayerWall = () => {
     title: '',
     content: '',
     authorName: '',
-    isAnonymous: false,
-    privacy: 'public',
-    category: 'General',
     campusId: ''
   });
 
@@ -107,7 +94,7 @@ export const PrayerWall = () => {
       if (res.ok) {
         toast.success('Prayer request submitted! It will appear once approved by your campus leader.');
         setShowForm(false);
-        setNewRequest({ title: '', content: '', authorName: '', isAnonymous: false, privacy: 'public', category: 'General', campusId: '' });
+        setNewRequest({ title: '', content: '', authorName: '', campusId: '' });
         fetchPrayers(); // Reload the list (it won't show up until approved though)
       } else {
         const data = await res.json();
@@ -195,23 +182,9 @@ export const PrayerWall = () => {
                         placeholder="Your Name (Optional)"
                         value={newRequest.authorName}
                         onChange={(e) => setNewRequest(prev => ({ ...prev, authorName: e.target.value }))}
-                        disabled={newRequest.isAnonymous}
                       />
                     </div>
-                    <div>
-                      <select
-                        value={newRequest.category}
-                        onChange={(e) => setNewRequest(prev => ({ ...prev, category: e.target.value }))}
-                        className="w-full text-sm border rounded px-3 py-2 bg-transparent"
-                      >
-                        <option value="General">General</option>
-                        <option value="Health">Health</option>
-                        <option value="Family">Family</option>
-                        <option value="Career">Career</option>
-                        <option value="Relationships">Relationships</option>
-                        <option value="Church">Church</option>
-                      </select>
-                    </div>
+
                     
                     {!sessionMember && (
                       <div className="sm:col-span-2">
@@ -234,29 +207,7 @@ export const PrayerWall = () => {
                     )}
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-4 pt-2">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="anonymous"
-                        checked={newRequest.isAnonymous}
-                        onChange={(e) => setNewRequest(prev => ({ ...prev, isAnonymous: e.target.checked, authorName: '' }))}
-                        className="rounded"
-                      />
-                      <label htmlFor="anonymous" className="text-sm">Post anonymously</label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <select
-                        value={newRequest.privacy}
-                        onChange={(e) => setNewRequest(prev => ({ ...prev, privacy: e.target.value }))}
-                        className="text-sm border rounded px-3 py-1 bg-transparent"
-                      >
-                        <option value="public">Public</option>
-                        <option value="members">Members Only</option>
-                        <option value="staff">Staff Only</option>
-                      </select>
-                    </div>
-                  </div>
+
 
                   <div className="flex gap-2 pt-4">
                     <Button type="submit" disabled={submitting}>
@@ -277,9 +228,6 @@ export const PrayerWall = () => {
             <Button variant="default" size="sm">All Prayers</Button>
             <Button variant="outline" size="sm">Recent</Button>
             <Button variant="outline" size="sm">Most Prayed</Button>
-            <Button variant="outline" size="sm">Health</Button>
-            <Button variant="outline" size="sm">Family</Button>
-            <Button variant="outline" size="sm">Career</Button>
           </div>
 
           {/* Prayer Requests */}
@@ -299,15 +247,7 @@ export const PrayerWall = () => {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center gap-2">
-                          <Badge className={`${categoryColors[request.category as keyof typeof categoryColors] || categoryColors.General} text-xs`}>
-                            {request.category}
-                          </Badge>
-                          {request.privacy !== 'public' && (
-                            <Badge variant="outline" className="text-xs gap-1">
-                              <Shield className="w-3 h-3" />
-                              {request.privacy === 'members' ? 'Members' : 'Staff Only'}
-                            </Badge>
-                          )}
+
                         </div>
                         <h3 className="text-lg font-semibold">{request.title}</h3>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">

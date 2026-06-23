@@ -51,14 +51,7 @@ export default function PrayerRequestsPage() {
     month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
   });
 
-  const categoryColors: Record<string, string> = {
-    Health: "bg-success/10 text-success border-success/20",
-    Career: "bg-accent/10 text-accent-foreground border-accent/20",
-    Relationships: "bg-rose-500/10 text-rose-500 border-rose-500/20",
-    Church: "bg-primary/10 text-primary border-primary/20",
-    Family: "bg-amber-500/10 text-amber-500 border-amber-500/20",
-    General: "bg-gray-100 text-gray-800 border-gray-200"
-  };
+
 
   return (
     <div className="space-y-8">
@@ -124,15 +117,7 @@ export default function PrayerRequestsPage() {
                     <div className="flex items-start justify-between gap-4">
                       <div className="space-y-1 flex-1">
                         <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <Badge variant="outline" className={categoryColors[prayer.category] || categoryColors.General}>
-                            {prayer.category}
-                          </Badge>
-                          {prayer.privacy !== 'public' && (
-                            <Badge variant="outline" className="gap-1 border-primary/20 bg-primary/5 text-primary">
-                              <Shield className="w-3 h-3" />
-                              {prayer.privacy === 'members' ? 'Members Only' : 'Staff Only'}
-                            </Badge>
-                          )}
+
                           {!isCampusLeader && (
                              <Badge variant="outline" className="text-[10px]">
                                {campuses.find(c => c.id === prayer.campusId)?.name || 'Unknown Campus'}
@@ -142,7 +127,7 @@ export default function PrayerRequestsPage() {
                         <h3 className="font-bold text-lg leading-tight">{prayer.title}</h3>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <User className="w-3.5 h-3.5" /> 
-                          {prayer.isAnonymous ? 'Anonymous' : prayer.authorName}
+                          {prayer.authorName}
                           <span className="text-border px-1">•</span>
                           {formatDate(prayer.createdAt)}
                         </div>
@@ -199,15 +184,7 @@ export default function PrayerRequestsPage() {
                     <div className="flex items-start justify-between gap-4">
                       <div className="space-y-1 flex-1">
                         <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <Badge variant="outline" className={categoryColors[prayer.category] || categoryColors.General}>
-                            {prayer.category}
-                          </Badge>
-                          {prayer.privacy !== 'public' && (
-                            <Badge variant="outline" className="gap-1 border-primary/20 bg-primary/5 text-primary">
-                              <Shield className="w-3 h-3" />
-                              {prayer.privacy === 'members' ? 'Members Only' : 'Staff Only'}
-                            </Badge>
-                          )}
+
                           {!isCampusLeader && (
                              <Badge variant="outline" className="text-[10px]">
                                {campuses.find(c => c.id === prayer.campusId)?.name || 'Unknown Campus'}
@@ -217,7 +194,7 @@ export default function PrayerRequestsPage() {
                         <h3 className="font-bold text-lg leading-tight">{prayer.title}</h3>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <User className="w-3.5 h-3.5" /> 
-                          {prayer.isAnonymous ? 'Anonymous' : prayer.authorName}
+                          {prayer.authorName}
                           <span className="text-border px-1">•</span>
                           {formatDate(prayer.createdAt)}
                         </div>

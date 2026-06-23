@@ -10,23 +10,7 @@ export async function GET(req: Request) {
     await connectToDatabase();
     const session = await verifySession();
     
-    // Determine the privacy levels this user can see
-    const allowedPrivacy: Array<'public' | 'members' | 'staff'> = ['public'];
-    
-    if (session.isAuth && session.userId) {
-      const user = await User.findById(session.userId);
-      if (user) {
-        if (user.role === 'admin' || user.role === 'super_admin' || user.role === 'campus_leader' || user.role === 'member') {
-          allowedPrivacy.push('members');
-        }
-        if (user.role === 'admin' || user.role === 'super_admin' || user.role === 'campus_leader') {
-          allowedPrivacy.push('staff');
-        }
-      }
-    }
-
     const prayers = await PrayerRequest.find({
-      privacy: { $in: allowedPrivacy },
       status: 'approved'
     }).sort({ createdAt: -1 });
 
@@ -54,7 +38,7 @@ export async function POST(req: Request) {
     const data = parseResult.data;
     const session = await verifySession();
     
-    let authorName = data.isAnonymous ? 'Anonymous' : (data.authorName || 'Anonymous');
+    let authorName = data.authorName || 'Anonymous';
     let authorId = undefined;
     let campusId = data.campusId || 'global'; // Fallback for guest if they don't select one
     
@@ -62,7 +46,7 @@ export async function POST(req: Request) {
     if (session.isAuth && session.userId) {
       const user = await User.findById(session.userId);
       if (user) {
-        if (!data.isAnonymous && !data.authorName) {
+        if (!data.authorName) {
           authorName = `${user.firstName} ${user.lastName}`;
         }
         authorId = user._id;
@@ -73,9 +57,6 @@ export async function POST(req: Request) {
     const prayer = await PrayerRequest.create({
       title: data.title,
       content: data.content,
-      isAnonymous: !!data.isAnonymous,
-      privacy: data.privacy || 'public',
-      category: data.category || 'General',
       authorName: authorName,
       authorId: authorId,
       campusId: campusId,
