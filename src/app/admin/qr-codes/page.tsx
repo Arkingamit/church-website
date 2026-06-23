@@ -12,6 +12,11 @@ import {
 export default function QRCodesPage() {
   const { campuses, currentUser } = useAdminData();
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const isCampusLeader = currentUser.role === 'campus_leader';
 
@@ -24,7 +29,8 @@ export default function QRCodesPage() {
     if (typeof window !== 'undefined') {
       return `${window.location.origin}/register/${campusId}`;
     }
-    return `/register/${campusId}`;
+    // Fallback for SSR, though we won't render the QR code until mounted
+    return `http://localhost:3000/register/${campusId}`;
   };
 
   const getQRImageUrl = (campusId: string, size: number = 200) => {
@@ -92,7 +98,7 @@ export default function QRCodesPage() {
 
       {/* QR Code Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {visibleCampuses.map(campus => {
+        {mounted && visibleCampuses.map(campus => {
           const url = getRegistrationUrl(campus.id);
           const qrImageUrl = getQRImageUrl(campus.id);
           const isCopied = copiedId === campus.id;
