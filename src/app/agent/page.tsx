@@ -10,14 +10,14 @@ const chat = createAgentChat({
 })
 
 export default function AgentPage() {
-    const { messages, handleSubmit, status, stop, error } =
+    const { messages, sendMessage, status, stop, error } =
         useChat({ chat })
 
     return (
         <div className="flex flex-col h-[calc(100vh-80px)] mt-20 max-w-2xl mx-auto w-full border rounded-2xl overflow-hidden shadow-lg bg-background">
             <AgentChat
                 messages={messages}
-                onSend={() => handleSubmit()}
+                onSend={(msg) => sendMessage({ parts: [{ type: "text", text: msg.content }] })}
                 status={status}
                 onStop={stop}
                 error={error ?? undefined}

@@ -11,7 +11,7 @@ import { useAdminData } from "@/lib/admin-data-context";
 import { useAuth } from "@/lib/auth-context";
 
 export default function PrayerWallPage() {
-  const { prayerRequests, refreshData } = useAdminData();
+  const { prayerRequests } = useAdminData();
   const { session } = useAuth();
   
   const [content, setContent] = useState("");
@@ -31,8 +31,8 @@ export default function PrayerWallPage() {
         body: JSON.stringify({
           content,
           isAnonymous,
-          authorId: session?.userId,
-          authorName: session?.user?.name,
+          authorId: session?.memberId,
+          authorName: session?.name,
         }),
       });
 
@@ -41,7 +41,7 @@ export default function PrayerWallPage() {
         setContent("");
         setIsAnonymous(false);
         // Refresh global data
-        setTimeout(() => refreshData(), 2000);
+        setTimeout(() => window.location.reload(), 2000);
       }
     } catch (err) {
       console.error("Failed to submit prayer", err);
@@ -170,7 +170,7 @@ export default function PrayerWallPage() {
 function PrayerCard({ prayer, session }: { prayer: any, session: any }) {
   const [prayedCount, setPrayedCount] = useState(prayer.prayedCount || 0);
   const [hasPrayed, setHasPrayed] = useState(
-    prayer.prayedBy && session && prayer.prayedBy.includes(session.userId)
+    prayer.prayedBy && session && prayer.prayedBy.includes(session.memberId)
   );
 
   const handlePray = async () => {
