@@ -113,8 +113,8 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
   return (
     <div className="min-h-screen bg-transparent flex flex-col">
       {/* Top sticky header */}
-      <header className="sticky top-0 h-16 bg-card/85 backdrop-blur-md border-b border-border/50 z-30 flex items-center justify-between px-4 md:px-6 shrink-0">
-        <div className="flex items-center gap-3">
+      <header className="sticky top-0 h-16 bg-card/85 backdrop-blur-md border-b border-border/50 z-30 flex items-center justify-between md:justify-end px-4 md:px-6 shrink-0">
+        <div className="flex items-center gap-3 md:hidden">
           <Button
             variant="ghost"
             size="icon"
@@ -126,12 +126,12 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
           </Button>
           
           <Link href="/admin" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0">
-              <Church className="w-4.5 h-4.5 text-white" />
+            <div className="w-10 h-10 flex items-center justify-center shrink-0">
+              <img src="/logo.png" alt="Grace Logo" className="w-9 h-9 object-contain" />
             </div>
             <div>
-              <span className="text-sm font-bold truncate gradient-text block leading-none">Grace Admin</span>
-              <span className="text-[9px] text-muted-foreground block mt-0.5">Management Portal</span>
+              <span className="text-lg font-bold truncate gradient-text block leading-none">Grace Admin</span>
+              <span className="text-[12px] text-muted-foreground block mt-0.5">Management Portal</span>
             </div>
           </Link>
         </div>
@@ -146,33 +146,33 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
           
           <Link href="/">
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-xs gap-1.5 px-2.5">
-              <ArrowLeft className="w-3.5 h-3.5" /> Back to Site
+              <ArrowLeft className="w-3.5 h-3.5" /> Home Page
             </Button>
           </Link>
         </div>
       </header>
 
       {/* Main Container */}
-      <div className="flex-1 flex relative min-h-0">
+      <div className="flex-1 flex relative min-h-0 md:pl-64">
         {/* Backdrop Overlay when drawer is open */}
         {isSidebarOpen && (
           <div 
             onClick={() => setIsSidebarOpen(false)}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-all duration-300 animate-in fade-in"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-all duration-300 animate-in fade-in md:hidden"
           />
         )}
 
         {/* Drawer Sidebar */}
         <aside
-          className={`fixed top-0 left-0 h-screen w-64 bg-card border-r border-border/50 z-50 flex flex-col transition-transform duration-300 ease-in-out shadow-2xl ${
+          className={`fixed top-0 left-0 h-screen w-64 bg-card border-r border-border/50 z-50 flex flex-col transition-transform duration-300 ease-in-out shadow-2xl md:translate-x-0 md:shadow-none md:z-40 ${
             isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
           {/* Logo & Close Button */}
           <div className="flex items-center justify-between px-4 h-16 border-b border-border/50">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0">
-                <Church className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 flex items-center justify-center shrink-0">
+                <img src="/logo.png" alt="Grace Logo" className="w-8 h-8 object-contain" />
               </div>
               <div>
                 <h2 className="text-sm font-bold truncate gradient-text">Grace Admin</h2>
@@ -183,7 +183,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
               variant="ghost"
               size="icon"
               onClick={() => setIsSidebarOpen(false)}
-              className="text-muted-foreground hover:text-foreground hover:bg-muted"
+              className="text-muted-foreground hover:text-foreground hover:bg-muted md:hidden"
             >
               <X className="w-4.5 h-4.5" />
             </Button>

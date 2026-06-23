@@ -268,7 +268,7 @@ export default function GalleryPage() {
             </Button>
           </Link>
           <div className="text-center flex-1 pr-20">
-            <h1 className="text-xl font-bold tracking-tight italic">Grace Photo Gallery</h1>
+            <h1 className="text-xl font-bold tracking-tight italic border-l-4 border-[#8B2323] pl-3 py-0.5 leading-none md:border-l-0 md:pl-0">Grace Photo Gallery</h1>
           </div>
         </div>
       </div>

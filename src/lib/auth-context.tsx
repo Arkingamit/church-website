@@ -56,6 +56,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [members, setMembers] = useState<ChurchMember[]>([]);
   const [session, setSession] = useState<AuthSession | null>(null);
+  const [sessionMember, setSessionMember] = useState<ChurchMember | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchSession = async () => {
@@ -67,6 +68,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (sessionRes?.ok) {
         const data = await sessionRes.json();
         if (data.user) {
+          const formattedMember = {
+            ...data.user,
+            id: data.user._id
+          };
+          setSessionMember(formattedMember);
           setSession({
             memberId: data.user._id,
             email: data.user.email,
@@ -75,7 +81,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
         } else {
           setSession(null);
+          setSessionMember(null);
         }
+      } else {
+        setSession(null);
+        setSessionMember(null);
       }
     } catch (error) {
       console.error('Failed to fetch auth state', error);
@@ -139,6 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     setSession(null);
+    setSessionMember(null);
   }, []);
 
   const getMember = useCallback((id: string) => members.find(m => m.id === id || m._id === id), [members]);
@@ -158,8 +169,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const getSessionMember = useCallback(() => {
     if (!session) return undefined;
-    return members.find(m => m.id === session.memberId);
-  }, [session, members]);
+    return sessionMember || members.find(m => m.id === session.memberId);
+  }, [session, sessionMember, members]);
 
   const getPendingRequests = useCallback((campusId?: string) => {
     return members.filter(m =>

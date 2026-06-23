@@ -178,4 +178,33 @@
     background-clip: text;
     -webkit-text-fill-color: transparent;
   }
+
+  .animate-page-enter {
+    animation: pageEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes pageEnter {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-jiggle {
+    animation: jiggle 2s infinite cubic-bezier(.36,.07,.19,.97);
+  }
+
+  @keyframes jiggle {
+    0% { transform: rotate(0); }
+    15% { transform: rotate(-15deg); }
+    20% { transform: rotate(10deg); }
+    25% { transform: rotate(-10deg); }
+    30% { transform: rotate(5deg); }
+    35% { transform: rotate(0); }
+    100% { transform: rotate(0); }
+  }
 }

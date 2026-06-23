@@ -17,10 +17,21 @@ export function PublicLayoutWrapper({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <Navigation />
-      <main className="flex-1 pb-16 md:pb-0">{children}</main>
-      <Footer />
+    <div 
+      className="flex min-h-screen flex-col bg-[#FAF7F2] md:bg-background overflow-x-hidden"
+      style={{
+        backgroundImage: 'var(--bg-pattern)',
+        backgroundRepeat: 'repeat',
+        backgroundSize: '240px 240px'
+      }}
+    >
+      <div className="hidden md:block">
+        <Navigation />
+      </div>
+      <main key={pathname} className="flex-1 pb-20 md:pb-0 animate-page-enter">{children}</main>
+      <div className="hidden md:block">
+        <Footer />
+      </div>
       <MobileBottomNav />
     </div>
   );

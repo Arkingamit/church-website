@@ -98,7 +98,7 @@ export default function MusicPage() {
       <div className="container mx-auto px-4 space-y-8">
         {/* Header Section */}
         <div className="text-center space-y-4 flex flex-col items-center">
-          <h2 className="text-4xl font-bold">Music Library</h2>
+          <h2 className="text-4xl font-bold border-l-4 border-[#8B2323] pl-3 py-0.5 leading-none md:border-l-0 md:pl-0">Music Library</h2>
           <GoldRule />
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Discover our complete collection of worship music, hymns, and

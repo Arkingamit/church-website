@@ -17,6 +17,7 @@ export default function EventsPage() {
   const { getSessionMember, getEffectiveGroups } = useAuth();
   const [albumEvent, setAlbumEvent] = useState<Event | null>(null);
   const [rsvpEvent, setRsvpEvent] = useState<Event | null>(null);
+  const [activeTab, setActiveTab] = useState("upcoming");
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -185,18 +186,18 @@ export default function EventsPage() {
                   <ChevronLeft className="w-4 h-4" /> Back to Home
                 </Button>
               </Link>
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">Grace Calendar</h1>
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 border-l-4 border-[#8B2323] pl-3 py-0.5 leading-none md:border-l-0 md:pl-0">Grace Calendar</h1>
               <p className="text-xl text-muted-foreground">
                 Stay connected with our community events, services, and gatherings.
               </p>
             </div>
 
             {/* Tabs */}
-            <Tabs defaultValue="upcoming" className="w-full">
-              <TabsList className="grid w-full max-w-md grid-cols-3 mb-8">
-                <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-                <TabsTrigger value="registered">Registered</TabsTrigger>
-                <TabsTrigger value="past">Past Events</TabsTrigger>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="flex w-full overflow-x-auto no-scrollbar justify-start md:grid md:grid-cols-3 md:max-w-md mb-6 md:mb-8 bg-card/50 p-1 border border-border/50">
+                <TabsTrigger className="shrink-0 rounded-lg px-4 py-2" value="upcoming">Upcoming Events</TabsTrigger>
+                <TabsTrigger className="shrink-0 rounded-lg px-4 py-2" value="registered">Registered Events</TabsTrigger>
+                <TabsTrigger className="shrink-0 rounded-lg px-4 py-2" value="past">Past Events</TabsTrigger>
               </TabsList>
 
               <TabsContent value="upcoming" className="space-y-6">

@@ -143,7 +143,7 @@ export const PrayerWall = () => {
         <div className="max-w-4xl mx-auto">
           {/* Section Header */}
           <div className="text-center space-y-4 mb-12">
-            <h2 className="text-4xl font-bold">Prayer Wall</h2>
+            <h2 className="text-4xl font-bold border-l-4 border-[#8B2323] pl-3 py-0.5 leading-none md:border-l-0 md:pl-0">Prayer Wall</h2>
             <p className="text-xl text-muted-foreground">
               Share your prayer requests and pray for others in our community
             </p>
