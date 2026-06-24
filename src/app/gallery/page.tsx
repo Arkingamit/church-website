@@ -50,7 +50,7 @@ export default function GalleryPage() {
     ? Array.from(new Set([...effectiveGroups]))
     : ['all'];
 
-  const galleryAlbums = getVisibleGalleryAlbums('all', userGroups as string[]);
+  const galleryAlbums = getVisibleGalleryAlbums('all', userGroups as string[], sessionMember?.role || 'member');
 
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");

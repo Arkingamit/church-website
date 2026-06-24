@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireAdmin, requireAuth } from '@/lib/api-auth';
 import connectToDatabase from '@/lib/db';
 import { Sermon, SermonSeries, WorshipVideo, GalleryAlbum, LiveStream } from '@/models/Media';
 
@@ -14,8 +14,8 @@ const models: any = {
 };
 
 export async function GET(req: Request, { params }: { params: Promise<{ type: string }> }) {
-  const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const session = await requireAuth();
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     await connectToDatabase();

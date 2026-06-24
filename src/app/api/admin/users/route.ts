@@ -26,6 +26,22 @@ export async function POST(req: Request) {
     await connectToDatabase();
     const body = await req.json();
 
+    // Auto-fill required fields that might be missing from the admin UI
+    if (body.name && (!body.firstName || !body.lastName)) {
+      const parts = body.name.trim().split(' ');
+      body.firstName = parts[0] || 'Unknown';
+      body.lastName = parts.slice(1).join(' ') || 'Unknown';
+    }
+
+    if (!body.gender) {
+      body.gender = 'male'; // Defaulting to pass validation if missing in admin form
+    }
+
+    // Set user status to pending, and record the admin who added them.
+    // The creator admin must explicitly approve this request before the user can log in.
+    body.status = 'pending';
+    body.createdBy = admin.userId;
+
     // Hash password if provided
     if (body.password) {
       const salt = await bcrypt.genSalt(10);

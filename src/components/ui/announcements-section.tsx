@@ -39,7 +39,7 @@ export const AnnouncementsSection = () => {
 
   const campusForFilter = selectedCampus === 'all' ? 'all' : selectedCampus;
 
-  const visibleAnnouncements = getVisibleAnnouncements(campusForFilter, userGroups as string[]);
+  const visibleAnnouncements = getVisibleAnnouncements(campusForFilter, userGroups as string[], sessionMember?.role || 'member');
 
   return (
     <section id="announcements" className="py-10 sm:py-16 bg-muted/30">

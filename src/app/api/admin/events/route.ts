@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireAdmin, requireAuth } from '@/lib/api-auth';
 import connectToDatabase from '@/lib/db';
 import EventModel from '@/models/Event';
 import { eventSchema } from '@/lib/validations';
@@ -20,8 +20,8 @@ const LIST_PROJECTION = {
 };
 
 export async function GET() {
-  const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const session = await requireAuth();
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     await connectToDatabase();

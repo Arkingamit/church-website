@@ -937,8 +937,9 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
   }, [prayerRequests]);
 
   // ── Filtering ─────────────────────────────────────────────────────────
-  const getVisibleAnnouncements = useCallback((campusId: string, userGroups: string[]) => {
+  const getVisibleAnnouncements = useCallback((campusId: string, userGroups: string[], role?: string) => {
     return announcements.filter(a => {
+      if (role === 'admin' || role === 'super_admin') return true;
       const tc = a.targetCampuses ?? ['all'];
       const tg = a.targetGroups ?? ['all'];
       const ec = a.excludeCampuses ?? [];
@@ -953,8 +954,9 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
     });
   }, [announcements]);
 
-  const getVisibleEvents = useCallback((campusId: string, userGroups: string[]) => {
+  const getVisibleEvents = useCallback((campusId: string, userGroups: string[], role?: string) => {
     return events.filter(e => {
+      if (role === 'admin' || role === 'super_admin') return true;
       const tc = e.targetCampuses ?? ['all'];
       const tg = e.targetGroups ?? ['all'];
       const ec = e.excludeCampuses ?? [];
@@ -969,8 +971,9 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
     });
   }, [events]);
 
-  const getVisibleGalleryAlbums = useCallback((campusId: string, userGroups: string[]) => {
+  const getVisibleGalleryAlbums = useCallback((campusId: string, userGroups: string[], role?: string) => {
     return galleryAlbums.filter(a => {
+      if (role === 'admin' || role === 'super_admin') return true;
       const tc = a.targetCampuses ?? ['all'];
       const tg = a.targetGroups ?? ['all'];
       const ec = a.excludeCampuses ?? [];

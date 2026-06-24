@@ -46,7 +46,7 @@ export default function GallerySection() {
     ? Array.from(new Set([...effectiveGroups]))
     : ['all'];
 
-  const galleryAlbums = getVisibleGalleryAlbums('all', userGroups as string[]);
+  const galleryAlbums = getVisibleGalleryAlbums('all', userGroups as string[], sessionMember?.role || 'member');
 
   const [selectedAlbum, setSelectedAlbum] = useState<any>(null);
   const [previewPhotos, setPreviewPhotos] = useState<any[]>([]);

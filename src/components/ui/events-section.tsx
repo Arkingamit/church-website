@@ -402,7 +402,8 @@ export const EventsSection = () => {
 
   const visibleEvents = getVisibleEvents(
     selectedCampus === 'all' ? 'all' : selectedCampus,
-    userGroups as string[]
+    userGroups as string[],
+    sessionMember?.role || 'member'
   );
 
   return (

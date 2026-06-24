@@ -35,15 +35,12 @@ export default function EventsPage() {
   const visibleEvents = useMemo(() => {
     const sessionMember = getSessionMember();
     if (!sessionMember) {
-      // If not logged in, only see "all" campus / "all" groups events (or maybe guest-allowed)
-      // We'll treat guest as having 'global' campus and no special groups
-      return getVisibleEvents('global', []);
+      return getVisibleEvents('global', [], 'member');
     }
-    const effectiveGroups = getEffectiveGroups(sessionMember);
-    const isAdminOrLeader = sessionMember.role === 'admin' || sessionMember.role === 'super_admin' || sessionMember.role === 'campus_leader';
-    const userGroups = isAdminOrLeader ? ['all'] : Array.from(new Set([...effectiveGroups, 'all']));
-    
-    return getVisibleEvents(sessionMember.campusId || 'all', userGroups);
+
+    const userGroups = getEffectiveGroups(sessionMember);
+    // If user has a specific campus, use it, otherwise 'all'
+    return getVisibleEvents(sessionMember.campusId || 'all', userGroups, sessionMember.role || 'member');
   }, [getSessionMember, getEffectiveGroups, getVisibleEvents]);
 
   const upcomingEvents = useMemo(() => {

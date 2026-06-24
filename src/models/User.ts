@@ -20,6 +20,7 @@ export interface IUser extends Document {
   groups: string[];
   qrCode?: string;
   familyMemberId?: mongoose.Types.ObjectId;
+  createdBy?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -52,6 +53,7 @@ const UserSchema = new Schema<IUser>(
     groups: [{ type: String }],
     qrCode: { type: String },
     familyMemberId: { type: Schema.Types.ObjectId, ref: 'User' },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }
 );

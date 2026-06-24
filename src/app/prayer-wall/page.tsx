@@ -40,11 +40,7 @@ export default function PrayerWallPage() {
         setSubmitted(true);
         setContent("");
         setIsAnonymous(false);
-<<<<<<< HEAD
         // Refresh global data
-=======
-        // Refresh page to show new data
->>>>>>> eb272dbb9deda15e6bb215b49471fa0956d65bfd
         setTimeout(() => window.location.reload(), 2000);
       }
     } catch (err) {

@@ -115,10 +115,20 @@ export function QRScanner({ onClose }: QRScannerProps) {
                   router.push(`/register/${campusId}`);
                 });
               } else {
-                setError('QR code does not match any campus');
+                html5QrCode.stop().then(() => {
+                  scannerRef.current = null;
+                  setError('This QR code belongs to a campus that does not exist in this database.');
+                }).catch(() => {
+                  setError('This QR code belongs to a campus that does not exist in this database.');
+                });
               }
             } else {
-              setError('Invalid QR code. Please scan a campus registration QR code.');
+              html5QrCode.stop().then(() => {
+                scannerRef.current = null;
+                setError('Invalid QR code. Please scan a valid campus registration QR code.');
+              }).catch(() => {
+                setError('Invalid QR code. Please scan a valid campus registration QR code.');
+              });
             }
           },
           () => {
@@ -193,29 +203,31 @@ export function QRScanner({ onClose }: QRScannerProps) {
           </div>
         )}
 
-        {/* QR Reader Element */}
-        <div
-          id="qr-reader"
-          className="rounded-2xl overflow-hidden bg-muted/20"
-          style={{ minHeight: 300 }}
-        />
-
-        {/* Error */}
+        {/* Error overlay */}
         {error && (
-          <div className="mt-4 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-center">
-            <AlertTriangle className="w-5 h-5 text-destructive mx-auto mb-2" />
-            <p className="text-destructive text-sm">{error}</p>
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/95 p-6 rounded-2xl border border-destructive/20 text-center">
+            <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-3" />
+            <p className="text-destructive font-semibold mb-1">Scan Failed</p>
+            <p className="text-white/80 text-xs mb-4 leading-relaxed">{error}</p>
             <Button
               variant="outline"
               size="sm"
-              className="mt-3"
+              className="text-white border-white/20 hover:bg-white/10"
               onClick={handleClose}
             >
               Close Scanner
             </Button>
           </div>
         )}
+
+        {/* QR Reader Element */}
+        <div
+          id="qr-reader"
+          className="rounded-2xl overflow-hidden bg-muted/20"
+          style={{ minHeight: 300 }}
+        />
       </div>
+
 
       {/* Hint */}
       {!error && !scannedCampus && (

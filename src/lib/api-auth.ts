@@ -1,6 +1,20 @@
 import { verifySession } from './auth-utils';
 
 /**
+ * Ensures the requester is authenticated (at least a member).
+ * Returns the session if authorized, or null if not.
+ */
+export async function requireAuth() {
+  const session = await verifySession();
+
+  if (!session.isAuth || !session.userId) {
+    return null;
+  }
+
+  return session;
+}
+
+/**
  * Ensures the requester is authenticated and has an admin-level role.
  * Reads role directly from the JWT — no database query required.
  * Returns a lightweight session object if authorized, or null if not.

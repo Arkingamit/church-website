@@ -54,8 +54,26 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const { currentUser, campuses } = useAdminData();
-  const { getPendingRequests } = useAuth();
+  const { currentUser, setCurrentUser, campuses } = useAdminData();
+  const { getPendingRequests, refreshMembers, getSessionMember } = useAuth();
+
+  React.useEffect(() => {
+    refreshMembers();
+  }, [refreshMembers]);
+
+  React.useEffect(() => {
+    const sessionMember = getSessionMember();
+    if (sessionMember && sessionMember.id !== currentUser.id) {
+      setCurrentUser({
+        id: sessionMember.id,
+        name: `${sessionMember.firstName || ''} ${sessionMember.lastName || ''}`.trim() || sessionMember.email,
+        email: sessionMember.email,
+        role: sessionMember.role,
+        campusId: sessionMember.campusId || 'main',
+        groups: sessionMember.groups || [],
+      });
+    }
+  }, [getSessionMember, currentUser.id, setCurrentUser]);
 
   const isCampusLeader = currentUser.role === 'campus_leader';
   const pendingCount = isCampusLeader

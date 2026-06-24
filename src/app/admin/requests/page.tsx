@@ -17,13 +17,20 @@ import {
 } from 'lucide-react';
 
 export default function RequestsPage() {
-  const { members, getPendingRequests, approveMember, rejectMember, getMember } = useAuth();
+  const { session, members, getPendingRequests, approveMember, rejectMember, getMember } = useAuth();
   const { campuses, groups, currentUser } = useAdminData();
 
   const isCampusLeader = currentUser.role === 'campus_leader';
-  const pendingRequests = isCampusLeader
+  const pendingRequests = (isCampusLeader
     ? getPendingRequests(currentUser.campusId)
-    : getPendingRequests();
+    : getPendingRequests()
+  ).filter(member => {
+    // If the member was added by an admin, only show it to the admin who created them
+    if (member.createdBy) {
+      return member.createdBy === session?.memberId;
+    }
+    return true;
+  });
 
   const recentlyProcessed = members.filter(m =>
     (m.status === 'approved' || m.status === 'rejected') && m.qrCode !== undefined

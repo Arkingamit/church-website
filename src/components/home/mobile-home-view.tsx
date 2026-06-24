@@ -43,7 +43,7 @@ export function MobileHomeView() {
   const sessionMember = getSessionMember();
   const effectiveGroups = sessionMember ? getEffectiveGroups(sessionMember) : [];
   const userGroups = effectiveGroups.length > 0 ? Array.from(new Set([...effectiveGroups])) : ['all'];
-  const galleryAlbums = getVisibleGalleryAlbums('all', userGroups as string[]);
+  const galleryAlbums = getVisibleGalleryAlbums('all', userGroups as string[], sessionMember?.role || 'member');
   
   // Fallback verse if API fails
   const [verse, setVerse] = useState({
