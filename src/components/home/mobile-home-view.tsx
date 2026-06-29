@@ -16,6 +16,7 @@ import {
 import { useAdminData, type FlipCardItem } from '@/lib/admin-data-context';
 import { useAuth } from '@/lib/auth-context';
 import { motion, AnimatePresence } from 'framer-motion';
+import { LiveStreamSection } from '@/components/ui/live-stream';
 
 const christianIcons = [
   // Cross
@@ -490,6 +491,35 @@ export function MobileHomeView() {
           </div>
         </div>
 
+        {/* 5.5 Latest Sermons */}
+        {sermons && sermons.length > 0 && (
+          <div className="mb-8">
+            <div className="flex justify-between items-end mb-4">
+              <h2 className="text-2xl font-serif font-bold text-[#1A202C] border-l-4 border-[#8B2323] pl-3 py-0.5 leading-none">Latest Sermons</h2>
+              <Link href="/sermons" className="text-[#8B2323] text-sm font-bold flex items-center">
+                See all <ChevronRight className="w-4 h-4 ml-1" />
+              </Link>
+            </div>
+            
+            <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 snap-x no-scrollbar">
+              {sermons.slice(0, 5).map(sermon => (
+                <Link href={`/sermons/series/${sermon.seriesId}`} key={sermon.id} className="min-w-[280px] w-[280px] h-[160px] rounded-3xl overflow-hidden relative shadow-sm snap-start group block">
+                  <img src={`https://img.youtube.com/vi/${sermon.videoId}/mqdefault.jpg`} alt={sermon.title} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-4">
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-red-600/90 backdrop-blur-sm text-white flex items-center justify-center pl-1 shadow-lg">
+                      <Play className="w-5 h-5 fill-current" />
+                    </div>
+                    <span className="bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-full self-start mb-2">
+                      {sermon.pastor}
+                    </span>
+                    <h4 className="text-white font-bold leading-tight line-clamp-1 text-sm">{sermon.title}</h4>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* 6. Worship Focus */}
         <div>
           <div className="flex justify-between items-end mb-4">
@@ -579,17 +609,23 @@ export function MobileHomeView() {
               </Link>
             </div>
             
-            <div className="space-y-3">
+            <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 snap-x no-scrollbar">
               {prayerRequests
                 .filter(p => p.status === 'approved' || p.status === undefined)
-                .slice(0, 3)
                 .map(prayer => (
-                   <PrayerCard key={prayer.id} prayer={prayer} session={session} />
+                   <div key={prayer.id} className="min-w-[280px] w-[280px] snap-start">
+                     <PrayerCard prayer={prayer} session={session} />
+                   </div>
                 ))
               }
             </div>
           </div>
         )}
+
+        {/* Live Stream Widget */}
+        <div className="-mx-4 mt-8 pb-8">
+           <LiveStreamSection variant="widget" />
+        </div>
 
       </div>
     </div>

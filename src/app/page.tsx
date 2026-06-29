@@ -5,7 +5,7 @@ import { HeroSection } from "@/components/ui/hero-section";
 import { AnnouncementsSection } from "@/components/ui/announcements-section";
 import { PrayerWall } from "@/components/ui/prayer-wall";
 import { EventsSection } from "@/components/ui/events-section";
-import GallerySection from "@/components/ui/gallery-section";
+import { GallerySection } from "@/components/ui/gallery-section";
 import { LiveStreamSection } from "@/components/ui/live-stream";
 import { SongCarousel } from "@/components/ui/song-carousel";
 import { CampusDetails } from "@/components/ui/campus-details";

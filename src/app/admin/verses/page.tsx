@@ -150,7 +150,8 @@ export default function DailyVersesManagementPage() {
   };
 
   const handleSaveFlipConfig = () => {
-    updateFlipCardConfig(flipForm);
+    const isActive = flipForm.items && flipForm.items.length > 0;
+    updateFlipCardConfig({ ...flipForm, isActive });
     toast.success('Flip card configuration updated!');
   };
 
@@ -299,16 +300,7 @@ export default function DailyVersesManagementPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl border border-border/50">
-              <div className="space-y-0.5">
-                <Label>Enable Flip Animation</Label>
-                <p className="text-sm text-muted-foreground">Turn on to show the back side of the card.</p>
-              </div>
-              <Switch 
-                checked={flipForm.isActive} 
-                onCheckedChange={(checked) => setFlipForm({...flipForm, isActive: checked})}
-              />
-            </div>
+
 
             <div className="space-y-6">
               {(flipForm.items || []).map((item, index) => (
@@ -318,7 +310,6 @@ export default function DailyVersesManagementPage() {
                       variant="ghost" 
                       size="icon" 
                       onClick={() => handleRemoveItem(index)}
-                      disabled={!flipForm.isActive || (flipForm.items || []).length <= 1}
                       className="text-destructive hover:bg-destructive/10"
                     >
                       <X className="w-4 h-4" />
@@ -331,7 +322,6 @@ export default function DailyVersesManagementPage() {
                       <Select 
                         value={item.type} 
                         onValueChange={(val: any) => handleUpdateItem(index, { type: val, itemId: '' })}
-                        disabled={!flipForm.isActive}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select type" />
@@ -351,9 +341,8 @@ export default function DailyVersesManagementPage() {
                       <div className="space-y-2">
                         <Label>Select Item</Label>
                         <Select 
-                          value={item.itemId || ''} 
-                          onValueChange={(val) => handleUpdateItem(index, { itemId: val })}
-                          disabled={!flipForm.isActive}
+                          value={item.itemId} 
+                          onValueChange={(val: any) => handleUpdateItem(index, { itemId: val })}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select item" />
@@ -378,17 +367,15 @@ export default function DailyVersesManagementPage() {
                           placeholder="e.g. Christmas Eve Service" 
                           value={item.title || ''}
                           onChange={(e) => handleUpdateItem(index, { title: e.target.value })}
-                          disabled={!flipForm.isActive}
                         />
                       </div>
                       
                       <div className="space-y-2">
                         <Label>Description</Label>
                         <Input 
-                          placeholder="e.g. Join us for a special evening..." 
-                          value={item.description || ''}
+                          placeholder="e.g. Join us for our annual picnic" 
+                          value={item.description || ''} 
                           onChange={(e) => handleUpdateItem(index, { description: e.target.value })}
-                          disabled={!flipForm.isActive}
                         />
                       </div>
 
@@ -399,16 +386,14 @@ export default function DailyVersesManagementPage() {
                             placeholder="e.g. RSVP Now" 
                             value={item.buttonText || ''}
                             onChange={(e) => handleUpdateItem(index, { buttonText: e.target.value })}
-                            disabled={!flipForm.isActive}
                           />
                         </div>
                         <div className="space-y-2">
                           <Label>Button Link</Label>
                           <Input 
-                            placeholder="e.g. /events/christmas" 
-                            value={item.buttonLink || ''}
+                            placeholder="e.g. /events/picnic" 
+                            value={item.buttonLink || ''} 
                             onChange={(e) => handleUpdateItem(index, { buttonLink: e.target.value })}
-                            disabled={!flipForm.isActive}
                           />
                         </div>
                       </div>
@@ -420,7 +405,6 @@ export default function DailyVersesManagementPage() {
               <Button 
                 variant="outline" 
                 onClick={handleAddItem} 
-                disabled={!flipForm.isActive}
                 className="w-full border-dashed"
               >
                 <Plus className="w-4 h-4 mr-2" /> Add Another Item
