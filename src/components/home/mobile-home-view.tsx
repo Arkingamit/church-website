@@ -36,6 +36,40 @@ const cardGradients = [
   "from-[#A04A00]/15 via-white to-[#8B2323]/15",
 ];
 
+function AnimatedNumber({ end, duration = 2000, delay = 0, suffix = "" }: { end: number, duration?: number, delay?: number, suffix?: string }) {
+  const [count, setCount] = React.useState(0);
+  
+  React.useEffect(() => {
+    let startTime: number | null = null;
+    let animationFrame: number;
+    
+    const timeoutId = setTimeout(() => {
+      const animate = (time: number) => {
+        if (!startTime) startTime = time;
+        const progress = Math.min((time - startTime) / duration, 1);
+        
+        const easeOut = 1 - Math.pow(1 - progress, 4);
+        setCount(Math.floor(easeOut * end));
+        
+        if (progress < 1) {
+          animationFrame = requestAnimationFrame(animate);
+        } else {
+          setCount(end);
+        }
+      };
+      
+      animationFrame = requestAnimationFrame(animate);
+    }, delay);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+    };
+  }, [end, duration, delay]);
+  
+  return <>{count.toLocaleString()}{suffix}</>;
+}
+
 export function MobileHomeView() {
   const { events, worshipVideos, flipCardConfig, announcements, sermons, prayerRequests, getVisibleGalleryAlbums } = useAdminData();
   const { session, getSessionMember, getEffectiveGroups, logout } = useAuth();
@@ -221,16 +255,19 @@ export function MobileHomeView() {
           backgroundSize: '240px 240px'
         }}
       >
-        <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="Grace Community" className="w-8 h-8 object-contain" />
-          <h1 className="text-xl font-bold font-serif text-[#1A202C]">Grace Ahmedabad</h1>
+        <div className="flex items-center gap-3">
+          <img src="/logo.png" alt="Grace Community" className="w-10 h-10 object-contain" />
+          <div className="flex flex-col">
+            <span className="text-lg font-bold font-serif text-[#1A202C] leading-none">Grace</span>
+            <span className="text-lg font-bold font-serif text-[#1A202C] leading-none mt-1">Ahmedabad</span>
+          </div>
         </div>
         
         <div className="flex items-center gap-3">
-          <Link href="/search" className="w-10 h-10 rounded-full bg-[#F3EAE1] flex items-center justify-center text-[#8B2323]">
+          <Link href="/search" className="w-10 h-10 rounded-full bg-[#FAF7F2] border border-[#E5D5C5]/60 flex items-center justify-center text-[#8B2323] shadow-sm">
             <Search className="w-5 h-5" />
           </Link>
-          <Link href="/notifications" className="relative w-10 h-10 rounded-full bg-[#F3EAE1] flex items-center justify-center text-[#8B2323]">
+          <Link href="/notifications" className="relative w-10 h-10 rounded-full bg-[#FAF7F2] border border-[#E5D5C5]/60 flex items-center justify-center text-[#8B2323] shadow-sm">
             <Bell className={`w-5 h-5 ${((announcements?.length || 0) + (prayerRequests?.length || 0) > 0) ? 'animate-jiggle origin-top' : ''}`} />
             {((announcements?.length || 0) + (prayerRequests?.length || 0) > 0) && (
               <span className="absolute top-2 right-2 w-2 h-2 bg-red-600 rounded-full border border-white"></span>
@@ -239,8 +276,8 @@ export function MobileHomeView() {
           {session ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="w-10 h-10 rounded-full bg-gradient-to-br from-[#8B2323] to-[#721515] flex items-center justify-center border-2 border-white shadow-sm outline-none">
-                  <span className="text-xs font-bold text-white">{getInitials(session.name)}</span>
+                <button className="w-10 h-10 rounded-full bg-[#721515] flex items-center justify-center border border-[#E5D5C5]/60 shadow-sm outline-none">
+                  <span className="text-xs font-bold text-white uppercase">{getInitials(session.name)}</span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 rounded-2xl p-2 border-[#E5D5C5]">
@@ -267,8 +304,8 @@ export function MobileHomeView() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Link href="/login" className="w-10 h-10 rounded-full bg-[#E5D5C5] flex items-center justify-center text-[#8B2323] border-2 border-white shadow-sm">
-              <User className="w-5 h-5" />
+            <Link href="/login" className="w-10 h-10 rounded-full bg-[#721515] flex items-center justify-center text-white border border-[#E5D5C5]/60 shadow-sm">
+              <span className="text-xs font-bold">DA</span>
             </Link>
           )}
         </div>
@@ -277,11 +314,11 @@ export function MobileHomeView() {
       <div className="px-4 pt-4 space-y-8">
         
         {/* 2. Hero Card */}
-        <div className="rounded-[2rem] bg-gradient-to-br from-[#721515] to-[#3A0A0A] text-white overflow-hidden shadow-xl">
-          <div className="p-6 pb-8 space-y-6 ">
-            <div className="space-y-2">
+        <div className="rounded-[2.5rem] bg-[#5C1111] text-white overflow-hidden shadow-xl">
+          <div className="p-8 space-y-6">
+            <div className="space-y-3">
               <p className="text-white/80 text-sm font-medium">Welcome to</p>
-              <h2 className="text-4xl font-serif font-bold leading-tight">
+              <h2 className="text-5xl font-serif font-bold leading-tight tracking-tight">
                 Grace <br/>Community
               </h2>
               <p className="text-white/70 text-sm pt-2 leading-relaxed">
@@ -290,57 +327,37 @@ export function MobileHomeView() {
             </div>
 
             <div className="flex gap-4 pt-2">
-              <Button asChild className="flex-1 bg-[#A04A00] hover:bg-[#8A4000] text-white rounded-xl py-6 font-semibold">
+              <Button asChild className="flex-1 bg-[#A04A00] hover:bg-[#8A4000] text-white rounded-full py-6 font-semibold shadow-md">
                 <Link href="/visit">Join Sunday</Link>
               </Button>
-              <Button asChild variant="outline" className="flex-1 border-white/20 hover:bg-white/10 text-white rounded-xl py-6 font-semibold bg-transparent">
+              <Button asChild variant="outline" className="flex-1 border-white/30 hover:bg-white/10 text-white rounded-full py-6 font-semibold bg-transparent">
                 <Link href="/live">Watch Live</Link>
               </Button>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 border-t border-white/10 bg-black/10">
-            <div className="p-4 text-center border-r border-white/10">
-              <div className="text-xl font-bold">2,500</div>
-              <div className="text-[10px] text-white/60 uppercase tracking-wider mt-1">Members</div>
+          <div className="grid grid-cols-3 border-t border-white/10 bg-black/20">
+            <div className="p-5 text-center border-r border-white/10">
+              <div className="text-2xl font-bold font-sans"><AnimatedNumber end={2500} delay={2600} /></div>
+              <div className="text-[9px] text-white/60 uppercase tracking-widest font-semibold mt-1">Members</div>
             </div>
-            <div className="p-4 text-center border-r border-white/10">
-              <div className="text-xl font-bold">25+</div>
-              <div className="text-[10px] text-white/60 uppercase tracking-wider mt-1">Groups</div>
+            <div className="p-5 text-center border-r border-white/10">
+              <div className="text-2xl font-bold font-sans"><AnimatedNumber end={25} delay={2600} suffix="+" /></div>
+              <div className="text-[9px] text-white/60 uppercase tracking-widest font-semibold mt-1">Groups</div>
             </div>
-            <div className="p-4 text-center">
-              <div className="text-xl font-bold">15</div>
-              <div className="text-[10px] text-white/60 uppercase tracking-wider mt-1">Yrs Serving</div>
+            <div className="p-5 text-center">
+              <div className="text-2xl font-bold font-sans"><AnimatedNumber end={15} delay={2600} /></div>
+              <div className="text-[9px] text-white/60 uppercase tracking-widest font-semibold mt-1">Yrs Serving</div>
             </div>
           </div>
-        </div>
-
-        {/* 3. Quick Links Row */}
-        <div className="flex justify-between gap-3">
-          <Link href="/events" className="flex-1 flex flex-col items-center justify-center gap-2 bg-[#F1E8DC] rounded-2xl py-4 hover:bg-[#E5D5C5] transition-all active:scale-95 duration-150">
-            <Calendar className="w-6 h-6 text-[#8B2323]" />
-            <span className="text-xs font-semibold text-[#8B2323]">Events</span>
-          </Link>
-          <Link href="/music" className="flex-1 flex flex-col items-center justify-center gap-2 bg-[#F1E8DC] rounded-2xl py-4 hover:bg-[#E5D5C5] transition-all active:scale-95 duration-150">
-            <Music className="w-6 h-6 text-[#8B2323]" />
-            <span className="text-xs font-semibold text-[#8B2323]">Worship</span>
-          </Link>
-          <Link href="/prayer-wall" className="flex-1 flex flex-col items-center justify-center gap-2 bg-[#F1E8DC] rounded-2xl py-4 hover:bg-[#E5D5C5] transition-all active:scale-95 duration-150">
-            <Heart className="w-6 h-6 text-[#8B2323]" />
-            <span className="text-xs font-semibold text-[#8B2323]">Prayer</span>
-          </Link>
-          <Link href="/sermons" className="flex-1 flex flex-col items-center justify-center gap-2 bg-[#F1E8DC] rounded-2xl py-4 hover:bg-[#E5D5C5] transition-all active:scale-95 duration-150">
-            <BookOpen className="w-6 h-6 text-[#8B2323]" />
-            <span className="text-xs font-semibold text-[#8B2323]">Sermon</span>
-          </Link>
         </div>
 
         {/* 4. Highlight Stacked Cards */}
         <div>
           <div className="flex justify-between items-end mb-4">
             <h2 className="text-2xl font-serif font-bold text-[#1A202C] border-l-4 border-[#8B2323] pl-3 py-0.5 leading-none">Highlights</h2>
-            <span className="text-[#8B2323] text-xs font-bold flex items-center bg-[#FBE8E8] px-2 py-1 rounded-full">
-              Swipe <ChevronRight className="w-3 h-3 ml-1" />
+            <span className="text-[#8B2323] text-xs font-bold flex items-center bg-[#FBE8E8] px-3 py-1.5 rounded-full">
+              Swipe &gt;
             </span>
           </div>
           
@@ -379,37 +396,33 @@ export function MobileHomeView() {
                     let cardContent;
                     if (item.type === 'verse') {
                       cardContent = (
-                        <div className="bg-[#F1E8DC] rounded-3xl p-6 shadow-xl h-full flex flex-col justify-between border-2 border-white/50 w-full pointer-events-auto">
+                        <div className="bg-[#F3EAE1] rounded-[2rem] p-6 shadow-xl h-full flex flex-col justify-between border border-[#E5D5C5]/60 w-full pointer-events-auto">
                           <div className="flex justify-between items-start">
-                            <span className="bg-[#E5D5C5] text-[#7A6150] text-xs font-bold px-3 py-1.5 rounded-full">
+                            <span className="bg-[#FAF7F2] border border-[#E5D5C5]/60 text-[#7A6150] text-xs font-semibold px-4 py-2 rounded-full">
                               Daily Verse
                             </span>
-                            <button className="w-8 h-8 rounded-full bg-[#E5D5C5] flex items-center justify-center text-[#7A6150]">
+                            <button className="w-10 h-10 rounded-full bg-[#FAF7F2] border border-[#E5D5C5]/60 flex items-center justify-center text-[#7A6150] shadow-sm">
                               <Share2 className="w-4 h-4" />
                             </button>
                           </div>
                           
                           <div className="my-auto pointer-events-none">
-                            <h3 className="text-2xl sm:text-3xl font-serif italic font-bold text-[#8B2323] mb-3 leading-tight line-clamp-4">
+                            <h3 className="text-3xl font-serif italic font-bold text-[#721515] mb-3 leading-snug line-clamp-4">
                               "{item.data.text}"
                             </h3>
-                            <p className="text-right text-[#7A6150] font-medium">— {item.data.reference}</p>
+                            <p className="text-right text-[#7A6150] font-semibold mt-2">— {item.data.reference}</p>
                           </div>
-                          
-                          <Button asChild className="w-full bg-[#7A3608] hover:bg-[#602A06] text-white rounded-xl py-6 font-semibold text-base mt-4 shrink-0 pointer-events-auto">
-                            <Link href="/devotionals" onPointerDown={(e) => e.stopPropagation()}>Read Devotional</Link>
-                          </Button>
                         </div>
                       );
                     } else {
                       const { displayTitle, displayDesc, displayBtn, displayLink } = getDisplayDetails(item.data);
                       cardContent = (
-                        <Card className={`p-6 w-full h-full shadow-xl border-2 border-white flex flex-col justify-center items-center text-center bg-gradient-to-br ${cardGradients[originalIndex % cardGradients.length]} backdrop-blur-md rounded-3xl overflow-hidden pointer-events-auto`}>
+                        <Card className="p-6 w-full h-full shadow-xl border border-[#E5D5C5]/60 flex flex-col justify-between text-center bg-[#F3EAE1] rounded-[2rem] overflow-hidden pointer-events-auto">
                           <div className="space-y-4 w-full my-auto pointer-events-none">
-                            <div className="mx-auto w-12 h-12 rounded-full bg-[#8B2323]/10 flex items-center justify-center">
+                            <div className="mx-auto w-12 h-12 rounded-full bg-[#8B2323]/10 flex items-center justify-center text-[#8B2323]">
                               {christianIcons[originalIndex % christianIcons.length]}
                             </div>
-                            <h3 className="text-xl font-bold text-[#3A2D27] line-clamp-2 leading-tight">
+                            <h3 className="text-2xl font-serif font-bold text-[#721515] line-clamp-2 leading-tight">
                               {displayTitle}
                             </h3>
                             <p className="text-[#7A6150] text-sm px-1 line-clamp-3">

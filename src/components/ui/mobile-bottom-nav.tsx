@@ -3,13 +3,13 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, CalendarDays, Headphones, Book, LogIn, BookOpen } from "lucide-react";
+import { Home, PlayCircle, Music, CalendarHeart, BookHeart } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
 type NavItem = {
     label: string;
     href: string;
-    icon: React.ComponentType<{ className?: string }>;
+    icon: React.ComponentType<{ className?: string; strokeWidth?: number | string }>;
     exact?: boolean;
 };
 
@@ -19,15 +19,23 @@ export function MobileBottomNav() {
 
     const navItems: NavItem[] = [
         { label: "Home", href: "/", icon: Home, exact: true },
-        { label: "Sermons", href: "/sermons", icon: BookOpen },
-        { label: "Music", href: "/music", icon: Headphones },
-        { label: "Events", href: "/events", icon: CalendarDays },
-        { label: "Bible", href: "/devotionals", icon: Book },
+        { label: "Sermons", href: "/sermons", icon: PlayCircle },
+        { label: "Worship", href: "/music", icon: Music },
+        { label: "Events", href: "/events", icon: CalendarHeart },
+        { label: "Bible", href: "/devotionals", icon: BookHeart },
     ];
 
     return (
         <nav className="fixed inset-x-0 bottom-0 z-50 md:hidden pb-[env(safe-area-inset-bottom)]">
-            <div className="mx-auto max-w-screen-sm border-t border-border bg-[#FAF7F2] px-2 pt-2 pb-2 shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
+            <div 
+                className="mx-auto max-w-screen-sm border-t border-[#a59d94]/60 px-2 pt-2 pb-2 shadow-[0_-4px_16px_-2px_rgba(58,45,39,0.12),0_1px_0px_rgba(255,255,255,0.6)_inset]"
+                style={{
+                    backgroundColor: '#FAF7F2',
+                    backgroundImage: 'var(--bg-pattern)',
+                    backgroundRepeat: 'repeat',
+                    backgroundSize: '240px 240px'
+                }}
+            >
                 <div className="grid grid-cols-5 gap-1">
                     {navItems.map((item) => {
                         const Icon = item.icon;
@@ -44,7 +52,7 @@ export function MobileBottomNav() {
                                     : "text-[#7A6150] hover:bg-[#E5D5C5] hover:text-[#3A2D27]"
                                     }`}
                             >
-                                <Icon className={`h-5 w-5 ${isActive ? "text-[#8B2323]" : "text-[#7A6150]"}`} />
+                                <Icon strokeWidth={isActive ? 2 : 1.5} className={`h-6 w-6 mb-0.5 ${isActive ? "text-[#8B2323]" : "text-[#7A6150]"}`} />
                                 <span className="leading-none">{item.label}</span>
                             </Link>
                         );
