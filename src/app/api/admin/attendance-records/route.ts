@@ -37,9 +37,11 @@ export async function GET(req: Request) {
 
     const records = await AttendanceRecord.find({ sessionId }).sort({ markedAt: -1 }).lean();
     
-    // Fetch user details for each record
+    // Fetch rich user details for each record
     const userIds = records.map(r => r.userId);
-    const users = await User.find({ _id: { $in: userIds } }).select('name email').lean();
+    const users = await User.find({ _id: { $in: userIds } })
+      .select('name email gender birthday maritalStatus familyMemberId')
+      .lean();
     const userMap = users.reduce((acc, u) => {
       acc[u._id.toString()] = u;
       return acc;
@@ -47,7 +49,7 @@ export async function GET(req: Request) {
 
     const enrichedRecords = records.map(r => ({
       ...r,
-      user: userMap[r.userId] || { name: 'Unknown User', email: '' }
+      user: userMap[r.userId] || { name: 'Unknown User', email: '', gender: '', birthday: '', maritalStatus: '' }
     }));
 
     return NextResponse.json(enrichedRecords);
