@@ -29,6 +29,7 @@ export function QRScanner({ onClose }: QRScannerProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [scannedCampus, setScannedCampus] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
 
   const stopScanner = useCallback(async () => {
     if (scannerRef.current) {
@@ -159,7 +160,7 @@ export function QRScanner({ onClose }: QRScannerProps) {
       mounted = false;
       stopScanner();
     };
-  }, [campuses, extractCampusId, router, stopScanner]);
+  }, [campuses, extractCampusId, router, stopScanner, retryKey]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4">
@@ -209,14 +210,36 @@ export function QRScanner({ onClose }: QRScannerProps) {
             <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-3" />
             <p className="text-destructive font-semibold mb-1">Scan Failed</p>
             <p className="text-white/80 text-xs mb-4 leading-relaxed">{error}</p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-white border-white/20 hover:bg-white/10"
-              onClick={handleClose}
-            >
-              Close Scanner
-            </Button>
+            <div className="flex flex-col gap-2 w-full max-w-[200px]">
+              <Button
+                size="sm"
+                className="w-full bg-primary hover:bg-primary/90 text-white font-medium"
+                onClick={async () => {
+                  try {
+                    // Force the browser to ask for permission directly from user gesture
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                    // Immediately stop it
+                    stream.getTracks().forEach(t => t.stop());
+                    // Clear error and trigger a re-mount/re-try
+                    setError(null);
+                    setIsLoading(true);
+                    setRetryKey(k => k + 1);
+                  } catch (err: any) {
+                    setError('Permission denied again. Please enable it in your browser settings.');
+                  }
+                }}
+              >
+                Enable Camera
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-white border-white/20 hover:bg-white/10"
+                onClick={handleClose}
+              >
+                Close Scanner
+              </Button>
+            </div>
           </div>
         )}
 
