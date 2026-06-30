@@ -103,22 +103,26 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    // Check if already checked in
-    const query = actualType === 'event' 
-      ? { eventId: actualId, userId: session.userId }
-      : { sessionId: actualId, userId: session.userId };
+    // Today's date string for per-day duplicate check (supports recurring sessions)
+    const todayStr = now.toISOString().split('T')[0];
+
+    // Check if already checked in for THIS date
+    const query: any = actualType === 'event' 
+      ? { eventId: actualId, userId: session.userId, date: todayStr }
+      : { sessionId: actualId, userId: session.userId, date: todayStr };
       
     const existing = await AttendanceRecord.findOne(query);
     if (existing) {
       return NextResponse.json({ 
         error: 'Already checked in', 
-        message: 'You have already checked in for this session.' 
+        message: 'You have already checked in for this session today.' 
       }, { status: 400 });
     }
 
     const recordData: any = {
       userId: session.userId,
       distance: Math.round(distance),
+      date: todayStr,
     };
     if (actualType === 'event') recordData.eventId = actualId;
     else recordData.sessionId = actualId;
@@ -129,7 +133,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error('Error checking in:', error);
     if (error.code === 11000) {
-      return NextResponse.json({ error: 'Already checked in', message: 'You have already checked in.' }, { status: 400 });
+      return NextResponse.json({ error: 'Already checked in', message: 'You have already checked in today.' }, { status: 400 });
     }
     return NextResponse.json({ error: 'Failed to check in' }, { status: 500 });
   }

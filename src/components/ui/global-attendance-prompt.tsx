@@ -1,76 +1,240 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
+/**
+ * Haversine distance calculation (client-side mirror of geo-utils.ts)
+ */
+function getDistanceInMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371e3;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/**
+ * Check if today matches the session's recurrence schedule (client-side).
+ */
+function isSessionActiveToday(session: any): boolean {
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+  // Check if past end date
+  if (session.recurrenceEndDate && session.recurrenceEndDate < todayStr) return false;
+
+  // Non-recurring: just match date
+  if (!session.recurring) return session.date === todayStr;
+
+  // The start date must be <= today
+  if (session.date > todayStr) return false;
+
+  const pattern = session.recurrencePattern;
+  if (pattern === 'daily') return true;
+
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const todayDayName = dayNames[now.getDay()];
+
+  if (pattern === 'weekly' || pattern === 'biweekly') {
+    if (session.recurrenceDay && todayDayName !== session.recurrenceDay) return false;
+
+    if (pattern === 'biweekly') {
+      // Check if the week count from start date is even
+      const startDate = new Date(session.date + 'T00:00:00');
+      const diffDays = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      const diffWeeks = Math.floor(diffDays / 7);
+      if (diffWeeks % 2 !== 0) return false;
+    }
+    return true;
+  }
+
+  if (pattern === 'monthly') {
+    const startDate = new Date(session.date + 'T00:00:00');
+    return now.getDate() === startDate.getDate();
+  }
+
+  if (pattern === 'custom_monthly') {
+    if (session.recurrenceDay && todayDayName !== session.recurrenceDay) return false;
+
+    const weekOfMonth = session.recurrenceWeekOfMonth;
+    const dayOfMonth = now.getDate();
+    const weekNum = Math.ceil(dayOfMonth / 7);
+
+    if (weekOfMonth === 'last') {
+      // Check if there's no more of this day-of-week in this month
+      const nextWeek = new Date(now);
+      nextWeek.setDate(now.getDate() + 7);
+      return nextWeek.getMonth() !== now.getMonth();
+    }
+
+    const weekMap: Record<string, number> = { '1st': 1, '2nd': 2, '3rd': 3, '4th': 4 };
+    return weekNum === (weekMap[weekOfMonth] || 1);
+  }
+
+  return false;
+}
+
+/**
+ * Check if current time is within the session's time window.
+ */
+function isWithinTimeWindow(startTime: string, endTime: string): boolean {
+  const now = new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  
+  const [sh, sm] = startTime.split(':').map(Number);
+  const [eh, em] = endTime.split(':').map(Number);
+  
+  return currentMinutes >= (sh * 60 + sm) && currentMinutes <= (eh * 60 + em);
+}
+
+const CACHE_KEY = 'attendanceSessions';
+const CHECKED_KEY = 'attendanceCheckedDates';
+
+/**
+ * GlobalAttendancePrompt — completely invisible.
+ * 
+ * Flow:
+ * 1. On first load, fetches all sessions from the server and caches them in localStorage.
+ * 2. On every subsequent page load, reads from localStorage.
+ * 3. Checks client-side if today matches any session's recurring schedule AND current time is within window.
+ * 4. If yes, silently requests GPS. If user is within the geofence radius, sends check-in to server.
+ * 5. Refreshes the cache from the server every 6 hours.
+ */
 export function GlobalAttendancePrompt() {
-  const [activeSession, setActiveSession] = useState<any | null>(null);
   const pathname = usePathname();
 
   useEffect(() => {
-    // Don't run on the explicit check-in page or admin pages
-    if (pathname?.includes('/check-in') || pathname?.includes('/admin')) return;
+    if (pathname?.includes('/admin')) return;
 
-    const checkActiveSessions = async () => {
+    const run = async () => {
       try {
-        const res = await fetch('/api/attendance/active');
-        if (!res.ok) return;
-        const data = await res.json();
-        
-        if (Array.isArray(data) && data.length > 0) {
-          // Find first session not already processed today
-          const today = new Date().toDateString();
-          const processed = JSON.parse(localStorage.getItem('processedAttendance') || '{}');
-          
-          const session = data.find(s => {
-            const key = `${s._id}-${today}`;
-            return !processed[key];
-          });
+        // --- Step 1: Get sessions (from cache or server) ---
+        let sessions: any[] = [];
+        const cached = localStorage.getItem(CACHE_KEY);
+        let lastFetched = 0;
 
-          if (session) {
-            setActiveSession(session);
-            
-            // Automatically ask for location and try to check in silently
-            if (navigator.geolocation) {
-              navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                  try {
-                    const res = await fetch('/api/attendance/check-in', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        id: session._id,
-                        type: session.type || 'session',
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude
-                      })
-                    });
-                    
-                    if (res.ok) {
-                      // Silently mark as checked in locally
-                      const newProcessed = { ...processed, [`${session._id}-${today}`]: 'checked-in' };
-                      localStorage.setItem('processedAttendance', JSON.stringify(newProcessed));
-                    }
-                  } catch (e) {
-                    // Silently fail
-                  }
-                },
-                (error) => {
-                  // Silently fail if location denied
-                },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-              );
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            sessions = parsed.sessions || [];
+            lastFetched = parsed.fetchedAt || 0;
+          } catch { /* ignore corrupt cache */ }
+        }
+
+        // Refresh from server if cache is empty or older than 6 hours
+        const SIX_HOURS = 6 * 60 * 60 * 1000;
+        if (sessions.length === 0 || Date.now() - lastFetched > SIX_HOURS) {
+          try {
+            const res = await fetch('/api/attendance/active?all=true');
+            if (res.ok) {
+              const serverData = await res.json();
+              if (Array.isArray(serverData)) {
+                sessions = serverData;
+                localStorage.setItem(CACHE_KEY, JSON.stringify({
+                  sessions,
+                  fetchedAt: Date.now()
+                }));
+              }
             }
+          } catch {
+            // Use cached data if server is unreachable
           }
         }
-      } catch (error) {
+
+        if (sessions.length === 0) return;
+
+        // --- Step 2: Check if any session is active right now (client-side) ---
+        const now = new Date();
+        const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const checkedDates: Record<string, string> = JSON.parse(localStorage.getItem(CHECKED_KEY) || '{}');
+
+        // Clean old entries (keep last 30 days only)
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        for (const key of Object.keys(checkedDates)) {
+          const dateStr = key.split('::')[1];
+          if (dateStr && dateStr < `${thirtyDaysAgo.getFullYear()}-${String(thirtyDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(thirtyDaysAgo.getDate()).padStart(2, '0')}`) {
+            delete checkedDates[key];
+          }
+        }
+
+        const eligibleSession = sessions.find(s => {
+          const checkKey = `${s._id}::${todayKey}`;
+          if (checkedDates[checkKey]) return false; // Already processed today
+
+          // Check recurrence match
+          if (!isSessionActiveToday(s)) return false;
+
+          // Check time window
+          const startTime = s.startTime || s.time;
+          const endTime = s.endTime;
+          if (!startTime || !endTime) return false;
+
+          return isWithinTimeWindow(startTime, endTime);
+        });
+
+        if (!eligibleSession) return;
+
+        // --- Step 3: Silently get GPS and check if within geofence ---
+        if (!navigator.geolocation) return;
+
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const userLat = position.coords.latitude;
+            const userLon = position.coords.longitude;
+            const targetLat = eligibleSession.latitude || eligibleSession.attendanceConfig?.latitude;
+            const targetLon = eligibleSession.longitude || eligibleSession.attendanceConfig?.longitude;
+            const radius = eligibleSession.radius || eligibleSession.attendanceConfig?.radius || 500;
+
+            if (targetLat === undefined || targetLon === undefined) return;
+
+            const distance = getDistanceInMeters(userLat, userLon, targetLat, targetLon);
+
+            if (distance > radius) {
+              // User is NOT at the location — do nothing, don't mark as processed
+              // so it can try again if they arrive later
+              return;
+            }
+
+            // --- Step 4: User IS at the location — send check-in to server ---
+            try {
+              const res = await fetch('/api/attendance/check-in', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  id: eligibleSession._id,
+                  type: eligibleSession.type || 'session',
+                  latitude: userLat,
+                  longitude: userLon
+                })
+              });
+
+              if (res.ok) {
+                checkedDates[`${eligibleSession._id}::${todayKey}`] = 'checked-in';
+                localStorage.setItem(CHECKED_KEY, JSON.stringify(checkedDates));
+              }
+            } catch {
+              // Silently fail
+            }
+          },
+          () => {
+            // Location denied — nothing we can do
+          },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+        );
+      } catch {
         // Silently fail
       }
     };
 
-    checkActiveSessions();
+    // Run after a short delay to not block page load
+    const timer = setTimeout(run, 2000);
+    return () => clearTimeout(timer);
   }, [pathname]);
 
-  // Completely invisible component, runs silently in the background
   return null;
 }

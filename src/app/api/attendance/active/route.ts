@@ -21,6 +21,9 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    const url = new URL(req.url);
+    const fetchAll = url.searchParams.get('all') === 'true';
+
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
     const currentHours = String(now.getHours()).padStart(2, '0');
@@ -49,13 +52,29 @@ export async function GET(req: Request) {
     };
 
     // 1. Find AttendanceSessions
-    const sessionsRaw = await AttendanceSession.find({
+    const sessionQuery: any = {
       $or: [{ campusId: user.campusId }, { campusId: 'all' }],
-      startTime: { $lte: currentTimeStr },
-      endTime: { $gte: currentTimeStr }
-    }).lean();
+    };
 
-    const sessions = sessionsRaw.filter(isRecurringActiveToday);
+    // If not fetching all, also filter by current time window
+    if (!fetchAll) {
+      sessionQuery.startTime = { $lte: currentTimeStr };
+      sessionQuery.endTime = { $gte: currentTimeStr };
+    }
+
+    const sessionsRaw = await AttendanceSession.find(sessionQuery).lean();
+
+    // If fetching all, return all sessions for the user's campus (for client-side caching)
+    // If not, filter by today's recurrence
+    const sessions = fetchAll
+      ? sessionsRaw.filter((s: any) => {
+          // Only exclude sessions that are definitively ended
+          const endDate = s.recurrenceEndDate || null;
+          if (!s.recurring && s.date < todayStr) return false;
+          if (endDate && endDate < todayStr) return false;
+          return true;
+        })
+      : sessionsRaw.filter(isRecurringActiveToday);
 
     // 2. Find Events with attendance enabled
     const Event = mongoose.models.Event || mongoose.model('Event');
@@ -67,8 +86,34 @@ export async function GET(req: Request) {
       ]
     }).lean();
     
-    const events = eventsRaw.filter(isRecurringActiveToday);
+    const events = fetchAll
+      ? eventsRaw
+      : eventsRaw.filter(isRecurringActiveToday);
 
+    if (fetchAll) {
+      // Return full data for client-side caching
+      const mappedSessions = sessions.map((s: any) => ({ ...s, type: 'session' }));
+      const mappedEvents = events.map((ev: any) => ({
+        _id: ev._id,
+        title: ev.title,
+        date: ev.date,
+        startTime: ev.time,
+        endTime: ev.endTime,
+        latitude: ev.attendanceConfig?.latitude,
+        longitude: ev.attendanceConfig?.longitude,
+        radius: ev.attendanceConfig?.radius || 500,
+        recurring: ev.isRecurring,
+        recurrencePattern: ev.recurrencePattern,
+        recurrenceDay: ev.recurrenceDay,
+        recurrenceWeekOfMonth: ev.recurrenceWeekOfMonth,
+        recurrenceEndDate: ev.recurrenceEndDate || ev.endDate,
+        type: 'event'
+      }));
+
+      return NextResponse.json([...mappedSessions, ...mappedEvents]);
+    }
+
+    // Original behaviour: only return sessions active RIGHT NOW
     // We need to check if the event's time window matches
     const activeEvents = events.filter((ev: any) => {
       if (!ev.attendanceConfig) return false;
