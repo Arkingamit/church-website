@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Navigation } from "@/components/ui/navigation";
 import { MobileBottomNav } from "@/components/ui/mobile-bottom-nav";
 import { Footer } from "@/components/ui/footer";
+import { GlobalAttendancePrompt } from "@/components/ui/global-attendance-prompt";
 
 export function PublicLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -32,6 +33,7 @@ export function PublicLayoutWrapper({ children }: { children: React.ReactNode })
       <div className="hidden md:block">
         <Footer />
       </div>
+      <GlobalAttendancePrompt />
       <MobileBottomNav />
     </div>
   );
