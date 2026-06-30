@@ -193,13 +193,6 @@ export const Navigation = () => {
       <div className="flex items-center justify-between w-full gap-x-6 sm:gap-x-10">
         <div className="flex items-center">
           {logoElement}
-          <button
-            aria-label="Toggle theme"
-            className="p-2 ml-2 rounded-full hover:bg-muted transition-colors"
-            onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-          >
-            {resolvedTheme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </button>
         </div>
 
         <nav className="hidden md:flex items-center space-x-8">

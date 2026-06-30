@@ -29,7 +29,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <GoogleOAuthProvider clientId={clientId}>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <ThemeProvider attribute="class" defaultTheme="light" forcedTheme="light" enableSystem={false}>
         <QueryClientProvider client={queryClient}>
           {/*
            * AdminDataProvider is kept here because public components
