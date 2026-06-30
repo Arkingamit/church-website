@@ -5,6 +5,7 @@ import AttendanceRecord from '@/models/AttendanceRecord';
 import User from '@/models/User';
 import { verifySession } from '@/lib/auth-utils';
 import { getDistanceFromLatLonInMeters } from '@/lib/geo-utils';
+import mongoose from 'mongoose';
 
 export async function POST(req: Request) {
   try {
@@ -98,7 +99,7 @@ export async function POST(req: Request) {
     if (distance > radius) {
       return NextResponse.json({ 
         error: 'Out of range', 
-        message: `You are too far away. Distance: ${Math.round(distance)}m. Max allowed: ${attSession.radius}m.` 
+        message: `You are too far away. Distance: ${Math.round(distance)}m. Max allowed: ${radius}m.` 
       }, { status: 400 });
     }
 

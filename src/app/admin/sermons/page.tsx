@@ -140,7 +140,11 @@ export default function SermonManagementPage() {
       ...sermon,
       isFeatured: !!sermon.isFeatured,
       youtubeUrl: `https://youtube.com/watch?v=${sermon.videoId}`,
-      materials: sermon.materials || [],
+      materials: (sermon.materials || []).map(m => ({
+        title: m.title,
+        url: m.url,
+        type: m.type || 'other'
+      })),
     });
     setSermonDialogOpen(true);
   };

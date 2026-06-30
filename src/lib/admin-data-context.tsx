@@ -78,6 +78,14 @@ export interface Event {
   schedule?: EventScheduleDay[];
   reminders?: string[]; // Deprecated
   customReminders?: { daysBefore: number; hoursBefore: number; minutesBefore: number; }[];
+  attendanceConfig?: {
+    enabled: boolean;
+    radius: number;
+    latitude: number;
+    longitude: number;
+    openMinutesBefore: number;
+    closeMinutesAfter: number;
+  };
 }
 
 export interface EventRegistration {
@@ -107,8 +115,9 @@ export interface Announcement {
   excludeGroups?: string[];
   createdAt: string;
   isRecurring?: boolean;
-  recurrencePattern?: 'weekly' | 'biweekly' | 'monthly' | 'custom';
+  recurrencePattern?: 'weekly' | 'biweekly' | 'monthly' | 'custom' | 'custom_monthly';
   recurrenceDay?: string; // e.g. 'Sunday', 'Monday', or '1st Sunday'
+  recurrenceWeekOfMonth?: string;
   recurrenceEndDate?: string; // optional end date for recurring
   recurrenceNote?: string; // e.g. 'Every Sunday at 10 AM'
   nextOccurrence?: string;

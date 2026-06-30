@@ -125,6 +125,7 @@ export default function AnnouncementsPage() {
       isRecurring: announcement.isRecurring || false,
       recurrencePattern: announcement.recurrencePattern || 'weekly',
       recurrenceDay: announcement.recurrenceDay || 'Sunday',
+      recurrenceWeekOfMonth: announcement.recurrenceWeekOfMonth || '1st',
       recurrenceEndDate: announcement.recurrenceEndDate || '',
       recurrenceNote: announcement.recurrenceNote || '',
       customReminders: announcement.customReminders || [],
