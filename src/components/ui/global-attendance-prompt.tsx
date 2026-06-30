@@ -112,36 +112,27 @@ export function GlobalAttendancePrompt() {
 
     const run = async () => {
       try {
-        // --- Step 1: Get sessions (from cache or server) ---
+        // --- Step 1: Always fetch fresh sessions from server and cache locally ---
         let sessions: any[] = [];
-        const cached = localStorage.getItem(CACHE_KEY);
-        let lastFetched = 0;
-
-        if (cached) {
-          try {
-            const parsed = JSON.parse(cached);
-            sessions = parsed.sessions || [];
-            lastFetched = parsed.fetchedAt || 0;
-          } catch { /* ignore corrupt cache */ }
-        }
-
-        // Refresh from server if cache is empty or older than 6 hours
-        const SIX_HOURS = 6 * 60 * 60 * 1000;
-        if (sessions.length === 0 || Date.now() - lastFetched > SIX_HOURS) {
-          try {
-            const res = await fetch('/api/attendance/active?all=true');
-            if (res.ok) {
-              const serverData = await res.json();
-              if (Array.isArray(serverData)) {
-                sessions = serverData;
-                localStorage.setItem(CACHE_KEY, JSON.stringify({
-                  sessions,
-                  fetchedAt: Date.now()
-                }));
-              }
+        try {
+          const res = await fetch('/api/attendance/active?all=true');
+          if (res.ok) {
+            const serverData = await res.json();
+            if (Array.isArray(serverData)) {
+              sessions = serverData;
+              localStorage.setItem(CACHE_KEY, JSON.stringify({
+                sessions,
+                fetchedAt: Date.now()
+              }));
             }
-          } catch {
-            // Use cached data if server is unreachable
+          }
+        } catch {
+          // If server unreachable, fall back to cached data
+          const cached = localStorage.getItem(CACHE_KEY);
+          if (cached) {
+            try {
+              sessions = JSON.parse(cached).sessions || [];
+            } catch { /* ignore corrupt cache */ }
           }
         }
 
