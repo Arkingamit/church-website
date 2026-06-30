@@ -105,15 +105,22 @@ export function MobileHomeView() {
   }, []);
 
   const [activeIdx, setActiveIdx] = useState(0);
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return !sessionStorage.getItem('splashShown');
+    }
+    return true;
+  });
 
   useEffect(() => {
-    // Hide splash screen after 2.5 seconds
-    const timer = setTimeout(() => {
-      setShowSplash(false);
-    }, 2500);
-    return () => clearTimeout(timer);
-  }, []);
+    if (showSplash) {
+      sessionStorage.setItem('splashShown', 'true');
+      const timer = setTimeout(() => {
+        setShowSplash(false);
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [showSplash]);
 
   const [dismissedIds, setDismissedIds] = useState<string[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
