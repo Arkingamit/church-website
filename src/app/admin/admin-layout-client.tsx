@@ -31,7 +31,8 @@ import {
   Heart,
   BookOpen,
   Menu,
-  X
+  X,
+  MapPin
 } from 'lucide-react';
 
 const roleIcons: Record<UserRole, React.ElementType> = {
@@ -65,10 +66,10 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
     const sessionMember = getSessionMember();
     if (sessionMember && sessionMember.id !== currentUser.id) {
       setCurrentUser({
-        id: sessionMember.id,
+        id: sessionMember._id || sessionMember.id,
         name: `${sessionMember.firstName || ''} ${sessionMember.lastName || ''}`.trim() || sessionMember.email,
         email: sessionMember.email,
-        role: sessionMember.role,
+        role: sessionMember.role as UserRole,
         campusId: sessionMember.campusId || 'main',
         groups: sessionMember.groups || [],
       });
@@ -94,6 +95,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
     { label: 'Prayer Wall', href: '/admin/prayers', icon: Heart, minRole: 'campus_leader' as UserRole, badge: pendingPrayersCount },
     { label: 'Daily Verses', href: '/admin/verses', icon: BookOpen, minRole: 'admin' as UserRole },
     { label: 'Requests', href: '/admin/requests', icon: UserPlus, minRole: 'campus_leader' as UserRole, badge: pendingCount },
+    { label: 'Attendance', href: '/admin/attendance', icon: MapPin, minRole: 'campus_leader' as UserRole },
     { label: 'QR Codes', href: '/admin/qr-codes', icon: QrCode, minRole: 'campus_leader' as UserRole },
     { label: 'Users', href: '/admin/users', icon: Users, minRole: 'campus_leader' as UserRole },
     { label: 'Settings', href: '/admin/settings', icon: Settings, minRole: 'super_admin' as UserRole },

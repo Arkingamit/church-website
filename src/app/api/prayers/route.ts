@@ -30,7 +30,12 @@ export async function GET(req: Request) {
       .sort({ createdAt: -1 })
       .lean();
 
-    return NextResponse.json(prayers);
+    const mappedPrayers = prayers.map((p: any) => ({
+      ...p,
+      id: p._id.toString()
+    }));
+
+    return NextResponse.json(mappedPrayers);
   } catch (error) {
     console.error('Error fetching prayer requests:', error);
     return NextResponse.json({ error: 'Failed to fetch prayer requests' }, { status: 500 });

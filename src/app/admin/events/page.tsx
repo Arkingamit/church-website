@@ -16,6 +16,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+import { SchedulePreviewExport } from '@/components/admin/schedule-preview-export';
 import {
   Calendar, Clock, MapPin, Users, Plus, Pencil, Trash2, Search, X,
   Megaphone, Globe, Building2, Image as ImageIcon, Link2, ListPlus, AlignLeft, CheckSquare, ChevronDown, Trash, ListEnd, Download, Repeat
@@ -55,6 +56,14 @@ const emptyForm = {
   mapUrl: '',
   reminders: [] as string[], // Deprecated
   customReminders: [] as { daysBefore: number, hoursBefore: number, minutesBefore: number }[],
+  attendanceConfig: {
+    enabled: false,
+    radius: 500,
+    latitude: 0,
+    longitude: 0,
+    openMinutesBefore: 30,
+    closeMinutesAfter: 30
+  }
 };
 
 export default function EventsPage() {
@@ -124,6 +133,14 @@ export default function EventsPage() {
       mapUrl: event.mapUrl || '',
       reminders: event.reminders || [],
       customReminders: event.customReminders || [],
+      attendanceConfig: event.attendanceConfig || {
+        enabled: false,
+        radius: 500,
+        latitude: 0,
+        longitude: 0,
+        openMinutesBefore: 30,
+        closeMinutesAfter: 30
+      },
     });
     setDialogOpen(true);
   };
@@ -459,9 +476,19 @@ export default function EventsPage() {
                     <span>{event.location}</span>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <Users className="w-3.5 h-3.5 text-primary" />
-                  <span>{event.registered} registered</span>
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-3.5 h-3.5 text-primary" />
+                    <span>{event.registered} registered</span>
+                    {event.attendanceConfig?.enabled && (
+                      <span className="text-muted-foreground border-l border-border/50 pl-2 ml-1">
+                        {(event as any).attended || 0} attended
+                      </span>
+                    )}
+                  </div>
+                  {event.capacity > 0 && (
+                    <span className="text-xs text-muted-foreground">Cap: {event.capacity}</span>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -709,6 +736,10 @@ export default function EventsPage() {
 
               {form.recurring && (
                 <div className="border border-violet-500/20 bg-violet-500/5 rounded-xl p-4 space-y-4">
+                  <div className="text-xs text-muted-foreground bg-violet-500/10 p-2 rounded-md flex items-center gap-2">
+                    <Calendar className="w-3.5 h-3.5" />
+                    Recurring sequence is based on the Event Start Date: <span className="font-semibold text-foreground">{form.date || <span className="text-red-500 italic">Not set</span>}</span>
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground">Pattern</Label>
@@ -790,6 +821,18 @@ export default function EventsPage() {
                       onChange={(e) => setForm({ ...form, recurrenceEndDate: e.target.value })}
                     />
                     <p className="text-[10px] text-muted-foreground">Leave empty for indefinite recurring</p>
+                  </div>
+
+                  <div className="pt-2">
+                    <SchedulePreviewExport
+                      title={form.title || 'Untitled Event'}
+                      startDate={form.date}
+                      endDate={form.recurrenceEndDate}
+                      pattern={form.recurrencePattern}
+                      dayOfWeek={form.recurrenceDay}
+                      weekOfMonth={form.recurrenceWeekOfMonth}
+                      startTime={form.time}
+                    />
                   </div>
                 </div>
               )}
@@ -882,6 +925,112 @@ export default function EventsPage() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Geolocation Attendance Config */}
+              <div className="border-t border-border/50 pt-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <h4 className="text-sm font-semibold flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-primary" /> Geolocation Attendance
+                    </h4>
+                    <p className="text-[10px] text-muted-foreground">Allow members to check-in to this event via GPS.</p>
+                  </div>
+                  <Switch
+                    checked={form.attendanceConfig?.enabled}
+                    onCheckedChange={(c) => setForm({ 
+                      ...form, 
+                      attendanceConfig: { ...form.attendanceConfig, enabled: c as boolean } 
+                    })}
+                  />
+                </div>
+                {form.attendanceConfig?.enabled && (
+                  <div className="space-y-4 p-4 rounded-xl bg-muted/20 border border-border/50">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs">Latitude</Label>
+                        <Input
+                          type="number"
+                          step="any"
+                          value={form.attendanceConfig.latitude || ''}
+                          onChange={(e) => setForm({
+                            ...form,
+                            attendanceConfig: { ...form.attendanceConfig, latitude: parseFloat(e.target.value) }
+                          })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Longitude</Label>
+                        <Input
+                          type="number"
+                          step="any"
+                          value={form.attendanceConfig.longitude || ''}
+                          onChange={(e) => setForm({
+                            ...form,
+                            attendanceConfig: { ...form.attendanceConfig, longitude: parseFloat(e.target.value) }
+                          })}
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full h-8 text-xs gap-2"
+                      onClick={() => {
+                        if (navigator.geolocation) {
+                          navigator.geolocation.getCurrentPosition(
+                            (pos) => setForm({
+                              ...form,
+                              attendanceConfig: {
+                                ...form.attendanceConfig,
+                                latitude: pos.coords.latitude,
+                                longitude: pos.coords.longitude
+                              }
+                            }),
+                            () => alert("Could not get location.")
+                          );
+                        }
+                      }}
+                    >
+                      <MapPin className="w-3.5 h-3.5" /> Use My Current Location
+                    </Button>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Check-in Radius (meters)</Label>
+                      <Input
+                        type="number"
+                        value={form.attendanceConfig.radius}
+                        onChange={(e) => setForm({
+                          ...form,
+                          attendanceConfig: { ...form.attendanceConfig, radius: parseInt(e.target.value) || 500 }
+                        })}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs">Open (mins before)</Label>
+                        <Input
+                          type="number"
+                          value={form.attendanceConfig.openMinutesBefore}
+                          onChange={(e) => setForm({
+                            ...form,
+                            attendanceConfig: { ...form.attendanceConfig, openMinutesBefore: parseInt(e.target.value) || 30 }
+                          })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs">Close (mins after)</Label>
+                        <Input
+                          type="number"
+                          value={form.attendanceConfig.closeMinutesAfter}
+                          onChange={(e) => setForm({
+                            ...form,
+                            attendanceConfig: { ...form.attendanceConfig, closeMinutesAfter: parseInt(e.target.value) || 30 }
+                          })}
+                        />
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

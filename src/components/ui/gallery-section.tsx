@@ -58,7 +58,7 @@ function GalleryWidgetLayout() {
     ? Array.from(new Set([...effectiveGroups]))
     : ['all'];
 
-  const galleryAlbums = getVisibleGalleryAlbums('all', userGroups as string[], sessionMember?.role || 'member');
+  const galleryAlbums = getVisibleGalleryAlbums('all', userGroups as string[]);
 
   const [selectedAlbum, setSelectedAlbum] = useState<any>(null);
   const [previewPhotos, setPreviewPhotos] = useState<any[]>([]);

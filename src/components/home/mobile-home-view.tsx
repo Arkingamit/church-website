@@ -78,7 +78,7 @@ export function MobileHomeView() {
   const sessionMember = getSessionMember();
   const effectiveGroups = sessionMember ? getEffectiveGroups(sessionMember) : [];
   const userGroups = effectiveGroups.length > 0 ? Array.from(new Set([...effectiveGroups])) : ['all'];
-  const galleryAlbums = getVisibleGalleryAlbums('all', userGroups as string[], sessionMember?.role || 'member');
+  const galleryAlbums = getVisibleGalleryAlbums('all', userGroups as string[]);
   
   // Fallback verse if API fails
   const [verse, setVerse] = useState({
@@ -86,11 +86,20 @@ export function MobileHomeView() {
     reference: "Psalm 23:1"
   });
 
+  const [publicPrayers, setPublicPrayers] = useState<any[]>([]);
+
   React.useEffect(() => {
     fetch('/api/verses/today')
       .then(res => res.json())
       .then(data => {
         if (data && data.text) setVerse(data);
+      })
+      .catch(console.error);
+      
+    fetch('/api/prayers')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setPublicPrayers(data);
       })
       .catch(console.error);
   }, []);
@@ -105,6 +114,35 @@ export function MobileHomeView() {
     }, 2500);
     return () => clearTimeout(timer);
   }, []);
+
+  const [dismissedIds, setDismissedIds] = useState<string[]>([]);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('grace_dismissed_notifications');
+      if (stored) {
+        try {
+          setDismissedIds(JSON.parse(stored));
+        } catch (e) {}
+      }
+    }
+    
+    // Fetch pending counts for admins
+    if (session?.role === 'campus_leader' || session?.role === 'admin' || session?.role === 'super_admin') {
+      Promise.all([
+        fetch('/api/admin/prayers').then(res => res.ok ? res.json() : []),
+        fetch('/api/admin/users').then(res => res.ok ? res.json() : [])
+      ]).then(([prayers, users]) => {
+        let count = 0;
+        if (Array.isArray(prayers)) count += prayers.filter(p => p.status === 'pending').length;
+        if (Array.isArray(users)) count += users.filter(u => u.status === 'pending').length;
+        setPendingCount(count);
+      }).catch(() => {});
+    }
+  }, [session?.role]);
+
+  const unseenCount = (announcements?.filter(a => !dismissedIds.includes(`ann-${a.id}`))?.length || 0) + pendingCount;
   const [albumCovers, setAlbumCovers] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -269,9 +307,11 @@ export function MobileHomeView() {
             <Search className="w-5 h-5" />
           </Link>
           <Link href="/notifications" className="relative w-10 h-10 rounded-full bg-[#FAF7F2] border border-[#E5D5C5]/60 flex items-center justify-center text-[#8B2323] shadow-sm">
-            <Bell className={`w-5 h-5 ${((announcements?.length || 0) + (prayerRequests?.length || 0) > 0) ? 'animate-jiggle origin-top' : ''}`} />
-            {((announcements?.length || 0) + (prayerRequests?.length || 0) > 0) && (
-              <span className="absolute top-2 right-2 w-2 h-2 bg-red-600 rounded-full border border-white"></span>
+            <Bell className={`w-5 h-5 ${unseenCount > 0 ? 'animate-jiggle origin-top' : ''}`} />
+            {unseenCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-4 h-4 bg-red-600 rounded-full border border-white flex items-center justify-center px-1 text-[9px] font-bold text-white leading-none">
+                {unseenCount > 99 ? '99+' : unseenCount}
+              </span>
             )}
           </Link>
           {session ? (
@@ -351,6 +391,34 @@ export function MobileHomeView() {
               <div className="text-[9px] text-white/60 uppercase tracking-widest font-semibold mt-1">Yrs Serving</div>
             </div>
           </div>
+        </div>
+
+        {/* 3. Quick Actions */}
+        <div className="grid grid-cols-4 gap-4 px-2">
+          <Link href="/check-in" className="flex flex-col items-center gap-2 group">
+            <div className="w-14 h-14 rounded-2xl bg-[#F3EAE1] flex items-center justify-center text-[#8B2323] border border-[#E5D5C5] shadow-sm">
+              <MapPin className="w-6 h-6" />
+            </div>
+            <span className="text-[10px] font-bold text-[#7A6150]">Check-In</span>
+          </Link>
+          <Link href="/prayer-wall" className="flex flex-col items-center gap-2">
+            <div className="w-14 h-14 rounded-2xl bg-[#F3EAE1] flex items-center justify-center text-[#8B2323] border border-[#E5D5C5] shadow-sm">
+              <Heart className="w-6 h-6" />
+            </div>
+            <span className="text-[10px] font-bold text-[#7A6150]">Prayer</span>
+          </Link>
+          <Link href="/music" className="flex flex-col items-center gap-2">
+            <div className="w-14 h-14 rounded-2xl bg-[#F3EAE1] flex items-center justify-center text-[#8B2323] border border-[#E5D5C5] shadow-sm">
+              <Music className="w-6 h-6" />
+            </div>
+            <span className="text-[10px] font-bold text-[#7A6150]">Worship</span>
+          </Link>
+          <Link href="/events" className="flex flex-col items-center gap-2">
+            <div className="w-14 h-14 rounded-2xl bg-[#F3EAE1] flex items-center justify-center text-[#8B2323] border border-[#E5D5C5] shadow-sm">
+              <Calendar className="w-6 h-6" />
+            </div>
+            <span className="text-[10px] font-bold text-[#7A6150]">Events</span>
+          </Link>
         </div>
 
         {/* 4. Highlight Stacked Cards */}
@@ -613,7 +681,7 @@ export function MobileHomeView() {
         </div>
 
         {/* 8. Recent Prayers */}
-        {prayerRequests && prayerRequests.length > 0 && (
+        {publicPrayers && publicPrayers.length > 0 && (
           <div className="mb-8">
             <div className="flex justify-between items-end mb-4">
               <h2 className="text-2xl font-serif font-bold text-[#1A202C] border-l-4 border-[#8B2323] pl-3 py-0.5 leading-none">Community Prayers</h2>
@@ -623,7 +691,7 @@ export function MobileHomeView() {
             </div>
             
             <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 snap-x no-scrollbar">
-              {prayerRequests
+              {publicPrayers
                 .filter(p => p.status === 'approved' || p.status === undefined)
                 .map(prayer => (
                    <div key={prayer.id} className="min-w-[280px] w-[280px] snap-start">

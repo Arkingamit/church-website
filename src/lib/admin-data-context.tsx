@@ -138,6 +138,7 @@ export interface Sermon {
   duration: string;
   videoId: string;
   description: string;
+  materials?: { title: string; url: string; type?: string }[];
   views: number;
   likes: number;
   isFeatured?: boolean;

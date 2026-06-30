@@ -27,7 +27,23 @@ export async function GET() {
     await connectToDatabase();
     // .lean() returns plain JS objects — 30-50% faster than full Mongoose documents
     const events = await EventModel.find({}, LIST_PROJECTION).sort({ date: 1, time: 1 }).lean();
-    return NextResponse.json(events);
+    
+    const AttendanceRecord = mongoose.models.AttendanceRecord || mongoose.model('AttendanceRecord');
+    
+    // Group attendance counts by eventId
+    const attendanceCounts = await AttendanceRecord.aggregate([
+      { $match: { eventId: { $exists: true, $ne: null } } },
+      { $group: { _id: '$eventId', count: { $sum: 1 } } }
+    ]);
+    
+    const attendanceMap = new Map(attendanceCounts.map(a => [a._id.toString(), a.count]));
+
+    const eventsWithAttendance = events.map(ev => ({
+      ...ev,
+      attended: attendanceMap.get(ev._id.toString()) || 0
+    }));
+
+    return NextResponse.json(eventsWithAttendance);
   } catch (error: any) {
     return NextResponse.json({ error: 'Failed to fetch events' }, { status: 500 });
   }

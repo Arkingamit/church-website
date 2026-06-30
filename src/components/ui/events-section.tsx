@@ -408,8 +408,7 @@ function EventsWidgetLayout() {
 
   const visibleEvents = getVisibleEvents(
     selectedCampus === 'all' ? 'all' : selectedCampus,
-    userGroups as string[],
-    sessionMember?.role || 'member'
+    userGroups as string[]
   );
 
   return (

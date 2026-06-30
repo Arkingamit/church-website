@@ -57,6 +57,14 @@ export const eventSchema = z.object({
     hoursBefore: z.number(),
     minutesBefore: z.number()
   })).optional(),
+  attendanceConfig: z.object({
+    enabled: z.boolean(),
+    radius: z.number(),
+    latitude: z.number().optional(),
+    longitude: z.number().optional(),
+    openMinutesBefore: z.number(),
+    closeMinutesAfter: z.number()
+  }).optional()
 });
 
 // User Admin Schema (for creating/updating users in admin)

@@ -22,6 +22,7 @@ export interface ISermon extends Document {
   duration: string;
   videoId: string;
   description: string;
+  materials?: { title: string; url: string; type?: string }[];
   views: number;
   likes: number;
   isFeatured: boolean;
@@ -36,6 +37,11 @@ const SermonSchema = new Schema<ISermon>({
   duration: { type: String, required: true },
   videoId: { type: String, required: true },
   description: { type: String, required: true },
+  materials: [{
+    title: { type: String, required: true },
+    url: { type: String, required: true },
+    type: { type: String, default: 'other' }
+  }],
   views: { type: Number, default: 0 },
   likes: { type: Number, default: 0 },
   isFeatured: { type: Boolean, default: false },

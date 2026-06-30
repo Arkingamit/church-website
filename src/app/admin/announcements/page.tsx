@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { SchedulePreviewExport } from '@/components/admin/schedule-preview-export';
 import {
   Megaphone,
   Pin,
@@ -63,8 +64,9 @@ const emptyForm = {
   excludeCampuses: [] as string[],
   excludeGroups: [] as string[],
   isRecurring: false,
-  recurrencePattern: 'weekly' as 'weekly' | 'biweekly' | 'monthly' | 'custom',
+  recurrencePattern: 'weekly' as 'weekly' | 'biweekly' | 'monthly' | 'custom' | 'custom_monthly',
   recurrenceDay: 'Sunday',
+  recurrenceWeekOfMonth: '1st',
   recurrenceEndDate: '',
   recurrenceNote: '',
   customReminders: [] as { daysBefore: number, hoursBefore: number, minutesBefore: number }[],
@@ -395,6 +397,10 @@ export default function AnnouncementsPage() {
 
               {form.isRecurring && (
                 <div className="pl-2 space-y-3 animate-in fade-in slide-in-from-top-2">
+                  <div className="text-xs text-muted-foreground bg-violet-500/10 p-2 rounded-md flex items-center gap-2">
+                    <Calendar className="w-3.5 h-3.5" />
+                    Recurring sequence is based on the Creation Date: <span className="font-semibold text-foreground">{new Date().toISOString().split('T')[0]}</span>
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground">Pattern</Label>
@@ -407,10 +413,41 @@ export default function AnnouncementsPage() {
                           <SelectItem value="weekly">Every Week</SelectItem>
                           <SelectItem value="biweekly">Every 2 Weeks</SelectItem>
                           <SelectItem value="monthly">Every Month</SelectItem>
+                          <SelectItem value="custom_monthly">Custom Monthly (e.g. 2nd Thursday)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
-                    {form.recurrencePattern !== 'custom' && (
+
+                    {form.recurrencePattern === 'custom_monthly' && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground">Week</Label>
+                          <Select value={form.recurrenceWeekOfMonth} onValueChange={(v) => setForm({ ...form, recurrenceWeekOfMonth: v as any })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1st">First</SelectItem>
+                              <SelectItem value="2nd">Second</SelectItem>
+                              <SelectItem value="3rd">Third</SelectItem>
+                              <SelectItem value="4th">Fourth</SelectItem>
+                              <SelectItem value="last">Last</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground">Day</Label>
+                          <Select value={form.recurrenceDay} onValueChange={(v) => setForm({ ...form, recurrenceDay: v })}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(d => (
+                                <SelectItem key={d} value={d}>{d}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+
+                    {(form.recurrencePattern === 'weekly' || form.recurrencePattern === 'biweekly') && (
                       <div className="space-y-2">
                         <Label className="text-xs text-muted-foreground">Day</Label>
                         <Select
@@ -445,6 +482,17 @@ export default function AnnouncementsPage() {
                       onChange={(e) => setForm({ ...form, recurrenceEndDate: e.target.value })}
                     />
                     <p className="text-[10px] text-muted-foreground">Leave empty for indefinite recurring</p>
+                  </div>
+
+                  <div className="pt-2">
+                    <SchedulePreviewExport
+                      title={form.title || 'Untitled Announcement'}
+                      startDate={new Date().toISOString().split('T')[0]} // Announcements start when created/published
+                      endDate={form.recurrenceEndDate}
+                      pattern={form.recurrencePattern}
+                      dayOfWeek={form.recurrenceDay}
+                      weekOfMonth={form.recurrenceWeekOfMonth}
+                    />
                   </div>
 
                   {/* ── Custom Reminders ── */}

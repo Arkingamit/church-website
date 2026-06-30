@@ -42,6 +42,14 @@ export interface IEvent extends Document {
   schedule?: IEventScheduleDay[];
   reminders?: string[];
   customReminders?: { daysBefore: number; hoursBefore: number; minutesBefore: number; }[];
+  attendanceConfig?: {
+    enabled: boolean;
+    radius: number;
+    latitude: number;
+    longitude: number;
+    openMinutesBefore: number;
+    closeMinutesAfter: number;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -109,11 +117,23 @@ const EventSchema = new Schema<IEvent>(
     isMultiDay: { type: Boolean, default: false },
     endDate: { type: String },
     schedule: { type: [EventScheduleDaySchema], default: [] },
-    reminders: { type: [String], default: [] }, // Deprecated
+    reminders: { type: [String], default: [] },
     customReminders: {
-      type: [{ daysBefore: Number, hoursBefore: Number, minutesBefore: Number }],
+      type: [{
+        daysBefore: { type: Number, required: true },
+        hoursBefore: { type: Number, required: true },
+        minutesBefore: { type: Number, required: true },
+      }],
       default: []
     },
+    attendanceConfig: {
+      enabled: { type: Boolean, default: false },
+      radius: { type: Number, default: 500 },
+      latitude: { type: Number },
+      longitude: { type: Number },
+      openMinutesBefore: { type: Number, default: 30 },
+      closeMinutesAfter: { type: Number, default: 30 },
+    }
   },
   { timestamps: true }
 );

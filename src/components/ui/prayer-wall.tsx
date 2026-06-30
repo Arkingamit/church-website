@@ -126,7 +126,11 @@ function PrayerWallWidgetLayout() {
       const res = await fetch(`/api/prayers/${id}/pray`, { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
-        setPrayers(prev => prev.map(p => p.id === id ? { ...p, prayedCount: data.prayedCount } : p));
+        setPrayers(prev => prev.map(p => p.id === id ? { 
+          ...p, 
+          prayedCount: data.prayedCount, 
+          prayedBy: [...(p.prayedBy || []), sessionMember?._id || sessionMember?.id || ''] 
+        } : p));
         toast.success('You prayed for this request');
       } else {
         const data = await res.json();
@@ -241,7 +245,9 @@ function PrayerWallWidgetLayout() {
             </div>
           ) : (
             <div className="space-y-6">
-              {prayers.map((request) => (
+              {prayers.map((request) => {
+                const hasPrayed = request.prayedBy && sessionMember && request.prayedBy.includes(sessionMember.id || sessionMember._id || '');
+                return (
                 <Card key={request.id} className="hover:shadow-elevated transition-all duration-300">
                   <CardHeader className="pb-4">
                     <div className="flex items-start justify-between gap-4">
@@ -274,10 +280,6 @@ function PrayerWallWidgetLayout() {
                     </p>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="sm" className="gap-2 text-prayer hover:text-prayer cursor-default">
-                          <Heart className="w-4 h-4" />
-                          <span>{request.prayedCount} prayed</span>
-                        </Button>
                         <Button variant="ghost" size="sm" className="gap-2 cursor-default">
                           <MessageCircle className="w-4 h-4" />
                           <span>{request.comments} comments</span>
@@ -286,15 +288,22 @@ function PrayerWallWidgetLayout() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="bg-prayer/5 border-prayer/20 hover:bg-prayer/10 transition-colors"
+                        disabled={hasPrayed}
+                        className={`gap-2 transition-colors ${
+                          hasPrayed
+                          ? 'bg-[#FBE8E8] text-[#8B2323] border-[#8B2323]/20'
+                          : 'bg-prayer/5 border-prayer/20 hover:bg-prayer/10'
+                        }`}
                         onClick={() => handlePray(request.id)}
                       >
-                        I Prayed
+                        <Heart className={`w-4 h-4 ${hasPrayed ? 'fill-current' : ''}`} />
+                        {hasPrayed ? 'Prayed' : 'I Prayed'} • {request.prayedCount}
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -305,13 +314,22 @@ function PrayerWallWidgetLayout() {
 
 // --- PAGE LAYOUT (Original Page UI) ---
 function PrayerWallPageLayout() {
-  const { prayerRequests } = useAdminData();
   const { session } = useAuth();
   
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [publicPrayers, setPublicPrayers] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('/api/prayers')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setPublicPrayers(data);
+      })
+      .catch(console.error);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -334,7 +352,12 @@ function PrayerWallPageLayout() {
         setSubmitted(true);
         setTitle("");
         setContent("");
-        setTimeout(() => window.location.reload(), 2000);
+        fetch('/api/prayers')
+          .then(res => res.json())
+          .then(data => {
+            if (Array.isArray(data)) setPublicPrayers(data);
+          })
+          .catch(console.error);
       }
     } catch (err) {
       console.error("Failed to submit prayer", err);
@@ -427,7 +450,7 @@ function PrayerWallPageLayout() {
             Community Prayers
           </h2>
           
-          {prayerRequests
+          {publicPrayers
             .filter((p: any) => p.status === "approved" || p.status === undefined)
             .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
             .map((prayer: any) => (
@@ -435,7 +458,7 @@ function PrayerWallPageLayout() {
             ))
           }
 
-          {prayerRequests.length === 0 && (
+          {publicPrayers.length === 0 && (
             <div className="text-center py-12 bg-white/40 rounded-3xl border border-[#F3EAE1] border-dashed">
               <Heart className="w-12 h-12 text-[#E5D5C5] mx-auto mb-3" />
               <p className="text-[#7A6150]">No prayer requests at the moment.</p>

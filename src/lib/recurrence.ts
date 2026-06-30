@@ -127,8 +127,23 @@ export function generateOccurrences(
   
   if (pattern !== 'custom_monthly') {
     let d = new Date(startDateStr);
+    
+    // For weekly/biweekly, snap to the target day of week if specified
+    if (pattern === 'weekly' || pattern === 'biweekly') {
+      const targetDayIndex = dayOfWeek ? DAYS.indexOf(dayOfWeek) : -1;
+      if (targetDayIndex !== -1) {
+        while (d.getDay() !== targetDayIndex) {
+          d.setDate(d.getDate() + 1);
+        }
+      }
+    }
+
     while (d <= end && occurrences.length < maxOccurrences) {
-      occurrences.push(d.toISOString().split('T')[0]);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      occurrences.push(`${yyyy}-${mm}-${dd}`);
+
       if (pattern === 'weekly') d.setDate(d.getDate() + 7);
       else if (pattern === 'biweekly') d.setDate(d.getDate() + 14);
       else if (pattern === 'monthly') d.setMonth(d.getMonth() + 1);
@@ -165,7 +180,10 @@ export function generateOccurrences(
 
       if (dateObj > end) break;
       if (dateObj >= startObj) {
-        occurrences.push(dateObj.toISOString().split('T')[0]);
+        const yyyy = dateObj.getFullYear();
+        const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const dd = String(dateObj.getDate()).padStart(2, '0');
+        occurrences.push(`${yyyy}-${mm}-${dd}`);
       }
 
       month++;

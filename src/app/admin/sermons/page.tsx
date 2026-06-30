@@ -15,6 +15,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Play,
   Plus,
@@ -31,6 +32,10 @@ import {
   ChevronRight,
   Clock,
   GripVertical,
+  Link,
+  FileText,
+  MonitorPlay,
+  X
 } from 'lucide-react';
 
 export default function SermonManagementPage() {
@@ -57,6 +62,7 @@ export default function SermonManagementPage() {
     youtubeUrl: '',
     description: '',
     isFeatured: false,
+    materials: [] as {title: string; url: string; type: string}[],
   });
 
   // Series Dialog State
@@ -123,6 +129,7 @@ export default function SermonManagementPage() {
       youtubeUrl: '',
       description: '',
       isFeatured: false,
+      materials: [],
     });
     setSermonDialogOpen(true);
   };
@@ -133,6 +140,7 @@ export default function SermonManagementPage() {
       ...sermon,
       isFeatured: !!sermon.isFeatured,
       youtubeUrl: `https://youtube.com/watch?v=${sermon.videoId}`,
+      materials: sermon.materials || [],
     });
     setSermonDialogOpen(true);
   };
@@ -412,6 +420,92 @@ export default function SermonManagementPage() {
                 onChange={(e) => setSermonForm({ ...sermonForm, description: e.target.value })}
               />
             </div>
+            <div className="col-span-2 space-y-4 pt-4 border-t">
+              <div className="flex items-center justify-between">
+                <Label>Sermon Materials (Notes, Slides, etc.)</Label>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setSermonForm({
+                    ...sermonForm,
+                    materials: [...sermonForm.materials, { title: '', url: '', type: 'notes' }]
+                  })}
+                  className="gap-1 h-8 text-xs"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add Material
+                </Button>
+              </div>
+              
+              {sermonForm.materials.length === 0 ? (
+                <div className="text-sm text-muted-foreground text-center p-4 bg-muted/20 rounded-md border border-dashed">
+                  No materials attached yet.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {sermonForm.materials.map((mat, idx) => (
+                    <div key={idx} className="flex items-start gap-2 bg-muted/30 p-2 rounded-md border border-border/50">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Select 
+                            value={mat.type} 
+                            onValueChange={(v) => {
+                              const newMat = [...sermonForm.materials];
+                              newMat[idx].type = v;
+                              setSermonForm({ ...sermonForm, materials: newMat });
+                            }}
+                          >
+                            <SelectTrigger className="w-[140px] h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="notes"><div className="flex items-center gap-2"><FileText className="w-3.5 h-3.5"/> Notes</div></SelectItem>
+                              <SelectItem value="presentation"><div className="flex items-center gap-2"><MonitorPlay className="w-3.5 h-3.5"/> Slides</div></SelectItem>
+                              <SelectItem value="canva"><div className="flex items-center gap-2"><MonitorPlay className="w-3.5 h-3.5"/> Canva</div></SelectItem>
+                              <SelectItem value="link"><div className="flex items-center gap-2"><Link className="w-3.5 h-3.5"/> Link</div></SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Input 
+                            placeholder="Title (e.g. Sermon Outline)"
+                            value={mat.title}
+                            onChange={(e) => {
+                              const newMat = [...sermonForm.materials];
+                              newMat[idx].title = e.target.value;
+                              setSermonForm({ ...sermonForm, materials: newMat });
+                            }}
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                        <Input 
+                          placeholder="https://..."
+                          value={mat.url}
+                          onChange={(e) => {
+                            const newMat = [...sermonForm.materials];
+                            newMat[idx].url = e.target.value;
+                            setSermonForm({ ...sermonForm, materials: newMat });
+                          }}
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <Button 
+                        type="button"
+                        variant="ghost" 
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:bg-destructive/10 shrink-0"
+                        onClick={() => {
+                          const newMat = [...sermonForm.materials];
+                          newMat.splice(idx, 1);
+                          setSermonForm({ ...sermonForm, materials: newMat });
+                        }}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="col-span-2 flex items-center gap-2 pt-2">
               <input 
                 type="checkbox" 

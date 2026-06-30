@@ -16,7 +16,10 @@ import {
   Heart,
   Eye,
   ChevronRight,
-  Tv
+  Tv,
+  FileText,
+  MonitorPlay,
+  Link as LinkIcon
 } from 'lucide-react';
 
 export default function SeriesDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -110,6 +113,31 @@ export default function SeriesDetailPage({ params }: { params: Promise<{ id: str
                       {activeSermon.description}
                     </p>
 
+                    {activeSermon.materials && activeSermon.materials.length > 0 && (
+                      <div className="pt-6 border-t border-border/50">
+                        <h3 className="text-sm font-bold uppercase tracking-wider mb-4 text-muted-foreground">Sermon Materials</h3>
+                        <div className="flex flex-wrap gap-3">
+                          {activeSermon.materials.map((mat, idx) => {
+                            const Icon = mat.type === 'notes' ? FileText :
+                                         mat.type === 'presentation' || mat.type === 'canva' ? MonitorPlay :
+                                         LinkIcon;
+                            
+                            return (
+                              <a 
+                                key={idx} 
+                                href={mat.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all duration-300 font-medium text-sm border border-primary/20 hover:shadow-lg hover:shadow-primary/25"
+                              >
+                                <Icon className="w-4 h-4" />
+                                {mat.title}
+                              </a>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
