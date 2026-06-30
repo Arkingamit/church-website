@@ -395,12 +395,41 @@ export function MobileHomeView() {
 
         {/* 3. Quick Actions */}
         <div className="grid grid-cols-4 gap-4 px-2">
-          <Link href="/check-in" className="flex flex-col items-center gap-2 group">
-            <div className="w-14 h-14 rounded-2xl bg-[#F3EAE1] flex items-center justify-center text-[#8B2323] border border-[#E5D5C5] shadow-sm">
+          <button onClick={async () => {
+            if (!navigator.geolocation) { alert('Geolocation not supported'); return; }
+            const btn = document.getElementById('checkin-icon');
+            if (btn) btn.classList.add('animate-pulse');
+            navigator.geolocation.getCurrentPosition(
+              async (position) => {
+                try {
+                  const sessRes = await fetch('/api/attendance/active');
+                  if (!sessRes.ok) { if (btn) btn.classList.remove('animate-pulse'); alert('No active sessions right now.'); return; }
+                  const sessions = await sessRes.json();
+                  if (!Array.isArray(sessions) || sessions.length === 0) { if (btn) btn.classList.remove('animate-pulse'); alert('No active sessions right now.'); return; }
+                  const session = sessions[0];
+                  const res = await fetch('/api/attendance/check-in', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: session._id, type: session.type || 'session', latitude: position.coords.latitude, longitude: position.coords.longitude })
+                  });
+                  const data = await res.json();
+                  if (btn) btn.classList.remove('animate-pulse');
+                  if (res.ok) {
+                    alert('✅ Checked in successfully!');
+                  } else {
+                    alert(data.message || data.error || 'Check-in failed');
+                  }
+                } catch { if (btn) btn.classList.remove('animate-pulse'); alert('Connection error. Try again.'); }
+              },
+              () => { if (btn) btn.classList.remove('animate-pulse'); alert('Location access denied. Please enable GPS.'); },
+              { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+            );
+          }} className="flex flex-col items-center gap-2 group">
+            <div id="checkin-icon" className="w-14 h-14 rounded-2xl bg-[#F3EAE1] flex items-center justify-center text-[#8B2323] border border-[#E5D5C5] shadow-sm">
               <MapPin className="w-6 h-6" />
             </div>
             <span className="text-[10px] font-bold text-[#7A6150]">Check-In</span>
-          </Link>
+          </button>
           <Link href="/prayer-wall" className="flex flex-col items-center gap-2">
             <div className="w-14 h-14 rounded-2xl bg-[#F3EAE1] flex items-center justify-center text-[#8B2323] border border-[#E5D5C5] shadow-sm">
               <Heart className="w-6 h-6" />
