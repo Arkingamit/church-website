@@ -18,7 +18,7 @@ import {
 
 export default function RequestsPage() {
   const { session, members, getPendingRequests, approveMember, rejectMember, getMember } = useAuth();
-  const { campuses, groups, currentUser } = useAdminData();
+  const { campuses, groupScopes, currentUser } = useAdminData();
 
   const isCampusLeader = currentUser.role === 'campus_leader';
   const pendingRequests = (isCampusLeader
@@ -243,16 +243,42 @@ export default function RequestsPage() {
                   <Users className="w-4 h-4 text-primary" /> Assign to Groups *
                 </Label>
                 <p className="text-xs text-muted-foreground">Select one or more groups for this member</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {groups.map(group => (
-                    <label key={group} className="flex items-center gap-2 text-sm cursor-pointer p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                      <Checkbox
-                        checked={selectedGroups.includes(group)}
-                        onCheckedChange={() => toggleGroup(group)}
-                      />
-                      {group}
-                    </label>
-                  ))}
+                <div className="space-y-4">
+                  {/* Global Groups */}
+                  {groupScopes.filter(g => g.scope === 'global').length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Global Groups</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {groupScopes.filter(g => g.scope === 'global').map(g => (
+                          <label key={g.name} className="flex items-center gap-2 text-sm cursor-pointer p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                            <Checkbox
+                              checked={selectedGroups.includes(g.name)}
+                              onCheckedChange={() => toggleGroup(g.name)}
+                            />
+                            <span className="truncate">{g.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Campus Groups */}
+                  {groupScopes.filter(g => g.scope === approveDialog.campusId).length > 0 && (
+                    <div className="space-y-2 pt-2 border-t border-border/50">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Campus Groups</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {groupScopes.filter(g => g.scope === approveDialog.campusId).map(g => (
+                          <label key={g.name} className="flex items-center gap-2 text-sm cursor-pointer p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                            <Checkbox
+                              checked={selectedGroups.includes(g.name)}
+                              onCheckedChange={() => toggleGroup(g.name)}
+                            />
+                            <span className="truncate">{g.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -87,12 +87,12 @@ export const Navigation = () => {
 
   const navLinksData = [
 
-    { label: 'Events', href: '#events' },
+    { label: 'Events', href: '/events' },
     { label: 'Sermons', href: '/sermons' },
-    { label: 'Music', href: '/music' },
-    { label: 'Gallery', href: '#gallery' },
-    { label: 'Prayer Wall', href: '#prayers' },
-    { label: 'About', href: '#about' },
+    { label: 'Notes', href: '/broadcasts' },
+    { label: 'Announcements', href: '/announcements' },
+    { label: 'Gallery', href: '/gallery' },
+    { label: 'Prayer Wall', href: '/prayer-wall' },
   ];
 
   const handleLogout = () => {

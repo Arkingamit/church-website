@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, PlayCircle, Music, CalendarHeart, BookHeart } from "lucide-react";
+import { Home, PlayCircle, CalendarHeart, Radio, Megaphone } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
 type NavItem = {
@@ -20,9 +20,9 @@ export function MobileBottomNav() {
     const navItems: NavItem[] = [
         { label: "Home", href: "/", icon: Home, exact: true },
         { label: "Sermons", href: "/sermons", icon: PlayCircle },
-        { label: "Worship", href: "/music", icon: Music },
+        { label: "Notes", href: "/broadcasts", icon: Radio },
         { label: "Events", href: "/events", icon: CalendarHeart },
-        { label: "Bible", href: "/devotionals", icon: BookHeart },
+        { label: "Announcements", href: "/announcements", icon: Megaphone },
     ];
 
     return (

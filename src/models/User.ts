@@ -42,7 +42,7 @@ const UserSchema = new Schema<IUser>(
     password: { type: String }, // Optional for dummy users initially created by admin
     role: { 
       type: String, 
-      enum: ['member', 'campus_leader', 'admin', 'super_admin'],
+      enum: ['member', 'group_leader', 'campus_leader', 'admin', 'super_admin'],
       default: 'member'
     },
     status: {
