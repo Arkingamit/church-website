@@ -35,8 +35,48 @@ export function GlobalAttendancePrompt() {
 
           if (session) {
             setActiveSession(session);
-            // Small delay to allow page load before sliding up
-            setTimeout(() => setIsVisible(true), 1500);
+            
+            // Automatically ask for location and try to check in
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                  try {
+                    const res = await fetch('/api/attendance/check-in', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        id: session._id,
+                        type: session.type || 'session',
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude
+                      })
+                    });
+                    
+                    if (res.ok) {
+                      setSuccess(true);
+                      setIsVisible(true); // Show success banner briefly
+                      
+                      const newProcessed = { ...processed, [`${session._id}-${today}`]: 'checked-in' };
+                      localStorage.setItem('processedAttendance', JSON.stringify(newProcessed));
+                      
+                      setTimeout(() => setIsVisible(false), 4000);
+                    } else {
+                      // If out of range, show the manual prompt
+                      setIsVisible(true);
+                    }
+                  } catch (e) {
+                    setIsVisible(true);
+                  }
+                },
+                (error) => {
+                  // If location denied or failed, show the manual prompt banner
+                  setIsVisible(true);
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+              );
+            } else {
+              setIsVisible(true);
+            }
           }
         }
       } catch (error) {
