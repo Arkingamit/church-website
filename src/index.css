@@ -67,9 +67,6 @@
     --shadow-soft: 0 4px 20px rgba(47, 60, 94, 0.05);
     --shadow-elevated: 0 8px 30px rgba(47, 60, 94, 0.1);
     --shadow-glow: 0 0 20px hsl(var(--accent) / 0.3);
-
-    --font-heading: 'Playfair Display', serif;
-    --font-body: 'Work Sans', sans-serif;
     
     /* Subtle Christian Art Repeating Background Pattern (Light Mode) */
     --bg-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Cg fill='none' stroke='%23810008' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' opacity='0.08'%3E%3Cpath d='M120,70 L120,170 M90,100 L150,100' /%3E%3Cpath d='M60,55 Q30,30 10,50 Q30,70 60,45' /%3E%3Cpath d='M180,55 Q210,30 230,50 Q210,70 180,45' /%3E%3Cpath d='M60,195 Q30,170 10,190 Q30,210 60,185' /%3E%3Cpath d='M180,195 Q210,170 230,190 Q210,210 180,185' /%3E%3Cpath d='M100,20 Q110,10 120,30 Q130,10 140,20 Q130,35 120,25 Q110,35 100,20' /%3E%3Cpath d='M100,220 Q120,190 140,200' /%3E%3Cpath d='M110,210 Q100,205 105,195 Q115,200 110,210' /%3E%3Cpath d='M125,200 Q125,185 135,190 Q135,205 125,200' /%3E%3Cpath d='M30,110 L35,120 L30,130 L25,120 Z' /%3E%3Cpath d='M210,110 L215,120 L210,130 L205,120 Z' /%3E%3Cpath d='M120,40 L125,45 L120,50 L115,45 Z' /%3E%3Cpath d='M120,225 L125,230 L120,235 L115,230 Z' /%3E%3C/g%3E%3C/svg%3E");

@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { MapPin, Plus, Trash2, Users, RefreshCw, Repeat, Calendar, Download, FileSpreadsheet, PieChart } from 'lucide-react';
+import { MapPin, Plus, Trash2, Users, RefreshCw, Repeat, Calendar, Download, FileSpreadsheet, PieChart, QrCode } from 'lucide-react';
 import { SchedulePreviewExport } from '@/components/admin/schedule-preview-export';
 import { useAdminData } from '@/lib/admin-data-context';
 import { toast } from 'sonner';
@@ -21,6 +21,9 @@ export default function AdminAttendancePage() {
   const [recordsDialogOpen, setRecordsDialogOpen] = useState(false);
   const [selectedSessionRecords, setSelectedSessionRecords] = useState<any[]>([]);
   const [loadingRecords, setLoadingRecords] = useState(false);
+  
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const [selectedSessionForQr, setSelectedSessionForQr] = useState<any>(null);
 
   const [form, setForm] = useState({
     title: '',
@@ -177,6 +180,9 @@ export default function AdminAttendancePage() {
                 <div className="flex gap-2 pt-2 border-t">
                   <Button variant="outline" className="flex-1" onClick={() => viewRecords(s._id)}>
                     <Users className="w-4 h-4 mr-2" /> Records
+                  </Button>
+                  <Button variant="outline" className="flex-1" onClick={() => { setSelectedSessionForQr(s); setQrDialogOpen(true); }}>
+                    <QrCode className="w-4 h-4 mr-2" /> Show QR
                   </Button>
                   <Button variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50 px-3" onClick={() => handleDelete(s._id)}>
                     <Trash2 className="w-4 h-4" />
@@ -550,6 +556,36 @@ export default function AdminAttendancePage() {
               </>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Session QR Dialog */}
+      <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
+        <DialogContent className="max-w-md text-center">
+          <DialogHeader>
+            <DialogTitle>Session QR Code</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center justify-center p-6 space-y-4">
+            <p className="text-muted-foreground">
+              Display this QR code for members to scan with their camera or the church app.
+            </p>
+            {selectedSessionForQr && (
+              <div className="bg-white p-4 rounded-xl border inline-block">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`${typeof window !== 'undefined' ? window.location.origin : ''}/check-in/qr/${selectedSessionForQr._id}`)}&margin=10`} 
+                  alt="Session QR" 
+                  width={300} 
+                  height={300} 
+                  className="rounded-lg"
+                />
+              </div>
+            )}
+            <h3 className="font-bold text-lg mt-4">{selectedSessionForQr?.title}</h3>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" className="w-full" onClick={() => setQrDialogOpen(false)}>Close</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

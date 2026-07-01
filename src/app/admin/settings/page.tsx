@@ -41,7 +41,7 @@ export default function SettingsPage() {
   // Campus form state
   const [campusDialogOpen, setCampusDialogOpen] = useState(false);
   const [editingCampusId, setEditingCampusId] = useState<string | null>(null);
-  const [campusForm, setCampusForm] = useState({ name: '', pastor: '' });
+  const [campusForm, setCampusForm] = useState<Partial<Campus>>({ name: '', pastor: '', address: '', city: '', zipCode: '', phone: '', email: '', latitude: undefined, longitude: undefined, serviceTimes: [{ day: 'Sunday', times: [''] }] });
   const [deleteCampusConfirm, setDeleteCampusConfirm] = useState<string | null>(null);
 
   // Group form state
@@ -68,25 +68,25 @@ export default function SettingsPage() {
   // Campus handlers
   const openCreateCampus = () => {
     setEditingCampusId(null);
-    setCampusForm({ name: '', pastor: '' });
+    setCampusForm({ name: '', pastor: '', address: '', city: '', zipCode: '', phone: '', email: '', latitude: undefined, longitude: undefined, serviceTimes: [{ day: 'Sunday', times: [''] }] });
     setCampusDialogOpen(true);
   };
 
   const openEditCampus = (campus: Campus) => {
     setEditingCampusId(campus.id);
-    setCampusForm({ name: campus.name, pastor: campus.pastor });
+    setCampusForm({ ...campus, serviceTimes: campus.serviceTimes?.length ? campus.serviceTimes : [{ day: 'Sunday', times: [''] }] });
     setCampusDialogOpen(true);
   };
 
   const handleCampusSubmit = () => {
     if (!campusForm.name) return;
     if (editingCampusId) {
-      updateCampus(editingCampusId, campusForm);
+      updateCampus(editingCampusId, campusForm as Campus);
     } else {
-      addCampus(campusForm);
+      addCampus(campusForm as Campus);
     }
     setCampusDialogOpen(false);
-    setCampusForm({ name: '', pastor: '' });
+    setCampusForm({ name: '', pastor: '', address: '', city: '', zipCode: '', phone: '', email: '', latitude: undefined, longitude: undefined, serviceTimes: [{ day: 'Sunday', times: [''] }] });
     setEditingCampusId(null);
   };
 
@@ -256,7 +256,7 @@ export default function SettingsPage() {
 
       {/* Campus Create/Edit Dialog */}
       <Dialog open={campusDialogOpen} onOpenChange={setCampusDialogOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingCampusId ? 'Edit Campus' : 'New Campus'}</DialogTitle>
           </DialogHeader>
@@ -269,6 +269,71 @@ export default function SettingsPage() {
               <Label>Pastor / Leader</Label>
               <Input value={campusForm.pastor} onChange={(e) => setCampusForm({ ...campusForm, pastor: e.target.value })} placeholder="e.g. Pastor David" />
             </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Phone</Label>
+                <Input value={campusForm.phone || ''} onChange={(e) => setCampusForm({ ...campusForm, phone: e.target.value })} placeholder="+1..." />
+              </div>
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input type="email" value={campusForm.email || ''} onChange={(e) => setCampusForm({ ...campusForm, email: e.target.value })} placeholder="hello@..." />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Address</Label>
+              <Input value={campusForm.address || ''} onChange={(e) => setCampusForm({ ...campusForm, address: e.target.value })} placeholder="123 Church St" />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>City</Label>
+                <Input value={campusForm.city || ''} onChange={(e) => setCampusForm({ ...campusForm, city: e.target.value })} placeholder="City" />
+              </div>
+              <div className="space-y-2">
+                <Label>Zip Code</Label>
+                <Input value={campusForm.zipCode || ''} onChange={(e) => setCampusForm({ ...campusForm, zipCode: e.target.value })} placeholder="Zip" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Latitude (for Maps)</Label>
+                <Input type="number" step="any" value={campusForm.latitude || ''} onChange={(e) => setCampusForm({ ...campusForm, latitude: parseFloat(e.target.value) })} placeholder="e.g. 23.0238" />
+              </div>
+              <div className="space-y-2">
+                <Label>Longitude (for Maps)</Label>
+                <Input type="number" step="any" value={campusForm.longitude || ''} onChange={(e) => setCampusForm({ ...campusForm, longitude: parseFloat(e.target.value) })} placeholder="e.g. 72.5664" />
+              </div>
+            </div>
+
+            <div className="space-y-2 border-t pt-4">
+              <Label>Service Times</Label>
+              {campusForm.serviceTimes?.map((st, idx) => (
+                <div key={idx} className="flex gap-2 mb-2">
+                  <Input 
+                    placeholder="Day (e.g. Sunday)" 
+                    value={st.day}
+                    onChange={(e) => {
+                      const newST = [...(campusForm.serviceTimes || [])];
+                      newST[idx].day = e.target.value;
+                      setCampusForm({ ...campusForm, serviceTimes: newST });
+                    }} 
+                  />
+                  <Input 
+                    placeholder="Times (e.g. 9:00 AM, 11:00 AM)" 
+                    value={st.times.join(', ')}
+                    onChange={(e) => {
+                      const newST = [...(campusForm.serviceTimes || [])];
+                      newST[idx].times = e.target.value.split(',').map(t => t.trim());
+                      setCampusForm({ ...campusForm, serviceTimes: newST });
+                    }} 
+                  />
+                </div>
+              ))}
+            </div>
+
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCampusDialogOpen(false)}>Cancel</Button>

@@ -73,21 +73,41 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* QR Code */}
-            <div className="text-center space-y-2">
-              <div className="inline-block p-4 bg-white rounded-2xl">
-                <img
-                  src={qrUrl}
-                  alt="Member QR Code"
-                  width={180}
-                  height={180}
-                  className="rounded-lg"
-                />
+            {/* Enhanced ePass QR Code */}
+            <div className="relative pt-4 pb-2">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/5 rounded-2xl transform -skew-y-2"></div>
+              <div className="relative text-center space-y-3">
+                <div className="inline-flex flex-col items-center p-5 bg-white rounded-2xl shadow-sm border border-primary/10 relative overflow-hidden group">
+                  {/* Subtle pulsing background for attention during events */}
+                  <div className="absolute inset-0 bg-primary/5 animate-pulse opacity-50"></div>
+                  
+                  <div className="relative z-10">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={qrUrl}
+                      alt="Member ePass QR Code"
+                      width={180}
+                      height={180}
+                      className="rounded-lg mix-blend-multiply"
+                    />
+                  </div>
+                  
+                  <div className="mt-3 relative z-10 w-full text-center">
+                    <p className="text-[10px] text-muted-foreground font-mono bg-muted/30 py-1 rounded-md">
+                      {member.qrCode}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col items-center gap-1">
+                  <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                    <QrCode className="w-3 h-3 mr-1" /> Official ePass
+                  </Badge>
+                  <p className="text-xs text-muted-foreground">
+                    Show this to your leader for attendance check-in
+                  </p>
+                </div>
               </div>
-              <p className="text-[10px] text-muted-foreground flex items-center justify-center gap-1">
-                <QrCode className="w-3 h-3" /> Your unique member QR code
-              </p>
-              <p className="text-[9px] text-muted-foreground font-mono">{member.qrCode}</p>
             </div>
 
             {/* Details */}

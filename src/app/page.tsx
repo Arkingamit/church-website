@@ -85,61 +85,61 @@ export default function HomePage() {
 
       {/* Desktop Original View (Hidden on Mobile) */}
       <div className="hidden md:flex flex-col">
-        {/* Hero — parallax background blobs */}
+        {/* 1. Highlights (Hero) */}
         <ParallaxSection speed={0.15} className="min-h-screen flex flex-col justify-center border-b border-border/50 relative">
           <HeroSection />
         </ParallaxSection>
 
-        {/* Sermons Preview — reveal from bottom */}
-        <ParallaxSection speed={0.2} className="bg-muted/30 py-24 sm:py-32 border-b border-border/50 relative">
-          <RevealSection delay={50}>
-            <SermonsPreview />
-          </RevealSection>
-        </ParallaxSection>
-
-        {/* Music Carousel — reveal from bottom */}
-        <section className="bg-background relative z-10 py-24 sm:py-32 border-b border-border/50">
-          <RevealSection>
-            <SongCarousel />
-          </RevealSection>
-        </section>
-
-        {/* Gallery — parallax + reveal */}
-        <ParallaxSection speed={0.2} className="bg-primary/5 py-24 sm:py-32 border-b border-border/50 relative">
-          <RevealSection delay={100}>
-            <GallerySection />
-          </RevealSection>
-        </ParallaxSection>
-
-        {/* Announcements — reveal from bottom */}
+        {/* 2. Announcements */}
         <section className="bg-background relative z-10 py-24 sm:py-32 border-b border-border/50">
           <RevealSection delay={50}>
             <AnnouncementsSection />
           </RevealSection>
         </section>
 
-        {/* Prayer Wall — parallax + reveal */}
-        <ParallaxSection speed={0.25} className="bg-muted/30 py-24 sm:py-32 border-b border-border/50 relative">
-          <RevealSection delay={100}>
-            <PrayerWall />
-          </RevealSection>
-        </ParallaxSection>
-
-        {/* Events — reveal from bottom */}
+        {/* 3. Upcoming Events */}
         <section className="bg-background relative z-10 py-24 sm:py-32 border-b border-border/50">
           <RevealSection delay={50}>
             <EventsSection />
           </RevealSection>
         </section>
 
-        {/* Live Stream — parallax background */}
+        {/* 4. Prayer Wall */}
+        <ParallaxSection speed={0.25} className="bg-muted/30 py-24 sm:py-32 border-b border-border/50 relative">
+          <RevealSection delay={100}>
+            <PrayerWall />
+          </RevealSection>
+        </ParallaxSection>
+
+        {/* 5. Sermon */}
+        <ParallaxSection speed={0.2} className="bg-muted/30 py-24 sm:py-32 border-b border-border/50 relative">
+          <RevealSection delay={50}>
+            <SermonsPreview />
+          </RevealSection>
+        </ParallaxSection>
+
+        {/* 6. Music Videos */}
+        <section className="bg-background relative z-10 py-24 sm:py-32 border-b border-border/50">
+          <RevealSection>
+            <SongCarousel />
+          </RevealSection>
+        </section>
+
+        {/* 7. Photo Gallery */}
+        <ParallaxSection speed={0.2} className="bg-primary/5 py-24 sm:py-32 border-b border-border/50 relative">
+          <RevealSection delay={100}>
+            <GallerySection />
+          </RevealSection>
+        </ParallaxSection>
+
+        {/* 8. Live Worship */}
         <ParallaxSection speed={0.2} className="bg-primary/5 py-24 sm:py-32 border-b border-border/50 relative">
           <RevealSection delay={100}>
             <LiveStreamSection />
           </RevealSection>
         </ParallaxSection>
 
-        {/* Campus Details — reveal */}
+        {/* 9. Your Campus Location */}
         <section className="bg-background relative z-10 py-24 sm:py-32">
           <RevealSection delay={50}>
             <CampusDetails />

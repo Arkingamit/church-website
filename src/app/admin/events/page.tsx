@@ -19,8 +19,11 @@ import {
 import { SchedulePreviewExport } from '@/components/admin/schedule-preview-export';
 import {
   Calendar, Clock, MapPin, Users, Plus, Pencil, Trash2, Search, X,
-  Megaphone, Globe, Building2, Image as ImageIcon, Link2, ListPlus, AlignLeft, CheckSquare, ChevronDown, Trash, ListEnd, Download, Repeat
+  Megaphone, Globe, Building2, Image as ImageIcon, Link2, ListPlus, AlignLeft, CheckSquare, ChevronDown, Trash, ListEnd, Download, Repeat, FileText
 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 const EVENT_CATEGORIES = ['Worship', 'Prayer', 'Youth', 'Study', 'Outreach', 'Fellowship'];
 
@@ -78,6 +81,46 @@ export default function EventsPage() {
   const [selectedEventForResponses, setSelectedEventForResponses] = useState<Event | null>(null);
 
   const { getEventRegistrations } = useAdminData();
+
+  const handleExportPDF = (broadcastUsers: any[]) => {
+    const doc = new jsPDF();
+
+    doc.setFontSize(20);
+    doc.text('Broadcast Audience List', 14, 22);
+
+    const tableData = broadcastUsers.map((u) => [
+      u.name,
+      u.email,
+      u.role,
+      campuses.find((c) => c.id === u.campusId)?.name || 'Unknown',
+      u.groups.join(', ') || 'None',
+    ]);
+
+    autoTable(doc, {
+      startY: 28,
+      head: [['Name', 'Email', 'Role', 'Campus', 'Groups']],
+      body: tableData,
+    });
+
+    doc.save(`event-audience-${new Date().toISOString().slice(0, 10)}.pdf`);
+    import('sonner').then(({ toast }) => toast.success('PDF exported successfully'));
+  };
+
+  const handleExportExcel = (broadcastUsers: any[]) => {
+    const worksheet = XLSX.utils.json_to_sheet(
+      broadcastUsers.map((u) => ({
+        Name: u.name,
+        Email: u.email,
+        Role: u.role,
+        Campus: campuses.find((c) => c.id === u.campusId)?.name || 'Unknown',
+        Groups: u.groups.join(', ') || 'None',
+      }))
+    );
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Members');
+    XLSX.writeFile(workbook, `event-audience-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    import('sonner').then(({ toast }) => toast.success('Excel exported successfully'));
+  };
 
   const isCampusLeader = currentUser.role === 'campus_leader';
   const isGroupLeader = currentUser.role === 'group_leader';
@@ -1170,23 +1213,49 @@ export default function EventsPage() {
                     });
                     return (
                       <div className="mt-2 pt-2 border-t border-border/50">
-                        <div className="flex items-center justify-between">
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-0">
                             Broadcast List ({broadcastUsers.length} members)
                           </p>
                           {broadcastUsers.length > 0 && (
-                            <Button 
-                              type="button"
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={(e) => {
-                                e.preventDefault();
-                                setShowBroadcastList(!showBroadcastList);
-                              }}
-                              className="h-6 text-[10px] px-2"
-                            >
-                              {showBroadcastList ? 'Hide Members' : 'Show Members'}
-                            </Button>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  handleExportExcel(broadcastUsers);
+                                }}
+                                className="h-6 text-[10px] px-2 gap-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                              >
+                                <Download className="w-3 h-3" /> Excel
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  handleExportPDF(broadcastUsers);
+                                }}
+                                className="h-6 text-[10px] px-2 gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <FileText className="w-3 h-3" /> PDF
+                              </Button>
+                              <Button 
+                                type="button"
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setShowBroadcastList(!showBroadcastList);
+                                }}
+                                className="h-6 text-[10px] px-2 bg-[#8B2323] hover:bg-[#721515] text-white hover:text-white"
+                              >
+                                {showBroadcastList ? 'Hide Members' : 'Show Members'}
+                              </Button>
+                            </div>
                           )}
                         </div>
                         {showBroadcastList && broadcastUsers.length > 0 && (

@@ -19,6 +19,8 @@ export interface IAnnouncement extends Document {
   recurrenceNote?: string;
   nextOccurrence?: string; // ISO date string for next scheduled push
   lastTriggered?: string;  // ISO date string when notification was last sent
+  endDate?: string;
+  endTime?: string;
   customReminders?: { daysBefore: number; hoursBefore: number; minutesBefore: number; }[];
   createdAt: Date;
   updatedAt: Date;
@@ -44,6 +46,8 @@ const AnnouncementSchema = new Schema<IAnnouncement>(
     recurrenceNote: { type: String },
     nextOccurrence: { type: String },
     lastTriggered: { type: String },
+    endDate: { type: String },
+    endTime: { type: String },
     customReminders: [
       {
         daysBefore: { type: Number, required: true },

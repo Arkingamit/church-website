@@ -6,12 +6,15 @@ import { ChevronLeft, MapPin, CheckCircle2, XCircle, Loader2 } from 'lucide-reac
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { QrCode } from 'lucide-react';
+import { SessionQRScanner } from '@/components/ui/session-qr-scanner';
 
 export default function CheckInPage() {
   const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkingIn, setCheckingIn] = useState<string | null>(null);
   const [status, setStatus] = useState<Record<string, { success: boolean; message: string }>>({});
+  const [showScanner, setShowScanner] = useState(false);
 
   useEffect(() => {
     fetch('/api/attendance/active')
@@ -92,6 +95,19 @@ export default function CheckInPage() {
           </Card>
         ) : (
           <div className="space-y-4">
+            <Button 
+              className="w-full h-12 bg-white text-[#8B2323] hover:bg-[#F3EAE1] shadow-sm border border-[#E5D5C5] rounded-xl font-bold text-base"
+              onClick={() => setShowScanner(true)}
+            >
+              <QrCode className="w-5 h-5 mr-2" />
+              Scan QR Code to Check-In
+            </Button>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-[#E5D5C5]" /></div>
+              <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#FAF7F2] px-2 text-[#7A6150]">Or use GPS</span></div>
+            </div>
+
             {sessions.map(s => {
               const sessionStatus = status[s._id];
               return (
@@ -125,6 +141,10 @@ export default function CheckInPage() {
           </div>
         )}
       </div>
+
+      {showScanner && (
+        <SessionQRScanner onClose={() => setShowScanner(false)} />
+      )}
     </div>
   );
 }

@@ -133,6 +133,19 @@ export default function NotificationsPage() {
 
     // Map Announcements to Notifications
     announcements.forEach((ann) => {
+      // Check if announcement is expired
+      if (ann.endDate) {
+        let expirationDateObj;
+        if (ann.endTime) {
+          expirationDateObj = new Date(`${ann.endDate}T${ann.endTime}`);
+        } else {
+          expirationDateObj = new Date(`${ann.endDate}T23:59:59`);
+        }
+        if (expirationDateObj < new Date()) {
+          return; // Skip expired announcements
+        }
+      }
+
       items.push({
         id: `ann-${ann.id}`,
         type: 'announcement',

@@ -17,6 +17,14 @@ export interface Campus {
   _id?: string;
   name: string;
   pastor: string;
+  address?: string;
+  city?: string;
+  zipCode?: string;
+  phone?: string;
+  email?: string;
+  serviceTimes?: { day: string; times: string[] }[];
+  latitude?: number;
+  longitude?: number;
 }
 
 export type FormFieldType = 'text' | 'textarea' | 'radio' | 'checkbox' | 'select' | 'date';
@@ -122,6 +130,8 @@ export interface Announcement {
   recurrenceNote?: string; // e.g. 'Every Sunday at 10 AM'
   nextOccurrence?: string;
   lastTriggered?: string;
+  endDate?: string;
+  endTime?: string;
   customReminders?: { daysBefore: number; hoursBefore: number; minutesBefore: number; }[];
 }
 
@@ -957,6 +967,18 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
 
       if (campusId !== 'all' && ec.includes(campusId)) return false;
       if (userGroups.some(g => eg.includes(g))) return false;
+
+      if (a.endDate) {
+        let expirationDateObj;
+        if (a.endTime) {
+          expirationDateObj = new Date(`${a.endDate}T${a.endTime}`);
+        } else {
+          expirationDateObj = new Date(`${a.endDate}T23:59:59`);
+        }
+        if (expirationDateObj < new Date()) {
+          return false;
+        }
+      }
 
       const campusMatch = campusId === 'all' || tc.includes('all') || tc.includes(campusId);
       const groupMatch = tg.includes('all') || tg.some(g => userGroups.includes(g));

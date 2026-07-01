@@ -25,7 +25,12 @@ import {
   Globe,
   Building2,
   Users,
+  Download,
+  FileText
 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 import { Badge } from '@/components/ui/badge';
 
 export default function GalleryManagementPage() {
@@ -111,9 +116,49 @@ export default function GalleryManagementPage() {
     setForm(f => {
       const eg = f.excludeGroups || [];
       const has = eg.includes(g);
-      const next = has ? eg.filter(x => x !== g) : [...eg, g];
+    const next = has ? eg.filter(x => x !== g) : [...eg, g];
       return { ...f, excludeGroups: next };
     });
+  };
+
+  const handleExportPDF = (broadcastUsers: any[]) => {
+    const doc = new jsPDF();
+
+    doc.setFontSize(20);
+    doc.text('Broadcast Audience List', 14, 22);
+
+    const tableData = broadcastUsers.map((u) => [
+      u.name,
+      u.email,
+      u.role,
+      campuses.find((c) => c.id === u.campusId)?.name || 'Unknown',
+      u.groups.join(', ') || 'None',
+    ]);
+
+    autoTable(doc, {
+      startY: 28,
+      head: [['Name', 'Email', 'Role', 'Campus', 'Groups']],
+      body: tableData,
+    });
+
+    doc.save(`gallery-audience-${new Date().toISOString().slice(0, 10)}.pdf`);
+    import('sonner').then(({ toast }) => toast.success('PDF exported successfully'));
+  };
+
+  const handleExportExcel = (broadcastUsers: any[]) => {
+    const worksheet = XLSX.utils.json_to_sheet(
+      broadcastUsers.map((u) => ({
+        Name: u.name,
+        Email: u.email,
+        Role: u.role,
+        Campus: campuses.find((c) => c.id === u.campusId)?.name || 'Unknown',
+        Groups: u.groups.join(', ') || 'None',
+      }))
+    );
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Members');
+    XLSX.writeFile(workbook, `gallery-audience-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    import('sonner').then(({ toast }) => toast.success('Excel exported successfully'));
   };
 
   const filteredAlbums = galleryAlbums.filter(album => {
@@ -132,6 +177,11 @@ export default function GalleryManagementPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.url.startsWith('https://photos.app.goo.gl/') && !form.url.startsWith('https://photos.google.com/')) {
+      import('sonner').then(({ toast }) => toast.error('Please enter a valid Google Photos album URL (e.g. https://photos.app.goo.gl/...).'));
+      return;
+    }
+    
     if (editingId !== null) {
       updateGalleryAlbum(editingId, form);
       setEditingId(null);
@@ -225,7 +275,7 @@ export default function GalleryManagementPage() {
           </CardHeader>
           <CardContent className="p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid md:grid-cols-1 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="title" className="text-sm font-bold uppercase tracking-wider">Album Title</Label>
                   <Input
@@ -236,21 +286,6 @@ export default function GalleryManagementPage() {
                     required
                     className="bg-background/50 border-border/50 focus:ring-primary/20"
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category" className="text-sm font-bold uppercase tracking-wider">Category</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {categories.map(cat => (
-                      <Badge
-                        key={cat}
-                        variant={form.category === cat ? 'default' : 'glass'}
-                        className="cursor-pointer px-4 py-1.5 rounded-full transition-all"
-                        onClick={() => setForm({ ...form, category: cat })}
-                      >
-                        {cat}
-                      </Badge>
-                    ))}
-                  </div>
                 </div>
               </div>
 
@@ -286,16 +321,7 @@ export default function GalleryManagementPage() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="description" className="text-sm font-bold uppercase tracking-wider">Description</Label>
-                <Textarea
-                  id="description"
-                  value={form.description}
-                  onChange={e => setForm({ ...form, description: e.target.value })}
-                  placeholder="Tell the story of these moments..."
-                  className="bg-background/50 border-border/50 focus:ring-primary/20 min-h-[100px]"
-                />
-              </div>
+
 
               {/* Audience Targeting */}
               <div className="border-t border-border/50 pt-4 space-y-4">
@@ -432,23 +458,49 @@ export default function GalleryManagementPage() {
                     });
                     return (
                       <div className="mt-2 pt-2 border-t border-border/50">
-                        <div className="flex items-center justify-between">
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-0">
                             Broadcast List ({broadcastUsers.length} members)
                           </p>
                           {broadcastUsers.length > 0 && (
-                            <Button 
-                              type="button"
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={(e) => {
-                                e.preventDefault();
-                                setShowBroadcastList(!showBroadcastList);
-                              }}
-                              className="h-6 text-[10px] px-2"
-                            >
-                              {showBroadcastList ? 'Hide Members' : 'Show Members'}
-                            </Button>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  handleExportExcel(broadcastUsers);
+                                }}
+                                className="h-6 text-[10px] px-2 gap-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                              >
+                                <Download className="w-3 h-3" /> Excel
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  handleExportPDF(broadcastUsers);
+                                }}
+                                className="h-6 text-[10px] px-2 gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <FileText className="w-3 h-3" /> PDF
+                              </Button>
+                              <Button 
+                                type="button"
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setShowBroadcastList(!showBroadcastList);
+                                }}
+                                className="h-6 text-[10px] px-2 bg-[#8B2323] hover:bg-[#721515] text-white hover:text-white"
+                              >
+                                {showBroadcastList ? 'Hide Members' : 'Show Members'}
+                              </Button>
+                            </div>
                           )}
                         </div>
                         {showBroadcastList && broadcastUsers.length > 0 && (
@@ -479,11 +531,11 @@ export default function GalleryManagementPage() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-border/50">
-                <Button type="button" variant="outline" onClick={() => { setIsAdding(false); setEditingId(null); }} className="rounded-full px-8 border-border/50">
+              <div className="flex flex-wrap justify-end gap-3 pt-4 border-t border-border/50">
+                <Button type="button" variant="outline" onClick={() => { setIsAdding(false); setEditingId(null); }} className="rounded-full px-6 sm:px-8 border-border/50">
                   Cancel
                 </Button>
-                <Button type="submit" className="rounded-full px-10 font-bold hover-lift">
+                <Button type="submit" className="rounded-full px-8 sm:px-10 font-bold hover-lift">
                   <Save className="w-4 h-4 mr-2" /> {editingId ? 'Update Album' : 'Create Album'}
                 </Button>
               </div>
@@ -536,9 +588,7 @@ export default function GalleryManagementPage() {
                   </div>
                 </div>
                 <CardContent className="p-6 flex-1 flex flex-col">
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-4 flex-1 italic leading-relaxed">
-                    {album.description || 'No description provided.'}
-                  </p>
+
 
                   {/* Audience Tags */}
                   <div className="flex items-center gap-1.5 flex-wrap mb-4">

@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { Work_Sans, Playfair_Display } from "next/font/google";
+import { Inter, Outfit } from "next/font/google";
 import Providers from "./providers";
 
-const workSans = Work_Sans({
+const inter = Inter({
   subsets: ["latin"],
   variable: "--font-body",
 });
 
-const playfair = Playfair_Display({
+const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-heading",
 });
@@ -41,7 +41,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${workSans.variable} ${playfair.variable}`}>
+    <html lang="en" className={`${inter.variable} ${outfit.variable}`}>
       <body>
         <Providers>
           <PublicLayoutWrapper>

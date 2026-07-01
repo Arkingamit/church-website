@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useAdminData, canPublishAllCampuses, getGroupsForCampus, type Announcement } from '@/lib/admin-data-context';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -39,7 +40,12 @@ import {
   Users,
   Repeat,
   Clock,
+  Download,
+  FileText
 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 const ANNOUNCEMENT_CATEGORIES = ['Worship', 'Youth', 'Outreach', 'Membership', 'Urgent'];
 
@@ -57,6 +63,8 @@ const emptyForm = {
   isPinned: false,
   reminderDate: '',
   reminderTime: '',
+  endDate: '',
+  endTime: '',
   image: null as string | null,
   reactions: 0,
   targetCampuses: ['all'] as string[],
@@ -129,6 +137,8 @@ export default function AnnouncementsPage() {
       recurrenceEndDate: announcement.recurrenceEndDate || '',
       recurrenceNote: announcement.recurrenceNote || '',
       customReminders: announcement.customReminders || [],
+      endDate: announcement.endDate || '',
+      endTime: announcement.endTime || '',
     });
     setDialogOpen(true);
   };
@@ -148,6 +158,45 @@ export default function AnnouncementsPage() {
   const handleDelete = (id: string) => {
     deleteAnnouncement(id);
     setDeleteConfirmId(null);
+  };
+
+  const handleExportPDF = (broadcastUsers: any[]) => {
+    const doc = new jsPDF();
+    doc.text(`Broadcast Member List`, 14, 15);
+    doc.text(`Target: ${form.title || 'Untitled Announcement'}`, 14, 22);
+
+    const tableData = broadcastUsers.map((u) => [
+      u.name,
+      u.email,
+      u.role,
+      campuses.find((c) => c.id === u.campusId)?.name || 'Unknown',
+      u.groups.join(', ') || 'None',
+    ]);
+
+    autoTable(doc, {
+      startY: 28,
+      head: [['Name', 'Email', 'Role', 'Campus', 'Groups']],
+      body: tableData,
+    });
+
+    doc.save(`broadcast-members-${new Date().toISOString().slice(0, 10)}.pdf`);
+    toast.success('PDF exported successfully');
+  };
+
+  const handleExportExcel = (broadcastUsers: any[]) => {
+    const worksheet = XLSX.utils.json_to_sheet(
+      broadcastUsers.map((u) => ({
+        Name: u.name,
+        Email: u.email,
+        Role: u.role,
+        Campus: campuses.find((c) => c.id === u.campusId)?.name || 'Unknown',
+        Groups: u.groups.join(', ') || 'None',
+      }))
+    );
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Members');
+    XLSX.writeFile(workbook, `broadcast-members-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast.success('Excel exported successfully');
   };
 
   // ── Audience helpers ──
@@ -375,6 +424,16 @@ export default function AnnouncementsPage() {
               <div className="space-y-2">
                 <Label htmlFor="a-reminder-time">Schedule Time</Label>
                 <Input id="a-reminder-time" type="time" value={form.reminderTime} onChange={(e) => setForm({ ...form, reminderTime: e.target.value })} disabled={!form.reminderDate} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="a-end-date">Expiration Date (Optional)</Label>
+                <Input id="a-end-date" type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="a-end-time">Expiration Time</Label>
+                <Input id="a-end-time" type="time" value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} disabled={!form.endDate} />
               </div>
             </div>
             <div className="flex items-center gap-3 pt-2">
@@ -731,23 +790,49 @@ export default function AnnouncementsPage() {
                   });
                   return (
                     <div className="mt-2 pt-2 border-t border-border/50">
-                      <div className="flex items-center justify-between">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-0">
                           Broadcast List ({broadcastUsers.length} members)
                         </p>
                         {broadcastUsers.length > 0 && (
-                          <Button 
-                            type="button"
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setShowBroadcastList(!showBroadcastList);
-                            }}
-                            className="h-6 text-[10px] px-2"
-                          >
-                            {showBroadcastList ? 'Hide Members' : 'Show Members'}
-                          </Button>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleExportExcel(broadcastUsers);
+                              }}
+                              className="h-6 text-[10px] px-2 gap-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                            >
+                              <Download className="w-3 h-3" /> Excel
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleExportPDF(broadcastUsers);
+                              }}
+                              className="h-6 text-[10px] px-2 gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <FileText className="w-3 h-3" /> PDF
+                            </Button>
+                            <Button 
+                              type="button"
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setShowBroadcastList(!showBroadcastList);
+                              }}
+                              className="h-6 text-[10px] px-2"
+                            >
+                              {showBroadcastList ? 'Hide Members' : 'Show Members'}
+                            </Button>
+                          </div>
                         )}
                       </div>
                       {showBroadcastList && broadcastUsers.length > 0 && (

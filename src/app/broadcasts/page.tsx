@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Radio, ExternalLink, RefreshCw, User, Calendar } from 'lucide-react';
+import { FileText, ExternalLink, RefreshCw, User, Calendar } from 'lucide-react';
 
 export default function BroadcastsPage() {
   const [broadcasts, setBroadcasts] = useState<any[]>([]);
@@ -23,8 +23,8 @@ export default function BroadcastsPage() {
       <div className="bg-gradient-to-br from-[#8B2323] to-[#5C1717] text-white px-6 pt-12 pb-10">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center gap-3 mb-2">
-            <Radio className="w-6 h-6" />
-            <h1 className="text-3xl font-serif font-bold">Broadcasts</h1>
+            <FileText className="w-6 h-6" />
+            <h1 className="text-3xl font-serif font-bold">Note Share</h1>
           </div>
           <p className="text-white/70 text-sm">Notes, materials, and resources from your leaders</p>
         </div>
@@ -37,8 +37,8 @@ export default function BroadcastsPage() {
           </div>
         ) : broadcasts.length === 0 ? (
           <div className="text-center p-12 bg-white rounded-2xl shadow-sm border">
-            <Radio className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
-            <h3 className="font-semibold text-lg mb-1">No Broadcasts Yet</h3>
+            <FileText className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
+            <h3 className="font-semibold text-lg mb-1">No Notes Shared Yet</h3>
             <p className="text-muted-foreground text-sm">Check back later for notes and materials from your leaders.</p>
           </div>
         ) : (

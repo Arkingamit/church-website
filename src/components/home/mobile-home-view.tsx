@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, Bell, Heart, Music, Calendar, BookOpen, Share2, MapPin, Clock, ChevronRight, User, Play, Sparkles, ArrowRight, Image as ImageIcon } from 'lucide-react';
+import { Search, Bell, Heart, Music, Calendar, BookOpen, Share2, MapPin, Clock, ChevronRight, User, Play, Sparkles, ArrowRight, Image as ImageIcon, Megaphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -17,6 +17,8 @@ import { useAdminData, type FlipCardItem } from '@/lib/admin-data-context';
 import { useAuth } from '@/lib/auth-context';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LiveStreamSection } from '@/components/ui/live-stream';
+import { CampusDetails } from '@/components/ui/campus-details';
+import { AnnouncementsSection } from '@/components/ui/announcements-section';
 
 const christianIcons = [
   // Cross
@@ -152,13 +154,16 @@ export function MobileHomeView() {
   const unseenCount = (announcements?.filter(a => !dismissedIds.includes(`ann-${a.id}`))?.length || 0) + pendingCount;
   const [albumCovers, setAlbumCovers] = useState<Record<string, string>>({});
 
+  const fetchedAlbums = React.useRef<Set<string>>(new Set());
+
   useEffect(() => {
     const fetchCovers = async () => {
-      const newCovers: Record<string, string> = { ...albumCovers };
       let changed = false;
+      const newCovers: Record<string, string> = {};
       
       for (const album of galleryAlbums.slice(0, 5)) {
-        if (!newCovers[album.id] && album.url) {
+        if (!fetchedAlbums.current.has(album.id) && album.url) {
+          fetchedAlbums.current.add(album.id);
           try {
             const res = await fetch(`/api/gallery/photos?url=${encodeURIComponent(album.url)}`);
             if (res.ok) {
@@ -172,7 +177,7 @@ export function MobileHomeView() {
         }
       }
       
-      if (changed) setAlbumCovers(newCovers);
+      if (changed) setAlbumCovers(prev => ({ ...prev, ...newCovers }));
     };
 
     if (galleryAlbums.length > 0) {
@@ -401,7 +406,7 @@ export function MobileHomeView() {
         </div>
 
         {/* 3. Quick Actions */}
-        <div className="grid grid-cols-4 gap-4 px-2">
+        <div className="grid grid-cols-5 gap-2 px-1">
           <button onClick={async () => {
             if (!navigator.geolocation) { alert('Geolocation not supported'); return; }
             const btn = document.getElementById('checkin-icon');
@@ -454,6 +459,12 @@ export function MobileHomeView() {
               <Calendar className="w-6 h-6" />
             </div>
             <span className="text-[10px] font-bold text-[#7A6150]">Events</span>
+          </Link>
+          <Link href="/announcements" className="flex flex-col items-center gap-2">
+            <div className="w-14 h-14 rounded-2xl bg-[#F3EAE1] flex items-center justify-center text-[#8B2323] border border-[#E5D5C5] shadow-sm">
+              <Megaphone className="w-6 h-6" />
+            </div>
+            <span className="text-[10px] font-bold text-[#7A6150] whitespace-nowrap">Announcements</span>
           </Link>
         </div>
 
@@ -571,7 +582,12 @@ export function MobileHomeView() {
           </div>
         </div>
 
-        {/* 5. Upcoming Events */}
+        {/* 2. Announcements */}
+        <div className="-mx-4 mt-8">
+           <AnnouncementsSection />
+        </div>
+
+        {/* 3. Upcoming Events */}
         <div>
           <div className="flex justify-between items-end mb-4">
             <h2 className="text-2xl font-serif font-bold text-[#1A202C] border-l-4 border-[#8B2323] pl-3 py-0.5 leading-none">Upcoming Events</h2>
@@ -580,11 +596,11 @@ export function MobileHomeView() {
             </Link>
           </div>
           
-          <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 snap-x no-scrollbar">
+          <div className="flex gap-4 overflow-x-auto pb-4 -mr-4 pr-4 snap-x no-scrollbar">
             {upcomingEvents.map(event => {
               const eventDate = new Date(event.date);
               return (
-                <Link href={`/events/${event.id}`} key={event.id} className="min-w-[260px] max-w-[280px] bg-white rounded-3xl p-4 flex gap-4 shadow-sm snap-start">
+                <Link href={`/events/${event.id}`} key={event.id} className="min-w-[260px] max-w-[280px] bg-white rounded-3xl p-4 flex gap-4 shadow-sm snap-start border border-border/50">
                   <div className="w-16 h-16 rounded-2xl bg-[#FFF5F5] flex flex-col items-center justify-center shrink-0 border border-red-50">
                     <span className="text-xl font-bold text-[#8B2323] leading-none">{eventDate.getDate()}</span>
                     <span className="text-xs font-bold text-[#8B2323] mt-1">{eventDate.toLocaleDateString('en-US', { month: 'short' })}</span>
@@ -608,9 +624,60 @@ export function MobileHomeView() {
           </div>
         </div>
 
-        {/* 5.5 Latest Sermons */}
+        {/* 4. Prayer Wall CTA */}
+        <div className="rounded-3xl bg-gradient-to-r from-[#8B2323] to-[#5C1111] p-5 text-white relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/20 rounded-full blur-xl" />
+          
+          <div className="relative z-10 flex flex-col gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 shrink-0 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm shadow-inner">
+                <Heart className="w-6 h-6 text-white fill-white/20" />
+              </div>
+              <div>
+                <h3 className="text-xl font-serif font-bold mb-0.5">Prayer Wall</h3>
+                <p className="text-white/80 text-xs leading-snug">
+                  Let us know how we can pray and support you this week.
+                </p>
+              </div>
+            </div>
+            
+            <Link href="/prayer-wall" className="w-full">
+              <Button variant="outline" className="w-full border-white/30 text-white hover:bg-white/10 bg-white/5 rounded-xl h-11 font-semibold border-2 text-sm">
+                Submit Prayer Request <ArrowRightIcon className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        {/* 4.5 Recent Prayers */}
+        {publicPrayers && publicPrayers.length > 0 && (
+          <div>
+            <div className="mb-4">
+              <h2 className="text-2xl font-serif font-bold text-[#1A202C] border-l-4 border-[#8B2323] pl-3 py-0.5 leading-none">Community Prayers</h2>
+            </div>
+            <div className="flex flex-col gap-4">
+              {publicPrayers
+                .filter(p => p.status === 'approved' || p.status === undefined)
+                .slice(0, 3)
+                .map(prayer => (
+                   <div key={prayer.id} className="w-full">
+                     <PrayerCard prayer={prayer} session={session} />
+                   </div>
+                ))
+              }
+            </div>
+            <div className="mt-4 flex justify-center">
+              <Link href="/prayer-wall" className="text-[#8B2323] text-sm font-bold flex items-center hover:underline">
+                See all <ChevronRight className="w-4 h-4 ml-1" />
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* 5. Latest Sermons */}
         {sermons && sermons.length > 0 && (
-          <div className="mb-8">
+          <div>
             <div className="flex justify-between items-end mb-4">
               <h2 className="text-2xl font-serif font-bold text-[#1A202C] border-l-4 border-[#8B2323] pl-3 py-0.5 leading-none">Latest Sermons</h2>
               <Link href="/sermons" className="text-[#8B2323] text-sm font-bold flex items-center">
@@ -618,7 +685,7 @@ export function MobileHomeView() {
               </Link>
             </div>
             
-            <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 snap-x no-scrollbar">
+            <div className="flex gap-4 overflow-x-auto pb-4 -mr-4 pr-4 snap-x no-scrollbar">
               {sermons.slice(0, 5).map(sermon => (
                 <Link href={`/sermons/series/${sermon.seriesId}`} key={sermon.id} className="min-w-[280px] w-[280px] h-[160px] rounded-3xl overflow-hidden relative shadow-sm snap-start group block">
                   <img src={`https://img.youtube.com/vi/${sermon.videoId}/mqdefault.jpg`} alt={sermon.title} className="w-full h-full object-cover" />
@@ -646,7 +713,7 @@ export function MobileHomeView() {
             </Link>
           </div>
           
-          <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 snap-x no-scrollbar">
+          <div className="flex gap-4 overflow-x-auto pb-4 -mr-4 pr-4 snap-x no-scrollbar">
             {recentWorship.map(video => (
               <a href={`https://youtube.com/watch?v=${video.videoId}`} target="_blank" rel="noopener noreferrer" key={video.id} className="min-w-[280px] w-[280px] h-[160px] rounded-3xl overflow-hidden relative shadow-sm snap-start group block">
                 <img src={`https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg`} alt={video.title} className="w-full h-full object-cover" />
@@ -661,7 +728,7 @@ export function MobileHomeView() {
           </div>
         </div>
 
-        {/* 6.5 Photo Gallery */}
+        {/* 7. Photo Gallery */}
         {galleryAlbums.length > 0 && (
           <div>
             <div className="flex justify-between items-end mb-4">
@@ -671,7 +738,7 @@ export function MobileHomeView() {
               </Link>
             </div>
             
-            <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 snap-x no-scrollbar">
+            <div className="flex gap-4 overflow-x-auto pb-4 -mr-4 pr-4 snap-x no-scrollbar">
               {galleryAlbums.slice(0, 5).map(album => (
                 <Link href="/gallery" key={album.id} className="min-w-[220px] w-[220px] h-[220px] rounded-3xl overflow-hidden relative shadow-sm snap-start group block">
                   {albumCovers[album.id] ? (
@@ -693,55 +760,14 @@ export function MobileHomeView() {
           </div>
         )}
 
-        {/* 7. Prayer Wall CTA */}
-        <div className="rounded-[2.5rem] bg-gradient-to-b from-[#8B2323] to-[#5C1111] p-8 text-center text-white relative overflow-hidden mt-6 mb-8">
-          <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-black/20 rounded-full blur-2xl" />
-          
-          <div className="relative z-10 flex flex-col items-center">
-            <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center mb-6 backdrop-blur-sm shadow-inner">
-              <Heart className="w-6 h-6 text-white fill-white/20" />
-            </div>
-            
-            <h3 className="text-3xl font-serif font-bold mb-3">Prayer Wall</h3>
-            <p className="text-white/80 text-sm leading-relaxed mb-8 max-w-[260px]">
-              We would love to pray with you. Let us know how we can support you this week.
-            </p>
-            
-            <Link href="/prayer-wall" className="w-full">
-              <Button variant="outline" className="w-full border-white/30 text-white hover:bg-white/10 bg-white/5 rounded-xl py-6 font-semibold border-2">
-                Submit Prayer Request <ArrowRightIcon className="w-4 h-4 ml-2" />
-              </Button>
-            </Link>
-          </div>
+        {/* 8. Live Stream Widget */}
+        <div className="-mx-4 mt-8">
+           <LiveStreamSection variant="widget" />
         </div>
 
-        {/* 8. Recent Prayers */}
-        {publicPrayers && publicPrayers.length > 0 && (
-          <div className="mb-8">
-            <div className="flex justify-between items-end mb-4">
-              <h2 className="text-2xl font-serif font-bold text-[#1A202C] border-l-4 border-[#8B2323] pl-3 py-0.5 leading-none">Community Prayers</h2>
-              <Link href="/prayer-wall" className="text-[#8B2323] text-sm font-bold flex items-center">
-                See all <ChevronRight className="w-4 h-4 ml-1" />
-              </Link>
-            </div>
-            
-            <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 snap-x no-scrollbar">
-              {publicPrayers
-                .filter(p => p.status === 'approved' || p.status === undefined)
-                .map(prayer => (
-                   <div key={prayer.id} className="min-w-[280px] w-[280px] snap-start">
-                     <PrayerCard prayer={prayer} session={session} />
-                   </div>
-                ))
-              }
-            </div>
-          </div>
-        )}
-
-        {/* Live Stream Widget */}
+        {/* 9. Campus Location Widget */}
         <div className="-mx-4 mt-8 pb-8">
-           <LiveStreamSection variant="widget" />
+           <CampusDetails />
         </div>
 
       </div>
@@ -765,10 +791,18 @@ function PrayerCard({ prayer, session }: { prayer: any, session: any }) {
 
     try {
       const res = await fetch(`/api/prayers/${prayer.id}/pray`, { method: 'POST' });
+      
       if (!res.ok) {
         // Revert on failure
         setHasPrayed(false);
         setPrayedCount(prev => prev - 1);
+        return;
+      }
+      
+      const data = await res.json();
+      if (data.alreadyPrayed) {
+        // It was already prayed, so revert the optimistic count but keep hasPrayed true
+        setPrayedCount(data.prayedCount);
       }
     } catch (err) {
       setHasPrayed(false);

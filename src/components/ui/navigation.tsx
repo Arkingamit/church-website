@@ -90,7 +90,6 @@ export const Navigation = () => {
     { label: 'Events', href: '/events' },
     { label: 'Sermons', href: '/sermons' },
     { label: 'Notes', href: '/broadcasts' },
-    { label: 'Announcements', href: '/announcements' },
     { label: 'Gallery', href: '/gallery' },
     { label: 'Prayer Wall', href: '/prayer-wall' },
   ];

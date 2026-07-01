@@ -19,7 +19,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
 
     if (prayer.prayedBy.includes(identifier)) {
-      return NextResponse.json({ error: 'You have already prayed for this request' }, { status: 400 });
+      return NextResponse.json({ success: true, alreadyPrayed: true, prayedCount: prayer.prayedCount });
     }
 
     prayer.prayedCount += 1;

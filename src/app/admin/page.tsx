@@ -65,29 +65,29 @@ export default function AdminDashboardPage() {
       label: 'Total Events',
       value: events.length,
       icon: Calendar,
-      color: 'text-blue-500',
-      bg: 'bg-blue-500/10',
+      color: 'text-[#8B2323]',
+      bg: 'bg-[#FFF5F5]',
     },
     {
       label: 'Upcoming',
       value: upcomingEvents.length,
       icon: Clock,
-      color: 'text-emerald-500',
-      bg: 'bg-emerald-500/10',
+      color: 'text-[#8B2323]',
+      bg: 'bg-[#FFF5F5]',
     },
     {
       label: 'Announcements',
       value: announcements.length,
       icon: Megaphone,
-      color: 'text-purple-500',
-      bg: 'bg-purple-500/10',
+      color: 'text-[#8B2323]',
+      bg: 'bg-[#FFF5F5]',
     },
     {
       label: 'Total RSVPs',
       value: totalRegistered,
       icon: TrendingUp,
-      color: 'text-amber-500',
-      bg: 'bg-amber-500/10',
+      color: 'text-[#8B2323]',
+      bg: 'bg-[#FFF5F5]',
     },
   ];
 
@@ -97,7 +97,7 @@ export default function AdminDashboardPage() {
       label: 'Total Events',
       value: events.length,
       icon: Calendar,
-      bg: 'bg-[#dae2ff] text-[#0c1a3a]',
+      bg: 'bg-[#FFF5F5] text-[#8B2323]',
     },
     {
       label: 'Upcoming (7 Days)',
@@ -107,7 +107,7 @@ export default function AdminDashboardPage() {
         return diff >= 0 && diff <= 7 * 24 * 60 * 60 * 1000;
       }).length,
       icon: Clock,
-      bg: 'bg-[#ffddb0] text-[#614000]',
+      bg: 'bg-[#FFF5F5] text-[#8B2323]',
     },
     {
       label: 'New Announcements',
@@ -117,13 +117,13 @@ export default function AdminDashboardPage() {
         return diff <= 7 * 24 * 60 * 60 * 1000;
       }).length,
       icon: Megaphone,
-      bg: 'bg-[#ffdad6] text-[#410002]',
+      bg: 'bg-[#FFF5F5] text-[#8B2323]',
     },
     {
       label: 'Total RSVPs',
       value: totalRegistered,
       icon: TrendingUp,
-      bg: 'bg-[#fec56c]/20 text-[#785000]',
+      bg: 'bg-[#FFF5F5] text-[#8B2323]',
     },
   ];
 
@@ -151,8 +151,8 @@ export default function AdminDashboardPage() {
       rawTime: e.createdAt || e.date,
       badge: 'EVENT',
       icon: Calendar,
-      iconColor: 'text-blue-500 bg-[#dae2ff] border border-blue-100',
-      badgeStyle: 'text-blue-600 bg-blue-50 border-blue-100'
+      iconColor: 'text-[#8B2323] bg-[#FFF5F5] border border-[#EBE3D5]',
+      badgeStyle: 'text-[#8B2323] bg-[#FFF5F5] border-[#EBE3D5]'
     });
   });
 
@@ -165,8 +165,8 @@ export default function AdminDashboardPage() {
       rawTime: a.createdAt,
       badge: 'NEWS',
       icon: Bell,
-      iconColor: 'text-purple-500 bg-[#ffdad6] border border-purple-100',
-      badgeStyle: 'text-purple-600 bg-purple-50 border-purple-100'
+      iconColor: 'text-[#8B2323] bg-[#FFF5F5] border border-[#EBE3D5]',
+      badgeStyle: 'text-[#8B2323] bg-[#FFF5F5] border-[#EBE3D5]'
     });
   });
 
@@ -179,8 +179,8 @@ export default function AdminDashboardPage() {
       rawTime: p.createdAt,
       badge: 'PRAYER',
       icon: Droplet,
-      iconColor: 'text-rose-500 bg-[#ffdad6] border border-rose-100',
-      badgeStyle: 'text-rose-600 bg-rose-50 border-rose-100'
+      iconColor: 'text-[#8B2323] bg-[#FFF5F5] border border-[#EBE3D5]',
+      badgeStyle: 'text-[#8B2323] bg-[#FFF5F5] border-[#EBE3D5]'
     });
   });
 
@@ -193,8 +193,8 @@ export default function AdminDashboardPage() {
       rawTime: s.date,
       badge: 'MEDIA',
       icon: Video,
-      iconColor: 'text-amber-500 bg-[#fec56c]/20 border border-amber-100',
-      badgeStyle: 'text-amber-600 bg-amber-50 border-amber-100'
+      iconColor: 'text-[#8B2323] bg-[#FFF5F5] border border-[#EBE3D5]',
+      badgeStyle: 'text-[#8B2323] bg-[#FFF5F5] border-[#EBE3D5]'
     });
   });
 
@@ -323,19 +323,19 @@ export default function AdminDashboardPage() {
         {/* Configuration Cards Grid */}
         <div className="grid grid-cols-1 gap-4">
           {isCampusLeader && (
-            <Card className="border border-amber-100 bg-amber-50/70 shadow-sm rounded-2xl overflow-hidden">
+            <Card className="border border-[#EBE3D5] bg-white shadow-sm rounded-2xl overflow-hidden">
               <CardContent className="p-5 flex flex-col justify-between min-h-[120px]">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-base font-bold text-amber-900">Worship Homepage</h3>
-                    <Music className="w-5 h-5 text-amber-600" />
+                    <h3 className="text-base font-bold text-[#3A2D27]">Worship Homepage</h3>
+                    <Music className="w-5 h-5 text-[#8B2323]" />
                   </div>
-                  <p className="text-xs text-amber-800/80 leading-relaxed">
+                  <p className="text-xs text-[#7A6150] leading-relaxed">
                     Manage video items that appear on the homepage carousel.
                   </p>
                 </div>
                 <div className="mt-4">
-                  <Link href="/admin/worship" className="inline-flex items-center text-xs font-bold text-amber-700 hover:text-amber-850 transition-colors">
+                  <Link href="/admin/worship" className="inline-flex items-center text-xs font-bold text-[#8B2323] hover:text-[#5C1111] transition-colors">
                     Manage <ArrowRight className="w-3.5 h-3.5 ml-1" />
                   </Link>
                 </div>
@@ -344,19 +344,19 @@ export default function AdminDashboardPage() {
           )}
 
           {isCampusLeader && (
-            <Card className="border border-blue-100 bg-blue-50/70 shadow-sm rounded-2xl overflow-hidden">
+            <Card className="border border-[#EBE3D5] bg-white shadow-sm rounded-2xl overflow-hidden">
               <CardContent className="p-5 flex flex-col justify-between min-h-[120px]">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-base font-bold text-blue-900">Campus Broadcasts</h3>
-                    <Radio className="w-5 h-5 text-blue-600" />
+                    <h3 className="text-base font-bold text-[#3A2D27]">Campus Broadcasts</h3>
+                    <Radio className="w-5 h-5 text-[#8B2323]" />
                   </div>
-                  <p className="text-xs text-blue-800/80 leading-relaxed">
+                  <p className="text-xs text-[#7A6150] leading-relaxed">
                     Configure live worship feeds and stream settings.
                   </p>
                 </div>
                 <div className="mt-4">
-                  <Link href="/admin/live" className="inline-flex items-center text-xs font-bold text-blue-700 hover:text-blue-850 transition-colors">
+                  <Link href="/admin/live" className="inline-flex items-center text-xs font-bold text-[#8B2323] hover:text-[#5C1111] transition-colors">
                     Manage <ArrowRight className="w-3.5 h-3.5 ml-1" />
                   </Link>
                 </div>
@@ -365,19 +365,19 @@ export default function AdminDashboardPage() {
           )}
 
           {isAdmin && (
-            <Card className="border border-purple-100 bg-purple-50/70 shadow-sm rounded-2xl overflow-hidden">
+            <Card className="border border-[#EBE3D5] bg-white shadow-sm rounded-2xl overflow-hidden">
               <CardContent className="p-5 flex flex-col justify-between min-h-[120px]">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-base font-bold text-purple-900">Gallery Config</h3>
-                    <ImageIcon className="w-5 h-5 text-purple-600" />
+                    <h3 className="text-base font-bold text-[#3A2D27]">Gallery Config</h3>
+                    <ImageIcon className="w-5 h-5 text-[#8B2323]" />
                   </div>
-                  <p className="text-xs text-purple-800/80 leading-relaxed">
+                  <p className="text-xs text-[#7A6150] leading-relaxed">
                     Organize event photos and media albums.
                   </p>
                 </div>
                 <div className="mt-4">
-                  <Link href="/admin/gallery" className="inline-flex items-center text-xs font-bold text-purple-700 hover:text-purple-855 transition-colors">
+                  <Link href="/admin/gallery" className="inline-flex items-center text-xs font-bold text-[#8B2323] hover:text-[#5C1111] transition-colors">
                     Manage <ArrowRight className="w-3.5 h-3.5 ml-1" />
                   </Link>
                 </div>
@@ -386,19 +386,19 @@ export default function AdminDashboardPage() {
           )}
 
           {isAdmin && (
-            <Card className="border border-emerald-100 bg-emerald-50/70 shadow-sm rounded-2xl overflow-hidden">
+            <Card className="border border-[#EBE3D5] bg-white shadow-sm rounded-2xl overflow-hidden">
               <CardContent className="p-5 flex flex-col justify-between min-h-[120px]">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-base font-bold text-emerald-900">Daily Verses</h3>
-                    <BookOpen className="w-5 h-5 text-emerald-600" />
+                    <h3 className="text-base font-bold text-[#3A2D27]">Daily Verses</h3>
+                    <BookOpen className="w-5 h-5 text-[#8B2323]" />
                   </div>
-                  <p className="text-xs text-emerald-800/80 leading-relaxed">
+                  <p className="text-xs text-[#7A6150] leading-relaxed">
                     Curate and schedule scriptural verses.
                   </p>
                 </div>
                 <div className="mt-4">
-                  <Link href="/admin/verses" className="inline-flex items-center text-xs font-bold text-emerald-700 hover:text-emerald-850 transition-colors">
+                  <Link href="/admin/verses" className="inline-flex items-center text-xs font-bold text-[#8B2323] hover:text-[#5C1111] transition-colors">
                     Manage <ArrowRight className="w-3.5 h-3.5 ml-1" />
                   </Link>
                 </div>
@@ -668,7 +668,7 @@ export default function AdminDashboardPage() {
               <div className="flex flex-col gap-3">
                 <Link href="/admin/events">
                   <button className="flex items-center gap-3 w-full p-3.5 rounded-2xl border border-border/80 hover:border-primary/50 hover:bg-muted/50 transition-all text-left group">
-                    <span className="w-8 h-8 rounded-xl bg-[#dae2ff] text-[#0c1a3a] flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <span className="w-8 h-8 rounded-xl bg-[#FFF5F5] text-[#8B2323] flex items-center justify-center group-hover:scale-105 transition-transform">
                       <PlusCircle className="w-5 h-5" />
                     </span>
                     <span className="font-semibold text-sm text-foreground">Create Event</span>
@@ -677,7 +677,7 @@ export default function AdminDashboardPage() {
                 
                 <Link href="/admin/announcements">
                   <button className="flex items-center gap-3 w-full p-3.5 rounded-2xl border border-border/80 hover:border-secondary/50 hover:bg-muted/50 transition-all text-left group">
-                    <span className="w-8 h-8 rounded-xl bg-[#fec56c]/20 text-[#785000] flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <span className="w-8 h-8 rounded-xl bg-[#FFF5F5] text-[#8B2323] flex items-center justify-center group-hover:scale-105 transition-transform">
                       <Megaphone className="w-4 h-4" />
                     </span>
                     <span className="font-semibold text-sm text-foreground">Post Announcement</span>
@@ -686,7 +686,7 @@ export default function AdminDashboardPage() {
 
                 <Link href="/admin/users">
                   <button className="flex items-center gap-3 w-full p-3.5 rounded-2xl border border-border/80 hover:border-tertiary/50 hover:bg-muted/50 transition-all text-left group">
-                    <span className="w-8 h-8 rounded-xl bg-[#ffdad6] text-[#410002] flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <span className="w-8 h-8 rounded-xl bg-[#FFF5F5] text-[#8B2323] flex items-center justify-center group-hover:scale-105 transition-transform">
                       <Mail className="w-4 h-4" />
                     </span>
                     <span className="font-semibold text-sm text-foreground">Manage Members</span>
@@ -711,12 +711,7 @@ export default function AdminDashboardPage() {
                     const ActivityIcon = activity.icon;
                     return (
                       <div key={idx} className="relative">
-                        <div className={`absolute -left-[21px] w-3 h-3 rounded-full border-2 border-card flex items-center justify-center ${
-                          activity.type === 'EVENT' ? 'bg-blue-500' :
-                          activity.type === 'NEWS' ? 'bg-purple-500' :
-                          activity.type === 'PRAYER' ? 'bg-rose-500' :
-                          'bg-amber-500'
-                        }`} />
+                        <div className={`absolute -left-[21px] w-3 h-3 rounded-full border-2 border-card flex items-center justify-center bg-[#8B2323]`} />
                         <div className="flex flex-col">
                           <div className="flex items-center gap-2 mb-1">
                             <span className={`px-2 py-0.5 rounded-full font-bold text-[8px] uppercase tracking-wider border ${activity.badgeStyle}`}>
@@ -752,27 +747,27 @@ export default function AdminDashboardPage() {
             <div className="bg-popover border border-border/60 shadow-2xl rounded-2xl p-2 w-48 mb-2 flex flex-col gap-1 animate-in slide-in-from-bottom-5 fade-in duration-200">
               <Link href="/admin/announcements" onClick={() => setFabOpen(false)}>
                 <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                  <Megaphone className="w-4 h-4 text-purple-500" />
+                  <Megaphone className="w-4 h-4 text-[#8B2323]" />
                   <span>Post News</span>
                 </div>
               </Link>
               <Link href="/admin/events" onClick={() => setFabOpen(false)}>
                 <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                  <Calendar className="w-4 h-4 text-blue-500" />
+                  <Calendar className="w-4 h-4 text-[#8B2323]" />
                   <span>Create Event</span>
                 </div>
               </Link>
               {isAdmin && (
                 <Link href="/admin/sermons" onClick={() => setFabOpen(false)}>
                   <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                    <Play className="w-4 h-4 text-rose-500" />
+                    <Play className="w-4 h-4 text-[#8B2323]" />
                     <span>Add Sermon</span>
                   </div>
                 </Link>
               )}
               <Link href="/admin/prayers" onClick={() => setFabOpen(false)}>
                 <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                  <Heart className="w-4 h-4 text-pink-500" />
+                  <Heart className="w-4 h-4 text-[#8B2323]" />
                   <span>Prayer Request</span>
                 </div>
               </Link>

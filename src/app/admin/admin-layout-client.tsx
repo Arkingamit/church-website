@@ -33,7 +33,9 @@ import {
   Menu,
   X,
   MapPin,
-  Radio
+  FileText,
+  Camera,
+  FlipHorizontal
 } from 'lucide-react';
 
 const roleIcons: Record<UserRole, React.ElementType> = {
@@ -92,12 +94,14 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
     { label: 'Dashboard', href: '/admin', icon: LayoutDashboard, minRole: 'group_leader' as UserRole },
     { label: 'Events', href: '/admin/events', icon: Calendar, minRole: 'group_leader' as UserRole },
     { label: 'Announcements', href: '/admin/announcements', icon: Megaphone, minRole: 'group_leader' as UserRole },
-    { label: 'Broadcasts', href: '/admin/broadcasts', icon: Radio, minRole: 'group_leader' as UserRole },
+    { label: 'Note Share', href: '/admin/broadcasts', icon: FileText, minRole: 'group_leader' as UserRole },
     { label: 'Worship Videos', href: '/admin/worship', icon: Music, minRole: 'admin' as UserRole },
     { label: 'Prayer Wall', href: '/admin/prayers', icon: Heart, minRole: 'campus_leader' as UserRole, badge: pendingPrayersCount },
     { label: 'Daily Verses', href: '/admin/verses', icon: BookOpen, minRole: 'admin' as UserRole },
+    { label: 'Hero Cards', href: '/admin/hero-cards', icon: FlipHorizontal, minRole: 'admin' as UserRole },
     { label: 'Requests', href: '/admin/requests', icon: UserPlus, minRole: 'campus_leader' as UserRole, badge: pendingCount },
     { label: 'Attendance', href: '/admin/attendance', icon: MapPin, minRole: 'campus_leader' as UserRole },
+    { label: 'ePass Scanner', href: '/admin/scanner', icon: Camera, minRole: 'group_leader' as UserRole },
     { label: 'QR Codes', href: '/admin/qr-codes', icon: QrCode, minRole: 'campus_leader' as UserRole },
     { label: 'Users', href: '/admin/users', icon: Users, minRole: 'campus_leader' as UserRole },
     { label: 'Settings', href: '/admin/settings', icon: Settings, minRole: 'super_admin' as UserRole },

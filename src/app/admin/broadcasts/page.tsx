@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Radio, Plus, Trash2, RefreshCw, ExternalLink, Link2, FileText, X } from 'lucide-react';
+import { FileText, Plus, Trash2, RefreshCw, ExternalLink, Link2, X } from 'lucide-react';
 import { useAdminData } from '@/lib/admin-data-context';
 import { toast } from 'sonner';
 
@@ -68,12 +68,12 @@ export default function AdminBroadcastsPage() {
         body: JSON.stringify({ ...form, materialLinks: validLinks }),
       });
       if (res.ok) {
-        toast.success('Broadcast published!');
+        toast.success('Note share published!');
         setDialogOpen(false);
         setForm({ title: '', description: '', targetCampuses: ['all'], materialLinks: [{ label: '', url: '' }] });
         fetchBroadcasts();
       } else {
-        toast.error('Failed to create broadcast');
+        toast.error('Failed to create note share');
       }
     } catch {
       toast.error('An error occurred');
@@ -81,11 +81,11 @@ export default function AdminBroadcastsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this broadcast?')) return;
+    if (!confirm('Delete this note share?')) return;
     try {
       const res = await fetch(`/api/admin/broadcasts/${id}`, { method: 'DELETE' });
       if (res.ok) {
-        toast.success('Broadcast deleted');
+        toast.success('Note share deleted');
         fetchBroadcasts();
       } else {
         toast.error('Failed to delete');
@@ -99,12 +99,12 @@ export default function AdminBroadcastsPage() {
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-[#1A202C]">Broadcasts</h1>
+          <h1 className="text-3xl font-bold text-[#1A202C]">Note Share</h1>
           <p className="text-muted-foreground mt-1">Share notes, materials, and resources with your community</p>
         </div>
         <Button onClick={() => setDialogOpen(true)} className="bg-[#8B2323] hover:bg-[#721515]">
           <Plus className="w-4 h-4 mr-2" />
-          New Broadcast
+          New Note Share
         </Button>
       </div>
 
@@ -112,10 +112,10 @@ export default function AdminBroadcastsPage() {
         <div className="flex justify-center p-12"><RefreshCw className="w-8 h-8 animate-spin text-muted-foreground" /></div>
       ) : broadcasts.length === 0 ? (
         <Card className="p-12 text-center border-dashed">
-          <Radio className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No Broadcasts Yet</h3>
-          <p className="text-muted-foreground mb-4">Publish your first broadcast to share notes and materials.</p>
-          <Button onClick={() => setDialogOpen(true)} variant="outline">Create Broadcast</Button>
+          <FileText className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">No Notes Shared Yet</h3>
+          <p className="text-muted-foreground mb-4">Publish your first note to share notes and materials.</p>
+          <Button onClick={() => setDialogOpen(true)} variant="outline">Create Note Share</Button>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -168,7 +168,7 @@ export default function AdminBroadcastsPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>New Broadcast</DialogTitle>
+            <DialogTitle>New Note Share</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
             <div className="space-y-2">

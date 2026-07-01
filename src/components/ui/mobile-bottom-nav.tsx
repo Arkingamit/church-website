@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, PlayCircle, CalendarHeart, Radio, Megaphone } from "lucide-react";
+import { Home, PlayCircle, CalendarHeart, FileText } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
 type NavItem = {
@@ -20,9 +20,8 @@ export function MobileBottomNav() {
     const navItems: NavItem[] = [
         { label: "Home", href: "/", icon: Home, exact: true },
         { label: "Sermons", href: "/sermons", icon: PlayCircle },
-        { label: "Notes", href: "/broadcasts", icon: Radio },
+        { label: "Notes", href: "/broadcasts", icon: FileText },
         { label: "Events", href: "/events", icon: CalendarHeart },
-        { label: "Announcements", href: "/announcements", icon: Megaphone },
     ];
 
     return (
@@ -36,7 +35,7 @@ export function MobileBottomNav() {
                     backgroundSize: '240px 240px'
                 }}
             >
-                <div className="grid grid-cols-5 gap-1">
+                <div className="grid grid-cols-4 gap-1">
                     {navItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = item.exact

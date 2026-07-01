@@ -67,13 +67,16 @@ function GalleryWidgetLayout() {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [albumCovers, setAlbumCovers] = useState<Record<string, string>>({});
 
+  const fetchedAlbums = React.useRef<Set<string>>(new Set());
+
   useEffect(() => {
     const fetchCovers = async () => {
-      const newCovers: Record<number, string> = { ...albumCovers };
       let changed = false;
+      const newCovers: Record<string, string> = {};
       
       for (const album of galleryAlbums) {
-        if (!newCovers[album.id] && album.url) {
+        if (!fetchedAlbums.current.has(album.id) && album.url) {
+          fetchedAlbums.current.add(album.id);
           try {
             const res = await fetch(`/api/gallery/photos?url=${encodeURIComponent(album.url)}`);
             if (!res.ok) {
@@ -94,7 +97,7 @@ function GalleryWidgetLayout() {
       }
       
       if (changed) {
-        setAlbumCovers(newCovers);
+        setAlbumCovers(prev => ({ ...prev, ...newCovers }));
       }
     };
 
@@ -103,18 +106,10 @@ function GalleryWidgetLayout() {
     }
   }, [galleryAlbums]);
 
-  const categories = useMemo(() => {
-    return ["All", ...Array.from(new Set(galleryAlbums.map(a => a.category)))];
-  }, [galleryAlbums]);
-  
   const filteredAlbums = useMemo(() => {
-    const filtered = selectedCategory === "All" 
-      ? galleryAlbums 
-      : galleryAlbums.filter(a => a.category === selectedCategory);
-
     // Sort by sortOrder
-    return [...filtered].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-  }, [galleryAlbums, selectedCategory]);
+    return [...galleryAlbums].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+  }, [galleryAlbums]);
 
   const fetchAlbumPreview = async (album: any) => {
     setSelectedAlbum(album);
@@ -171,20 +166,7 @@ function GalleryWidgetLayout() {
             </p>
           </div>
 
-          {/* Filter Tabs */}
-          <div className="flex flex-wrap gap-2 justify-center mb-8">
-            {categories.map(category => (
-              <Button
-                key={category}
-                variant={selectedCategory === category ? "default" : "secondary"}
-                size="sm"
-                onClick={() => setSelectedCategory(category)}
-                className="transition-all duration-200"
-              >
-                {category}
-              </Button>
-            ))}
-          </div>
+
 
           {/* Album Rows */}
           <div className="space-y-4 mb-8 min-h-[400px]">
@@ -210,16 +192,10 @@ function GalleryWidgetLayout() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
                   </div>
 
-                  <Badge 
-                    variant="glass"
-                    className="absolute top-4 left-4 border-0"
-                  >
-                    {album.category}
-                  </Badge>
+
 
                   <div className="absolute bottom-4 left-4 right-4 text-white">
                     <h3 className="text-lg font-bold italic tracking-tight">{album.title}</h3>
-                    <p className="text-xs text-white/70 line-clamp-1 leading-normal mt-0.5">{album.description}</p>
                   </div>
                 </div>
               ))}
@@ -271,7 +247,6 @@ function GalleryWidgetLayout() {
                           <div className={`absolute inset-0 transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
                             <div className="absolute bottom-0 left-0 right-0 p-8 text-white space-y-1">
                               <h3 className="text-2xl font-bold italic tracking-tight">{album.title}</h3>
-                              <p className="text-sm text-white/70 line-clamp-2 leading-relaxed">{album.description}</p>
                             </div>
                           </div>
 
@@ -348,7 +323,6 @@ function GalleryWidgetLayout() {
                 <div className="space-y-2">
                   <Badge variant="glass" className="mb-2 text-primary">{selectedAlbum.category}</Badge>
                   <h2 className="text-4xl font-bold tracking-tight italic">{selectedAlbum.title}</h2>
-                  <p className="text-muted-foreground text-lg leading-relaxed">{selectedAlbum.description}</p>
                 </div>
                 <Button
                   variant="ghost"
@@ -436,11 +410,6 @@ function GalleryPageLayout() {
   // Album dialog details state
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [selectedAlbum, setSelectedAlbum] = useState<any>(null);
-  const [previewPhotos, setPreviewPhotos] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  
-  // Lightbox slideshow state (within the dialog)
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   
   const [isScrolledDown, setIsScrolledDown] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -460,14 +429,17 @@ function GalleryPageLayout() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
+  const fetchedAlbums = React.useRef<Set<string>>(new Set());
+
   // Fetch album covers
   useEffect(() => {
     const fetchCovers = async () => {
-      const newCovers: Record<number, string> = { ...albumCovers };
       let changed = false;
+      const newCovers: Record<string, string> = {};
       
       for (const album of galleryAlbums) {
-        if (!newCovers[album.id] && album.url) {
+        if (!fetchedAlbums.current.has(album.id) && album.url) {
+          fetchedAlbums.current.add(album.id);
           try {
             const res = await fetch(`/api/gallery/photos?url=${encodeURIComponent(album.url)}`);
             if (!res.ok) {
@@ -487,14 +459,14 @@ function GalleryPageLayout() {
       }
       
       if (changed) {
-        setAlbumCovers(newCovers);
+        setAlbumCovers(prev => ({ ...prev, ...newCovers }));
       }
     };
 
-    if (galleryAlbums.length > 0 && session && member) {
+    if (galleryAlbums.length > 0) {
       fetchCovers();
     }
-  }, [galleryAlbums, session, member]);
+  }, [galleryAlbums]);
 
   // Reset page when filter or search changes
   useEffect(() => {
@@ -545,29 +517,6 @@ function GalleryPageLayout() {
   const fetchAlbumPreview = async (album: any) => {
     setSelectedAlbum(album);
     setIsPreviewOpen(true);
-    setLoading(true);
-    setPreviewPhotos([]);
-    setLightboxIndex(null);
-
-    try {
-      if (!album.url) {
-        setLoading(false);
-        return;
-      }
-      const res = await fetch(`/api/gallery/photos?url=${encodeURIComponent(album.url)}`);
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to fetch photos');
-      }
-      const data = await res.json();
-      if (data.photos) {
-        setPreviewPhotos(data.photos);
-      }
-    } catch (err) {
-      console.error('Failed to fetch preview photos:', err);
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleShareAlbum = async () => {
@@ -585,14 +534,7 @@ function GalleryPageLayout() {
     }
   };
 
-  const navigateLightbox = (dir: 'next' | 'prev') => {
-    if (lightboxIndex === null || previewPhotos.length === 0) return;
-    if (dir === 'next') {
-      setLightboxIndex((lightboxIndex + 1) % previewPhotos.length);
-    } else {
-      setLightboxIndex((lightboxIndex - 1 + previewPhotos.length) % previewPhotos.length);
-    }
-  };
+
 
   // Auth gate check
   if (!session || !member) {
@@ -661,20 +603,6 @@ function GalleryPageLayout() {
 
             {/* Search and Filters Controls */}
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-card/30 backdrop-blur-md p-6 rounded-3xl border border-primary/5">
-              {/* Category Tabs */}
-              <div className="flex flex-wrap gap-2 justify-center md:justify-start w-full md:w-auto">
-                {categories.map(category => (
-                  <Button
-                    key={category}
-                    variant={selectedCategory === category ? "default" : "secondary"}
-                    size="sm"
-                    onClick={() => setSelectedCategory(category)}
-                    className="transition-all duration-200 rounded-full"
-                  >
-                    {category}
-                  </Button>
-                ))}
-              </div>
 
               {/* Search Bar */}
               <div className="relative w-full md:max-w-xs">
@@ -713,16 +641,10 @@ function GalleryPageLayout() {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
                     </div>
 
-                    <Badge 
-                      variant="glass"
-                      className="absolute top-4 left-4 border-0"
-                    >
-                      {album.category}
-                    </Badge>
+
 
                     <div className="absolute bottom-4 left-4 right-4 text-white">
                       <h3 className="text-lg font-bold italic tracking-tight">{album.title}</h3>
-                      <p className="text-xs text-white/70 line-clamp-1 leading-normal mt-0.5">{album.description}</p>
                     </div>
                   </div>
                 ))}
@@ -762,19 +684,11 @@ function GalleryPageLayout() {
                               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                             </div>
 
-                            <Badge 
-                              variant="glass"
-                              className={`absolute top-4 left-4 border-0 transition-opacity duration-300 ${
-                                shouldCompress ? 'opacity-0' : 'opacity-100'
-                              }`}
-                            >
-                              {album.category}
-                            </Badge>
+
 
                             <div className={`absolute inset-0 transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
                               <div className="absolute bottom-0 left-0 right-0 p-8 text-white space-y-1">
                                   <h3 className="text-2xl font-bold italic tracking-tight">{album.title}</h3>
-                                  <p className="text-sm text-white/70 line-clamp-2 leading-relaxed">{album.description}</p>
                               </div>
                             </div>
 
@@ -861,142 +775,39 @@ function GalleryPageLayout() {
 
       {/* Album Preview dialog with grid of photos */}
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-background border-primary/10 rounded-3xl max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-lg p-0 overflow-hidden bg-background border-primary/10 rounded-3xl">
           {/* Header */}
-          <DialogHeader className="p-6 pb-4 border-b border-border/40">
-            <div className="flex items-start justify-between">
-              <div className="space-y-1 pr-6">
-                <Badge variant="glass" className="bg-primary/10 text-primary border-0">{selectedAlbum?.category}</Badge>
-                <DialogTitle className="text-2xl font-bold italic tracking-tight">{selectedAlbum?.title}</DialogTitle>
-                <p className="text-muted-foreground text-sm leading-relaxed max-w-2xl">
+          <DialogHeader className="p-6 sm:p-8">
+            <div className="flex flex-col gap-5">
+              <div className="space-y-2 pr-6 text-left">
+                <Badge variant="glass" className="bg-primary/10 text-primary border-0 w-max">{selectedAlbum?.category}</Badge>
+                <DialogTitle className="text-3xl font-bold italic tracking-tight text-left">{selectedAlbum?.title}</DialogTitle>
+                <p className="text-muted-foreground text-base leading-relaxed text-left">
                   {selectedAlbum?.description}
                 </p>
               </div>
-              <div className="flex gap-2 shrink-0">
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <Button 
                   onClick={handleShareAlbum}
                   variant="outline" 
-                  size="icon" 
-                  className="rounded-full border-border/40"
-                  title="Share Album"
+                  className="rounded-full border-border/40 gap-2 h-11 px-5 w-full sm:w-auto"
                 >
                   <Share2 className="w-4.5 h-4.5" />
+                  Share Album
                 </Button>
                 <Button 
                   asChild 
-                  className="rounded-full px-5 gap-2 shadow-lg shadow-primary/15 hover:scale-[1.02] transition-all text-xs"
+                  className="rounded-full px-6 gap-2 h-11 shadow-lg shadow-primary/15 hover:scale-[1.02] transition-all w-full sm:w-auto"
                 >
-                  <a href={selectedAlbum?.url} target="_blank" rel="noopener noreferrer">
-                    View Full Google Album <ExternalLink className="w-3.5 h-3.5" />
+                  <a href={selectedAlbum?.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center">
+                    View Full Google Album <ExternalLink className="w-4 h-4" />
                   </a>
                 </Button>
               </div>
             </div>
           </DialogHeader>
-
-          {/* Grid Area */}
-          <div className="flex-1 overflow-y-auto p-6 min-h-[350px]">
-            {loading ? (
-              <div className="flex flex-col items-center justify-center h-64 gap-3">
-                <Loader2 className="w-10 h-10 text-primary animate-spin" />
-                <p className="text-muted-foreground animate-pulse italic text-sm">Fetching photos...</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {previewPhotos.map((photo, i) => (
-                  <div 
-                    key={i} 
-                    className="relative group overflow-hidden aspect-square rounded-2xl cursor-zoom-in bg-muted border border-border/30"
-                    onClick={() => setLightboxIndex(i)}
-                  >
-                    <img 
-                      src={photo.src} 
-                      alt={`Photo ${i}`} 
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <div className="bg-white/20 backdrop-blur-md p-3 rounded-full text-white scale-90 group-hover:scale-100 transition-transform">
-                        <Maximize2 className="w-5 h-5" />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                
-                {previewPhotos.length === 0 && !loading && (
-                  <div className="col-span-full py-16 text-center border border-dashed border-border/50 rounded-2xl flex flex-col items-center justify-center space-y-2">
-                     <ImageIcon className="w-8 h-8 text-muted-foreground/30" />
-                     <p className="text-muted-foreground italic text-sm">No photos found or Google Album link is inaccessible.</p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
         </DialogContent>
       </Dialog>
-
-      {/* Lightbox / Slideshow Modal */}
-      {lightboxIndex !== null && previewPhotos[lightboxIndex] && (
-        <div className="fixed inset-0 bg-black/95 z-[999] flex flex-col items-center justify-between p-4 animate-in fade-in duration-200">
-          {/* Lightbox Header */}
-          <div className="w-full flex items-center justify-between text-white py-2 px-4 relative z-10">
-            <span className="text-sm font-medium bg-white/10 px-3 py-1 rounded-full">
-              {lightboxIndex + 1} / {previewPhotos.length}
-            </span>
-            <div className="flex gap-2">
-              <a 
-                href={previewPhotos[lightboxIndex].src} 
-                download={`photo-${lightboxIndex + 1}.jpg`}
-                target="_blank"
-                rel="noreferrer"
-                className="bg-white/10 hover:bg-white/20 p-2.5 rounded-full transition-colors"
-                title="Download Photo"
-              >
-                <Download className="w-5 h-5 text-white" />
-              </a>
-              <button 
-                onClick={() => setLightboxIndex(null)}
-                className="bg-white/10 hover:bg-white/20 p-2.5 rounded-full transition-colors"
-                title="Close"
-              >
-                <X className="w-5 h-5 text-white" />
-              </button>
-            </div>
-          </div>
-
-          {/* Large Image View */}
-          <div className="relative flex-1 w-full max-w-5xl flex items-center justify-center select-none">
-            {/* Left Button */}
-            <button 
-              onClick={() => navigateLightbox('prev')}
-              className="absolute left-4 bg-black/50 hover:bg-black/85 text-white p-3 rounded-full border border-white/15 transition-all z-10"
-              title="Previous Photo"
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-
-            <img 
-              src={previewPhotos[lightboxIndex].src} 
-              alt="Expanded view" 
-              className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl animate-in zoom-in-95 duration-200"
-            />
-
-            {/* Right Button */}
-            <button 
-              onClick={() => navigateLightbox('next')}
-              className="absolute right-4 bg-black/50 hover:bg-black/85 text-white p-3 rounded-full border border-white/15 transition-all z-10"
-              title="Next Photo"
-            >
-              <ChevronRight className="w-6 h-6" />
-            </button>
-          </div>
-
-          {/* Lightbox Footer */}
-          <div className="text-center text-white/60 text-xs py-4">
-            Use Left / Right arrow keys or controls to navigate. Click close to return to the album.
-          </div>
-        </div>
-      )}
     </main>
   );
 }

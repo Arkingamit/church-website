@@ -131,7 +131,11 @@ function PrayerWallWidgetLayout() {
           prayedCount: data.prayedCount, 
           prayedBy: [...(p.prayedBy || []), sessionMember?._id || sessionMember?.id || ''] 
         } : p));
-        toast.success('You prayed for this request');
+        if (data.alreadyPrayed) {
+          toast.info('You already prayed for this');
+        } else {
+          toast.success('You prayed for this request');
+        }
       } else {
         const data = await res.json();
         toast.error(data.error || 'You already prayed for this');
@@ -484,9 +488,16 @@ function PrayerPageCard({ prayer, session }: { prayer: any, session: any }) {
 
     try {
       const res = await fetch(`/api/prayers/${prayer.id}/pray`, { method: 'POST' });
+      
       if (!res.ok) {
         setHasPrayed(false);
         setPrayedCount((prev: number) => prev - 1);
+        return;
+      }
+
+      const data = await res.json();
+      if (data.alreadyPrayed) {
+        setPrayedCount(data.prayedCount);
       }
     } catch (err) {
       setHasPrayed(false);
