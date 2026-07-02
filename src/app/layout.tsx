@@ -24,12 +24,12 @@ export const metadata: Metadata = {
     description:
       "A welcoming community where faith grows, hearts connect, and lives are transformed through God's love.",
     type: "website",
-    images: ["https://lovable.dev/opengraph-image-p98pqg.png"],
+    images: ["https://graceconnect-psi.vercel.app/logo2.png"],
   },
   twitter: {
     card: "summary_large_image",
     site: "@lovable_dev",
-    images: ["https://lovable.dev/opengraph-image-p98pqg.png"],
+    images: ["https://graceconnect-psi.vercel.app/logo2.png"],
   },
 };
 
