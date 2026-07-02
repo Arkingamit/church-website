@@ -1,30 +1,28 @@
 import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/db';
 import Broadcast from '@/models/Broadcast';
-import User from '@/models/User';
-import { verifySession } from '@/lib/auth-utils';
+import { requireAdminWithScope, enforceCampusScope, enforceGroupScope } from '@/lib/api-auth';
 
 export async function GET() {
   try {
     await connectToDatabase();
-    const session = await verifySession();
-    if (!session.isAuth || !session.userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const user = await User.findById(session.userId);
-    if (!user || !['group_leader', 'campus_leader', 'admin', 'super_admin'].includes(user.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const admin = await requireAdminWithScope();
+    if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const query: any = {};
-    if (user.role === 'campus_leader') {
+    let query: any = {};
+
+    if (admin.role === 'campus_leader') {
       query.$or = [
-        { targetCampuses: { $in: [user.campusId, 'all'] } },
-        { createdBy: session.userId },
+        { targetCampuses: { $in: [admin.campusId, 'all'] } },
+        { createdBy: admin.userId },
       ];
-    } else if (user.role === 'group_leader') {
-      query.createdBy = session.userId;
+    } else if (admin.role === 'group_leader') {
+      query.$or = [
+        { targetCampuses: { $in: [admin.campusId, 'all'] }, targetGroups: { $in: [...admin.groups] } },
+        { createdBy: admin.userId },
+      ];
     }
+    // admin/super_admin: no filter — see everything
 
     const broadcasts = await Broadcast.find(query).sort({ createdAt: -1 }).lean();
     return NextResponse.json(broadcasts);
@@ -37,30 +35,28 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     await connectToDatabase();
-    const session = await verifySession();
-    if (!session.isAuth || !session.userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const user = await User.findById(session.userId);
-    if (!user || !['group_leader', 'campus_leader', 'admin', 'super_admin'].includes(user.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const admin = await requireAdminWithScope();
+    if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
-    const { title, description, materialLinks, targetCampuses, targetGroups } = body;
+    const { title, description, materialLinks } = body;
 
     if (!title || !description) {
       return NextResponse.json({ error: 'Title and description are required' }, { status: 400 });
     }
 
+    // Enforce scope restrictions
+    const targetCampuses = enforceCampusScope(admin.role, admin.campusId, body.targetCampuses);
+    const targetGroups = enforceGroupScope(admin.role, admin.groups, body.targetGroups);
+
     const broadcast = await Broadcast.create({
       title,
       description,
       materialLinks: materialLinks || [],
-      targetCampuses: targetCampuses || ['all'],
-      targetGroups: targetGroups || [],
-      createdBy: session.userId,
-      createdByName: user.name || `${user.firstName} ${user.lastName}`,
+      targetCampuses,
+      targetGroups,
+      createdBy: admin.userId,
+      createdByName: admin.name || '',
     });
 
     return NextResponse.json(broadcast, { status: 201 });

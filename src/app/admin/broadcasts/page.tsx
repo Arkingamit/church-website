@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileText, Plus, Trash2, RefreshCw, ExternalLink, Link2, X } from 'lucide-react';
-import { useAdminData } from '@/lib/admin-data-context';
+import { useAdminData, getAllowedCampuses, hasGlobalScope } from '@/lib/admin-data-context';
 import { toast } from 'sonner';
 
 export default function AdminBroadcastsPage() {
@@ -192,8 +192,8 @@ export default function AdminBroadcastsPage() {
                 <Select value={form.targetCampuses[0] || 'all'} onValueChange={(val) => setForm({ ...form, targetCampuses: [val] })}>
                   <SelectTrigger><SelectValue placeholder="Select campus" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Campuses</SelectItem>
-                    {campuses.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    {hasGlobalScope(currentUser?.role) && <SelectItem value="all">All Campuses</SelectItem>}
+                    {getAllowedCampuses(currentUser?.role, currentUser?.campusId, campuses).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

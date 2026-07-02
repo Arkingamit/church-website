@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin, requireAuth } from '@/lib/api-auth';
+import { requireAdmin, requireAdminWithScope, requireAuth, enforceCampusScope, enforceGroupScope } from '@/lib/api-auth';
 import connectToDatabase from '@/lib/db';
 import { Sermon, SermonSeries, WorshipVideo, GalleryAlbum, LiveStream } from '@/models/Media';
 
@@ -35,7 +35,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ type: st
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ type: string }> }) {
-  const admin = await requireAdmin();
+  const admin = await requireAdminWithScope();
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
@@ -48,6 +48,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
     }
 
     const body = await req.json();
+
+    // Enforce scope for models that support it
+    if (type === 'gallery') {
+      body.targetCampuses = enforceCampusScope(admin.role, admin.campusId, body.targetCampuses);
+      body.targetGroups = enforceGroupScope(admin.role, admin.groups, body.targetGroups);
+    } else if (type === 'livestreams') {
+      if (admin.role === 'campus_leader' || admin.role === 'group_leader') {
+        body.campusId = admin.campusId;
+      }
+    }
+
     const item = await Model.create(body);
     return NextResponse.json(item, { status: 201 });
   } catch (error) {

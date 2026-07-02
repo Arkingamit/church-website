@@ -1,17 +1,21 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireAdminWithScope, enforceCampusScope, enforceGroupScope } from '@/lib/api-auth';
 import connectToDatabase from '@/lib/db';
 import EventModel from '@/models/Event';
 import { calculateNextOccurrence, generateOccurrences } from '@/lib/recurrence';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await requireAdmin();
+  const admin = await requireAdminWithScope();
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     await connectToDatabase();
     const { id } = await params;
     const body = await req.json();
+
+    // Enforce scope restrictions on update
+    body.targetCampuses = enforceCampusScope(admin.role, admin.campusId, body.targetCampuses);
+    body.targetGroups = enforceGroupScope(admin.role, admin.groups, body.targetGroups);
 
     const url = new URL(req.url);
     const updateSeries = url.searchParams.get('updateSeries') === 'true';
@@ -67,7 +71,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await requireAdmin();
+  const admin = await requireAdminWithScope();
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {

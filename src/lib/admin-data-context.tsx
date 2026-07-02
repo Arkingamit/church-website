@@ -306,6 +306,47 @@ export function getGroupsForCampus(groupScopes: Group[], campusId: string): stri
     .map(g => g.name);
 }
 
+/**
+ * Returns the campuses a user is allowed to target based on their role.
+ * - admin/super_admin: all campuses
+ * - campus_leader/group_leader: only their own campus
+ */
+export function getAllowedCampuses(role: UserRole, campusId: string, campuses: Campus[]): Campus[] {
+  if (role === 'admin' || role === 'super_admin') {
+    return campuses;
+  }
+  return campuses.filter(c => c.id === campusId);
+}
+
+/**
+ * Returns the group names a user is allowed to target.
+ * - admin/super_admin: all groups
+ * - campus_leader: all groups within their campus
+ * - group_leader: only their own assigned groups
+ */
+export function getAllowedGroups(
+  role: UserRole,
+  userGroups: string[],
+  groupScopes: Group[],
+  campusId: string
+): string[] {
+  if (role === 'admin' || role === 'super_admin') {
+    return groupScopes.map(g => g.name);
+  }
+  if (role === 'campus_leader') {
+    return getGroupsForCampus(groupScopes, campusId);
+  }
+  // group_leader: only their own groups
+  return userGroups;
+}
+
+/**
+ * Whether the user has global (all-campus) broadcast scope.
+ */
+export function hasGlobalScope(role: UserRole): boolean {
+  return role === 'admin' || role === 'super_admin';
+}
+
 // ── Default Groups (kept client-side for now) ──────────────────────────
 const defaultGroups: string[] = [
   'Young Adults', 'Families', 'Men', 'Women',

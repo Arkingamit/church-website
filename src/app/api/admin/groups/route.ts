@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireAdmin, requireAdminWithScope } from '@/lib/api-auth';
 import connectToDatabase from '@/lib/db';
 import Group from '@/models/Group';
 
@@ -36,15 +36,18 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const admin = await requireAdmin();
+  const admin = await requireAdminWithScope();
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (admin.role === 'group_leader') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
 
   try {
     await connectToDatabase();
     const body = await req.json();
     const group = await Group.create({
       name: body.name,
-      scope: body.scope || 'global',
+      scope: admin.role === 'campus_leader' ? admin.campusId : (body.scope || 'global'),
     });
     return NextResponse.json(group, { status: 201 });
   } catch (error: any) {

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin, requireAuth } from '@/lib/api-auth';
+import { requireAdminWithScope, requireAuth, enforceCampusScope, enforceGroupScope } from '@/lib/api-auth';
 import connectToDatabase from '@/lib/db';
 import EventModel from '@/models/Event';
 import { eventSchema } from '@/lib/validations';
@@ -50,7 +50,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const admin = await requireAdmin();
+  const admin = await requireAdminWithScope();
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
@@ -62,6 +62,10 @@ export async function POST(req: Request) {
     }
 
     const eventData = parseResult.data as any;
+
+    // Enforce scope restrictions
+    eventData.targetCampuses = enforceCampusScope(admin.role, admin.campusId, eventData.targetCampuses);
+    eventData.targetGroups = enforceGroupScope(admin.role, admin.groups, eventData.targetGroups);
 
     if (eventData.recurring) {
       // Ahead-of-time duplication

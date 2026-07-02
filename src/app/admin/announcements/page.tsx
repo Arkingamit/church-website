@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useAdminData, canPublishAllCampuses, getGroupsForCampus, type Announcement } from '@/lib/admin-data-context';
+import { useAdminData, canPublishAllCampuses, getGroupsForCampus, getAllowedCampuses, getAllowedGroups, hasGlobalScope, type Announcement } from '@/lib/admin-data-context';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -649,37 +649,35 @@ export default function AnnouncementsPage() {
                     As a Group Leader, you can only broadcast to your campus: {campuses.find(c => c.id === currentUser.campusId)?.name}
                   </p>
                 )}
-                <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <Checkbox
-                      checked={campusMode === 'all'}
-                      onCheckedChange={() => setCampusMode('all')}
-                      disabled={isCampusLeader || isGroupLeader}
-                    />
-                    All Campuses
-                  </label>
-                  <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <Checkbox
-                      checked={campusMode === 'specific'}
-                      onCheckedChange={() => setCampusMode('specific')}
-                      disabled={isCampusLeader || isGroupLeader}
-                    />
-                    Specific
-                  </label>
-                </div>
-                {campusMode !== 'all' && (
+                {hasGlobalScope(currentUser.role) && (
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox
+                        checked={campusMode === 'all'}
+                        onCheckedChange={() => setCampusMode('all')}
+                        disabled={isCampusLeader || isGroupLeader}
+                      />
+                      All Campuses
+                    </label>
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox
+                        checked={campusMode === 'specific'}
+                        onCheckedChange={() => setCampusMode('specific')}
+                        disabled={isCampusLeader || isGroupLeader}
+                      />
+                      Specific
+                    </label>
+                  </div>
+                )}
+                {(campusMode !== 'all' || !hasGlobalScope(currentUser.role)) && (
                   <div className="grid grid-cols-1 gap-1.5 pl-2 mt-2">
-                    {campuses.map(campus => (
+                    {getAllowedCampuses(currentUser.role, currentUser.campusId, campuses).map(campus => (
                       <label key={campus.id} className="flex items-center gap-2 text-sm cursor-pointer">
                         <Checkbox
                           checked={form.targetCampuses.includes(campus.id)}
                           onCheckedChange={() => toggleCampus(campus.id)}
-                          disabled={(isCampusLeader || isGroupLeader) && campus.id !== currentUser.campusId}
                         />
                         {campus.name}
-                        {(isCampusLeader || isGroupLeader) && campus.id !== currentUser.campusId && (
-                          <span className="text-[10px] text-muted-foreground">(restricted)</span>
-                        )}
                       </label>
                     ))}
                   </div>
@@ -730,12 +728,13 @@ export default function AnnouncementsPage() {
                       const visibleGroups = campusMode === 'all'
                         ? groups
                         : [...new Set(selectedCampusIds.flatMap(cid => getGroupsForCampus(groupScopes, cid)))];
-                      return visibleGroups.map(group => (
+                      return getAllowedGroups(currentUser.role, currentUser.groups, groupScopes, currentUser.campusId)
+                        .filter(g => visibleGroups.includes(g))
+                        .map(group => (
                         <label key={group} className="flex items-center gap-2 text-sm cursor-pointer">
                           <Checkbox
                             checked={form.targetGroups.includes(group)}
                             onCheckedChange={() => toggleGroup(group)}
-                            disabled={isGroupLeader && !currentUser.groups.includes(group)}
                           />
                           {group}
                         </label>

@@ -7,6 +7,8 @@ import {
   canAppointRole,
   getAssignableRoles,
   getGroupsForCampus,
+  getAllowedCampuses,
+  hasGlobalScope,
   ROLE_LABELS,
   type UserProfile,
   type UserRole,
@@ -309,8 +311,8 @@ export default function UsersPage() {
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="global">Global (All Campuses)</SelectItem>
-                    {campuses.map(c => (
+                    {hasGlobalScope(currentUser.role) && <SelectItem value="global">Global (All Campuses)</SelectItem>}
+                    {getAllowedCampuses(currentUser.role, currentUser.campusId, campuses).map(c => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
                   </SelectContent>

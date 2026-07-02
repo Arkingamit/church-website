@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useAdminData, canPublishAllCampuses, getGroupsForCampus, GalleryAlbum } from '@/lib/admin-data-context';
+import { useAdminData, canPublishAllCampuses, getGroupsForCampus, getAllowedCampuses, getAllowedGroups, hasGlobalScope, GalleryAlbum } from '@/lib/admin-data-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -337,22 +337,23 @@ export default function GalleryManagementPage() {
                   {isGroupLeader && (
                     <p className="text-[10px] text-emerald-500">Group Leader: restricted to {campuses.find(c => c.id === currentUser.campusId)?.name}</p>
                   )}
-                  <div className="flex items-center gap-4">
-                    <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <Checkbox checked={campusMode === 'all'} onCheckedChange={() => setCampusMode('all')} disabled={isCampusLeader || isGroupLeader} /> All
-                    </label>
-                    <label className="flex items-center gap-2 text-sm cursor-pointer">
-                      <Checkbox checked={campusMode === 'specific'} onCheckedChange={() => setCampusMode('specific')} disabled={isCampusLeader || isGroupLeader} /> Specific
-                    </label>
-                  </div>
-                  {campusMode !== 'all' && (
+                  {hasGlobalScope(currentUser.role) && (
+                    <div className="flex items-center gap-4">
+                      <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <Checkbox checked={campusMode === 'all'} onCheckedChange={() => setCampusMode('all')} disabled={isCampusLeader || isGroupLeader} /> All
+                      </label>
+                      <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <Checkbox checked={campusMode === 'specific'} onCheckedChange={() => setCampusMode('specific')} disabled={isCampusLeader || isGroupLeader} /> Specific
+                      </label>
+                    </div>
+                  )}
+                  {(campusMode !== 'all' || !hasGlobalScope(currentUser.role)) && (
                     <div className="grid grid-cols-1 gap-1.5 pl-2 mt-2">
-                      {campuses.map(c => (
+                      {getAllowedCampuses(currentUser.role, currentUser.campusId, campuses).map(c => (
                         <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer">
                           <Checkbox
                             checked={(form.targetCampuses || []).includes(c.id)}
                             onCheckedChange={() => toggleCampus(c.id)}
-                            disabled={(isCampusLeader || isGroupLeader) && c.id !== currentUser.campusId}
                           />
                           {c.name}
                         </label>
@@ -398,12 +399,13 @@ export default function GalleryManagementPage() {
                         const visibleGroups = campusMode === 'all'
                           ? groups
                           : [...new Set(selectedCampusIds.flatMap(cid => getGroupsForCampus(groupScopes, cid)))];
-                        return visibleGroups.map(g => (
+                        return getAllowedGroups(currentUser.role, currentUser.groups, groupScopes, currentUser.campusId)
+                          .filter(g => visibleGroups.includes(g))
+                          .map(g => (
                           <label key={g} className="flex items-center gap-2 text-sm cursor-pointer">
                             <Checkbox 
                               checked={(form.targetGroups || []).includes(g)} 
                               onCheckedChange={() => toggleGroup(g)} 
-                              disabled={isGroupLeader && !currentUser.groups.includes(g)}
                             />
                             {g}
                           </label>

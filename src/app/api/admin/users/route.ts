@@ -1,17 +1,26 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireAdminWithScope } from '@/lib/api-auth';
 import connectToDatabase from '@/lib/db';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 
 export async function GET() {
-  const admin = await requireAdmin();
+  const admin = await requireAdminWithScope();
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     await connectToDatabase();
+    
+    let query: any = {};
+    if (admin.role === 'campus_leader') {
+      // Campus leaders see users in their campus or global users
+      query = { $or: [{ campusId: admin.campusId }, { campusId: 'global' }] };
+    } else if (admin.role === 'group_leader') {
+      return NextResponse.json({ error: 'Group leaders cannot view the user list' }, { status: 403 });
+    }
+
     // Exclude password, use .lean() for 30-50% faster serialization
-    const users = await User.find({}, { password: 0 }).sort({ createdAt: -1 }).lean();
+    const users = await User.find(query, { password: 0 }).sort({ createdAt: -1 }).lean();
     return NextResponse.json(users);
   } catch (error: any) {
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
@@ -19,12 +28,24 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const admin = await requireAdmin();
+  const admin = await requireAdminWithScope();
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     await connectToDatabase();
     const body = await req.json();
+
+    if (admin.role === 'campus_leader') {
+      // Force campusId to match the leader's campus
+      body.campusId = admin.campusId;
+      
+      // Enforce role appointment rules
+      if (body.role && !['member', 'group_leader'].includes(body.role)) {
+        return NextResponse.json({ error: 'Campus leaders can only appoint members and group leaders' }, { status: 403 });
+      }
+    } else if (admin.role === 'group_leader') {
+      return NextResponse.json({ error: 'Group leaders cannot create users' }, { status: 403 });
+    }
 
     // Auto-fill required fields that might be missing from the admin UI
     if (body.name && (!body.firstName || !body.lastName)) {

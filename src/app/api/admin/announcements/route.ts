@@ -1,17 +1,34 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin, requireAuth } from '@/lib/api-auth';
+import { requireAdminWithScope, enforceCampusScope, enforceGroupScope } from '@/lib/api-auth';
 import connectToDatabase from '@/lib/db';
 import Announcement from '@/models/Announcement';
 import { calculateNextOccurrence } from '@/lib/recurrence';
 
 export async function GET() {
-  const session = await requireAuth();
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const admin = await requireAdminWithScope();
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     await connectToDatabase();
-    // .lean() returns plain JS objects — 30-50% faster than full Mongoose documents
-    const announcements = await Announcement.find({})
+
+    let query: any = {};
+
+    if (admin.role === 'campus_leader') {
+      // Campus leaders see announcements targeting their campus or 'all'
+      query.$or = [
+        { targetCampuses: { $in: [admin.campusId, 'all'] } },
+      ];
+    } else if (admin.role === 'group_leader') {
+      // Group leaders see announcements targeting their campus/all AND their groups
+      query.$or = [
+        { targetCampuses: { $in: [admin.campusId, 'all'] }, targetGroups: { $in: [...admin.groups, 'all'] } },
+        { targetCampuses: { $in: [admin.campusId, 'all'] }, targetGroups: { $size: 0 } },
+        { targetCampuses: { $in: [admin.campusId, 'all'] }, targetGroups: { $exists: false } },
+      ];
+    }
+    // admin/super_admin: no filter — see everything
+
+    const announcements = await Announcement.find(query)
       .sort({ isPinned: -1, createdAt: -1 })
       .lean();
     return NextResponse.json(announcements);
@@ -21,12 +38,16 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const admin = await requireAdmin();
+  const admin = await requireAdminWithScope();
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
     await connectToDatabase();
     const body = await req.json();
+
+    // Enforce scope restrictions
+    body.targetCampuses = enforceCampusScope(admin.role, admin.campusId, body.targetCampuses);
+    body.targetGroups = enforceGroupScope(admin.role, admin.groups, body.targetGroups);
 
     // Auto-calculate nextOccurrence for recurring announcements
     if (body.isRecurring) {
