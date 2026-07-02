@@ -19,6 +19,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LiveStreamSection } from '@/components/ui/live-stream';
 import { CampusDetails } from '@/components/ui/campus-details';
 import { AnnouncementsSection } from '@/components/ui/announcements-section';
+import { Capacitor } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
 
 const christianIcons = [
   // Cross
@@ -395,6 +397,13 @@ export function MobileHomeView() {
           {/* 3. Quick Actions */}
           <div className="grid grid-cols-4 gap-2 px-1">
             <button onClick={async () => {
+              if (Capacitor.isNativePlatform()) {
+                try {
+                  await Geolocation.requestPermissions();
+                } catch (e) {
+                  console.warn("Native location permission request failed", e);
+                }
+              }
               if (!navigator.geolocation) { alert('Geolocation not supported'); return; }
               const btn = document.getElementById('checkin-icon');
               if (btn) btn.classList.add('animate-pulse');

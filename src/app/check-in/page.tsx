@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { QrCode } from 'lucide-react';
 import { SessionQRScanner } from '@/components/ui/session-qr-scanner';
+import { Capacitor } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
 
 export default function CheckInPage() {
   const [sessions, setSessions] = useState<any[]>([]);
@@ -26,7 +28,15 @@ export default function CheckInPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  const handleCheckIn = (session: any) => {
+  const handleCheckIn = async (session: any) => {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        await Geolocation.requestPermissions();
+      } catch (e) {
+        console.warn("Native location permission request failed", e);
+      }
+    }
+
     if (!navigator.geolocation) {
       toast.error("Geolocation is not supported by your browser");
       return;

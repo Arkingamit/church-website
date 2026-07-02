@@ -17,6 +17,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { SchedulePreviewExport } from '@/components/admin/schedule-preview-export';
+import { Capacitor } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
 import {
   Calendar, Clock, MapPin, Users, Plus, Pencil, Trash2, Search, X,
   Megaphone, Globe, Building2, Image as ImageIcon, Link2, ListPlus, AlignLeft, CheckSquare, ChevronDown, Trash, ListEnd, Download, Repeat, FileText
@@ -1021,7 +1023,14 @@ export default function EventsPage() {
                       type="button"
                       variant="outline"
                       className="w-full h-8 text-xs gap-2"
-                      onClick={() => {
+                      onClick={async () => {
+                        if (Capacitor.isNativePlatform()) {
+                          try {
+                            await Geolocation.requestPermissions();
+                          } catch (e) {
+                            console.warn("Native location permission request failed", e);
+                          }
+                        }
                         if (navigator.geolocation) {
                           navigator.geolocation.getCurrentPosition(
                             (pos) => setForm({

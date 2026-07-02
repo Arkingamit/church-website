@@ -2,6 +2,8 @@
 
 import React, { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { Capacitor } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
 
 /**
  * Haversine distance calculation (client-side mirror of geo-utils.ts)
@@ -227,6 +229,13 @@ export function GlobalAttendancePrompt() {
         }
 
         // --- Step 4: Silently get GPS and check if within geofence ---
+        if (Capacitor.isNativePlatform()) {
+          try {
+            await Geolocation.requestPermissions();
+          } catch (e) {
+            console.warn("Native location permission request failed", e);
+          }
+        }
         if (!navigator.geolocation) {
           sendAttendanceNotification(eligibleSession);
           return;

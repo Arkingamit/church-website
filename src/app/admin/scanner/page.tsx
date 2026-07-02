@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Camera, QrCode, UserCheck, XCircle, Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { Capacitor } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
 
 declare global {
   interface Window {
@@ -85,6 +87,13 @@ export default function LeaderScannerPage() {
       let lon = 0;
 
       if (requireGps) {
+        if (Capacitor.isNativePlatform()) {
+          try {
+            await Geolocation.requestPermissions();
+          } catch (e) {
+            console.warn("Native location permission request failed", e);
+          }
+        }
         if (!navigator.geolocation) {
           toast.error("Geolocation is not supported by your browser");
           setLastScanResult({ success: false, message: 'GPS required but not supported' });

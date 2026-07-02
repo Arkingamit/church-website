@@ -3,8 +3,10 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAdminData } from '@/lib/admin-data-context';
-import { Camera, X, QrCode, AlertTriangle } from 'lucide-react';
+import { Camera as LucideCamera, X, QrCode, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Capacitor } from '@capacitor/core';
+import { Camera } from '@capacitor/camera';
 
 /**
  * QR Scanner component that uses the device camera to scan campus QR codes.
@@ -73,7 +75,6 @@ export function QRScanner({ onClose }: QRScannerProps) {
     let mounted = true;
 
     const loadAndStart = async () => {
-      // Load html5-qrcode from CDN if not already loaded
       if (!window.Html5Qrcode) {
         const script = document.createElement('script');
         script.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
@@ -84,6 +85,14 @@ export function QRScanner({ onClose }: QRScannerProps) {
           script.onerror = () => reject(new Error('Failed to load QR scanner library'));
           document.head.appendChild(script);
         });
+      }
+
+      if (Capacitor.isNativePlatform()) {
+        try {
+          await Camera.requestPermissions({ permissions: ['camera'] });
+        } catch (e) {
+          console.warn("Native camera permission request failed", e);
+        }
       }
 
       if (!mounted) return;
@@ -216,16 +225,17 @@ export function QRScanner({ onClose }: QRScannerProps) {
                 className="w-full bg-primary hover:bg-primary/90 text-white font-medium"
                 onClick={async () => {
                   try {
-                    // Force the browser to ask for permission directly from user gesture
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                    // Immediately stop it
-                    stream.getTracks().forEach(t => t.stop());
-                    // Clear error and trigger a re-mount/re-try
+                    if (Capacitor.isNativePlatform()) {
+                      await Camera.requestPermissions({ permissions: ['camera'] });
+                    } else {
+                      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                      stream.getTracks().forEach(t => t.stop());
+                    }
                     setError(null);
                     setIsLoading(true);
                     setRetryKey(k => k + 1);
                   } catch (err: any) {
-                    setError('Permission denied again. Please enable it in your browser settings.');
+                    setError('Permission denied again. Please enable it in your settings.');
                   }
                 }}
               >

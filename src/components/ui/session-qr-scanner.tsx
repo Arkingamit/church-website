@@ -2,8 +2,10 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Camera, X, QrCode, AlertTriangle } from 'lucide-react';
+import { Camera as LucideCamera, X, QrCode, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Capacitor } from '@capacitor/core';
+import { Camera } from '@capacitor/camera';
 
 declare global {
   interface Window {
@@ -70,6 +72,14 @@ export function SessionQRScanner({ onClose }: SessionQRScannerProps) {
           script.onerror = () => reject(new Error('Failed to load QR scanner library'));
           document.head.appendChild(script);
         });
+      }
+
+      if (Capacitor.isNativePlatform()) {
+        try {
+          await Camera.requestPermissions({ permissions: ['camera'] });
+        } catch (e) {
+          console.warn("Native camera permission request failed", e);
+        }
       }
 
       if (!mounted) return;
@@ -181,13 +191,17 @@ export function SessionQRScanner({ onClose }: SessionQRScannerProps) {
                 className="w-full bg-[#8B2323] hover:bg-[#721515] text-white font-medium"
                 onClick={async () => {
                   try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                    stream.getTracks().forEach(t => t.stop());
+                    if (Capacitor.isNativePlatform()) {
+                      await Camera.requestPermissions({ permissions: ['camera'] });
+                    } else {
+                      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                      stream.getTracks().forEach(t => t.stop());
+                    }
                     setError(null);
                     setIsLoading(true);
                     setRetryKey(k => k + 1);
                   } catch (err: any) {
-                    setError('Permission denied again. Please enable it in your browser settings.');
+                    setError('Permission denied again. Please enable it in your settings.');
                   }
                 }}
               >

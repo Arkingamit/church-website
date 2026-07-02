@@ -4,4 +4,5 @@
     <string name="title_activity_main">Grace Connect</string>
     <string name="package_name">com.graceconnect.app</string>
     <string name="custom_url_scheme">com.graceconnect.app</string>
+    <string name="server_client_id">replace_with_your_google_client_id.apps.googleusercontent.com</string>
 </resources>

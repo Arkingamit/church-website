@@ -12,6 +12,8 @@ import { MapPin, Plus, Trash2, Users, RefreshCw, Repeat, Calendar, Download, Fil
 import { SchedulePreviewExport } from '@/components/admin/schedule-preview-export';
 import { useAdminData } from '@/lib/admin-data-context';
 import { toast } from 'sonner';
+import { Capacitor } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
 
 export default function AdminAttendancePage() {
   const { campuses, currentUser } = useAdminData();
@@ -112,7 +114,14 @@ export default function AdminAttendancePage() {
     setLoadingRecords(false);
   };
 
-  const getCurrentLocation = () => {
+  const getCurrentLocation = async () => {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        await Geolocation.requestPermissions();
+      } catch (e) {
+        console.warn("Native location permission request failed", e);
+      }
+    }
     if (!navigator.geolocation) {
       toast.error("Geolocation is not supported by your browser");
       return;

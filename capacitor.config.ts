@@ -7,7 +7,14 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://graceconnect-psi.vercel.app',
     cleartext: true
-  }
+  },
+  plugins: {
+    GoogleAuth: {
+      scopes: ['profile', 'email'],
+      serverClientId: 'replace_with_your_google_client_id.apps.googleusercontent.com',
+      forceCodeForRefreshToken: true,
+    },
+  },
 };
 
 export default config;
