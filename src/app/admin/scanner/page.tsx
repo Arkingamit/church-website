@@ -5,7 +5,7 @@ import { useAdminData } from '@/lib/admin-data-context';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Camera, QrCode, UserCheck, XCircle, Loader2, RefreshCw } from 'lucide-react';
+import { Camera as LucideCamera, QrCode, UserCheck, XCircle, Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
@@ -226,7 +226,7 @@ export default function LeaderScannerPage() {
     <div className="p-6 max-w-2xl mx-auto space-y-6">
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-3">
-          <Camera className="w-8 h-8 text-primary" />
+          <LucideCamera className="w-8 h-8 text-primary" />
           ePass Scanner
         </h1>
         <p className="text-muted-foreground mt-1">
