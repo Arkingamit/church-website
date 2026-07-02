@@ -54,9 +54,10 @@ function LiveStreamWidgetLayout() {
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto">
           {/* Section Header */}
-          <div className="text-center space-y-4 mb-8">
-            <h2 className="text-4xl font-bold">Live Worship</h2>
-            <p className="text-xl text-muted-foreground">
+          <div className="text-center space-y-5 mb-10">
+            <span className="section-heading">Watch Live</span>
+            <h2 className="section-title">Live Worship</h2>
+            <p className="section-subtitle">
               Join us online for live worship and fellowship
             </p>
           </div>

@@ -416,9 +416,10 @@ function EventsWidgetLayout() {
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="text-center space-y-4 mb-8">
-            <h2 className="text-4xl font-bold">Upcoming Events</h2>
-            <p className="text-xl text-muted-foreground">
+          <div className="text-center space-y-5 mb-10">
+            <span className="section-heading">Events</span>
+            <h2 className="section-title">Upcoming Events</h2>
+            <p className="section-subtitle">
               Join us for worship, fellowship, and community outreach
             </p>
           </div>

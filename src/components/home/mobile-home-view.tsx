@@ -287,24 +287,12 @@ export function MobileHomeView() {
       </AnimatePresence>
 
       <div
-        className={`md:hidden flex flex-col min-h-screen text-[#3A2D27] pb-20 font-sans relative w-full ${showSplash ? 'h-[100dvh] overflow-hidden' : 'overflow-x-hidden'}`}
-        style={{
-          backgroundColor: '#FAF7F2',
-          backgroundImage: 'var(--bg-pattern)',
-          backgroundRepeat: 'repeat',
-          backgroundSize: '240px 240px'
-        }}
+        className={`md:hidden flex flex-col min-h-screen text-[#3A2D27] pb-20 font-sans relative w-full ${showSplash ? 'h-[100dvh] overflow-hidden' : 'overflow-x-hidden'} bg-transparent`}
       >
 
         {/* 1. Header */}
         <header
-          className="sticky top-0 z-50 flex items-center justify-between px-4 pt-6 pb-4 border-b border-[#a59d94]/60 shadow-[0_4px_16px_-2px_rgba(58,45,39,0.12),0_1px_0px_rgba(255,255,255,0.6)_inset]"
-          style={{
-            backgroundColor: '#FAF7F2',
-            backgroundImage: 'var(--bg-pattern)',
-            backgroundRepeat: 'repeat',
-            backgroundSize: '240px 240px'
-          }}
+          className="sticky top-0 z-50 flex items-center justify-between px-4 pt-6 pb-4 border-b border-[#a59d94]/60 shadow-[0_4px_16px_-2px_rgba(58,45,39,0.12),0_1px_0px_rgba(255,255,255,0.6)_inset] bg-[#FAF7F2]/80 backdrop-blur-md"
         >
           <div className="flex items-center gap-3">
             <img src="/logo.png" alt="Grace Community" className="w-10 h-10 object-contain" />

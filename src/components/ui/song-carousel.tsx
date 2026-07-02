@@ -114,10 +114,11 @@ export const SongCarousel: React.FC<SongCarouselProps> = ({
     >
       <div className="container mx-auto px-0">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary via-primary-glow to-accent bg-clip-text text-transparent mb-6">
+          <span className="section-heading">Worship</span>
+          <h2 className="section-title mt-5">
             Worship Music
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+          <p className="section-subtitle mt-4">
             Listen to our collection of worship songs, hymns, and spiritual
             music. Let these melodies lift your spirit and draw you closer
             to God.

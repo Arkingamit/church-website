@@ -74,8 +74,8 @@ export default function CheckInPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] pb-24" style={{ backgroundImage: 'var(--bg-pattern)', backgroundRepeat: 'repeat', backgroundSize: '240px 240px' }}>
-      <div className="sticky top-0 z-50 bg-[#FAF7F2] border-b border-[#E5D5C5] shadow-sm pt-4 pb-4 px-4" style={{ backgroundImage: 'var(--bg-pattern)', backgroundRepeat: 'repeat', backgroundSize: '240px 240px' }}>
+    <div className="min-h-screen bg-transparent pb-24">
+      <div className="sticky top-0 z-50 bg-[#FAF7F2]/80 backdrop-blur-md border-b border-[#E5D5C5]/40 shadow-sm pt-4 pb-4 px-4">
         <div className="flex items-center gap-3">
           <Link href="/" className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#7A6150] shadow-sm shrink-0 hover:bg-[#F3EAE1] transition-colors">
             <ChevronLeft className="w-5 h-5" />

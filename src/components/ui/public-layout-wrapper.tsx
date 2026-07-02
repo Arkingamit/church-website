@@ -19,12 +19,7 @@ export function PublicLayoutWrapper({ children }: { children: React.ReactNode })
 
   return (
     <div 
-      className="flex min-h-screen flex-col bg-[#FAF7F2] md:bg-background overflow-x-hidden"
-      style={{
-        backgroundImage: 'var(--bg-pattern)',
-        backgroundRepeat: 'repeat',
-        backgroundSize: '240px 240px'
-      }}
+      className="flex min-h-screen flex-col bg-transparent overflow-x-hidden"
     >
       <div className="hidden md:block">
         <Navigation />

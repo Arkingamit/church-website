@@ -27,13 +27,7 @@ export function MobileBottomNav() {
     return (
         <nav className="fixed inset-x-0 bottom-0 z-50 md:hidden pb-[env(safe-area-inset-bottom)]">
             <div 
-                className="mx-auto max-w-screen-sm border-t border-[#a59d94]/60 px-2 pt-2 pb-2 shadow-[0_-4px_16px_-2px_rgba(58,45,39,0.12),0_1px_0px_rgba(255,255,255,0.6)_inset]"
-                style={{
-                    backgroundColor: '#FAF7F2',
-                    backgroundImage: 'var(--bg-pattern)',
-                    backgroundRepeat: 'repeat',
-                    backgroundSize: '240px 240px'
-                }}
+                className="mx-auto max-w-screen-sm border-t border-[#a59d94]/60 px-2 pt-2 pb-2 shadow-[0_-4px_16px_-2px_rgba(58,45,39,0.12),0_1px_0px_rgba(255,255,255,0.6)_inset] bg-[#FAF7F2]/80 backdrop-blur-md"
             >
                 <div className="grid grid-cols-4 gap-1">
                     {navItems.map((item) => {

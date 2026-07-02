@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 
 export default function VisitPage() {
   return (
-    <div className="min-h-screen bg-[#FAF7F2] pb-24 md:pb-12 text-[#3A2D27] selection:bg-[#8B2323]/20">
+    <div className="min-h-screen bg-transparent pb-24 md:pb-12 text-[#3A2D27] selection:bg-[#8B2323]/20">
       <Navigation />
 
       {/* Hero Section */}

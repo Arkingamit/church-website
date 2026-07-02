@@ -47,7 +47,7 @@ export default function QRCheckInPage() {
   }, [sessionId]);
 
   return (
-    <div className="min-h-screen bg-[#FAF7F2] flex flex-col p-4" style={{ backgroundImage: 'var(--bg-pattern)', backgroundRepeat: 'repeat', backgroundSize: '240px 240px' }}>
+    <div className="min-h-screen bg-transparent flex flex-col p-4">
       <div className="flex-1 flex flex-col items-center justify-center max-w-md mx-auto w-full space-y-6">
         
         <div className="text-center">

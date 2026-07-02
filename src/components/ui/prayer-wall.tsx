@@ -149,9 +149,10 @@ function PrayerWallWidgetLayout() {
     <section id="prayers" className="py-10 sm:py-16">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center space-y-4 mb-12">
-            <h2 className="text-4xl font-bold border-l-4 border-[#8B2323] pl-3 py-0.5 leading-none md:border-l-0 md:pl-0">Prayer Wall</h2>
-            <p className="text-xl text-muted-foreground">
+          <div className="text-center space-y-5 mb-12">
+            <span className="section-heading">Community</span>
+            <h2 className="section-title">Prayer Wall</h2>
+            <p className="section-subtitle">
               Share your prayer requests and pray for others in our community
             </p>
           </div>

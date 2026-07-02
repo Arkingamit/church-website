@@ -26,13 +26,11 @@ export function SermonsPreview() {
       <div className="container mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-14">
-          <Badge className="bg-primary/10 text-primary border-0 mb-4 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider">
-            Latest Messages
-          </Badge>
-          <h2 className="text-4xl lg:text-5xl font-bold mb-4">
-            <span className="gradient-text">Sermons</span>
+          <span className="section-heading">Latest Messages</span>
+          <h2 className="section-title mt-5">
+            Sermons
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="section-subtitle mt-4">
             Life-changing messages that inspire, encourage, and strengthen your faith journey.
           </p>
         </div>

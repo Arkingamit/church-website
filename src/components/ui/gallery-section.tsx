@@ -138,13 +138,18 @@ function GalleryWidgetLayout() {
   const hasMore = galleryAlbums.length > (displayRows.length * 3);
 
   return (
-    <section id="gallery" className="py-10 sm:py-16 bg-background">
+    <section id="gallery" className="py-10 sm:py-16 bg-transparent">
       <div className="container mx-auto px-4">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-6xl mx-auto relative bg-white/60 dark:bg-card/60 backdrop-blur-2xl border-4 border-white shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] rounded-[3rem] p-8 sm:p-12 transition-all duration-700 hover:shadow-[0_45px_70px_-15px_rgba(139,35,35,0.2)] hover:-translate-y-2">
+          {/* Inner bezel to give 3D frame depth */}
+          <div className="absolute inset-0 border-[3px] border-white/50 rounded-[3rem] pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent rounded-[3rem] pointer-events-none" />
+          
           {/* Section Header */}
-          <div className="text-center space-y-4 mb-12">
-            <h2 className="text-4xl font-bold text-heading">Photo Gallery</h2>
-            <p className="text-xl text-subheading">
+          <div className="relative z-10 text-center space-y-5 mb-12">
+            <span className="section-heading">Gallery</span>
+            <h2 className="section-title">Photo Gallery</h2>
+            <p className="section-subtitle">
               Capturing moments of faith, fellowship, and community
             </p>
           </div>
@@ -198,7 +203,7 @@ function GalleryWidgetLayout() {
                       return (
                         <div
                           key={album.id}
-                          className={`relative overflow-hidden rounded-2xl cursor-pointer transition-all duration-500 ease-out glass-card border-0 ${
+                          className={`relative overflow-hidden rounded-2xl cursor-pointer transition-all duration-500 ease-out glass-card border border-white/10 gallery-3d-card ${
                             isHovered ? 'flex-[2.5]' : shouldCompress ? 'flex-[0.6]' : 'flex-1'
                           }`}
                           onMouseEnter={() => setHoveredId(album.id)}
@@ -220,7 +225,7 @@ function GalleryWidgetLayout() {
 
                           <Badge 
                             variant="glass"
-                            className={`absolute top-4 left-4 border-0 transition-opacity duration-300 ${
+                            className={`absolute top-4 left-4 border-0 transition-opacity duration-300 gallery-3d-card-inner ${
                               shouldCompress ? 'opacity-0' : 'opacity-100'
                             }`}
                           >
@@ -228,13 +233,13 @@ function GalleryWidgetLayout() {
                           </Badge>
 
                           <div className={`absolute inset-0 transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
-                            <div className="absolute bottom-0 left-0 right-0 p-8 text-white space-y-1">
+                            <div className="absolute bottom-0 left-0 right-0 p-8 text-white space-y-1 gallery-3d-card-inner">
                               <h3 className="text-2xl font-bold italic tracking-tight">{album.title}</h3>
                             </div>
                           </div>
 
                           {!isHovered && (
-                            <div className={`absolute bottom-6 left-6 right-6 transition-opacity duration-300 ${shouldCompress ? 'opacity-0' : 'opacity-100'}`}>
+                            <div className={`absolute bottom-6 left-6 right-6 transition-opacity duration-300 gallery-3d-card-inner ${shouldCompress ? 'opacity-0' : 'opacity-100'}`}>
                                <h3 className="text-xl font-bold text-white italic truncate">{album.title}</h3>
                             </div>
                           )}

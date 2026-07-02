@@ -123,7 +123,6 @@ export const HeroSection = () => {
   return (
     <section className="relative py-20 sm:py-32 overflow-hidden">
       {/* Advanced Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-prayer/5" />
       <div className="absolute inset-0" style={{ backgroundImage: 'var(--gradient-mesh)' }} />
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-float" />
       <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-accent/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
@@ -131,10 +130,9 @@ export const HeroSection = () => {
       <div className="container mx-auto px-6 relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Hero Content */}
-          <div className="space-y-8 lg:space-y-12">
-            
+          <div className="w-full flex justify-center lg:justify-start">
             {/* White Card Container */}
-            <div className="bg-white/80 dark:bg-card/80 backdrop-blur-md rounded-[2.5rem] p-8 sm:p-12 shadow-xl border border-white/20 animate-slide-up flex flex-col items-center text-center space-y-8">
+            <div className="bg-white/80 dark:bg-card/80 backdrop-blur-md rounded-[2.5rem] p-8 sm:p-12 shadow-xl border border-white/20 animate-slide-up flex flex-col items-center text-center space-y-8 w-full max-w-2xl">
               
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.15] font-heading text-primary">
                 Welcome to <br className="block" />
@@ -155,22 +153,6 @@ export const HeroSection = () => {
                 </Button>
               </div>
 
-            </div>
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-8 pt-4 animate-slide-up" style={{ animationDelay: '0.4s' }}>
-              <div className="text-center group">
-                <div className="text-4xl lg:text-5xl font-bold text-primary group-hover:scale-110 transition-transform duration-300">2,500</div>
-                <div className="text-xs sm:text-sm font-semibold text-muted-foreground mt-2">Members</div>
-              </div>
-              <div className="text-center group">
-                <div className="text-4xl lg:text-5xl font-bold text-primary group-hover:scale-110 transition-transform duration-300">25+</div>
-                <div className="text-xs sm:text-sm font-semibold text-muted-foreground mt-2">Small Groups</div>
-              </div>
-              <div className="text-center group">
-                <div className="text-4xl lg:text-5xl font-bold text-primary group-hover:scale-110 transition-transform duration-300">15</div>
-                <div className="text-xs sm:text-sm font-semibold text-muted-foreground mt-2">Years Serving</div>
-              </div>
             </div>
           </div>
 
@@ -231,11 +213,11 @@ export const HeroSection = () => {
                 const stackZIndex = ['z-30', 'z-20', 'z-10'];
                 const stackOpacity = ['opacity-100', 'opacity-80', 'opacity-60'];
                 const borderColors = [
-                  'border-primary',
-                  'border-prayer',
-                  'border-accent',
-                  'border-success',
-                  'border-destructive',
+                  'border-primary/30',
+                  'border-prayer/30',
+                  'border-accent/30',
+                  'border-success/30',
+                  'border-destructive/30',
                 ];
 
                 const stack: { item: FlipCardItem; originalIndex: number; stackPos: number }[] = [];
@@ -258,7 +240,7 @@ export const HeroSection = () => {
                             key={item.id || originalIndex}
                             className={`absolute inset-0 transition-all duration-500 ease-out ${stackRotations[stackPos]} ${stackScales[stackPos]} ${stackTranslateY[stackPos]} ${stackZIndex[stackPos]} ${stackOpacity[stackPos]}`}
                           >
-                            <Card className={`p-8 w-full h-full shadow-2xl border-4 ${borderColors[originalIndex % borderColors.length]} flex flex-col justify-center items-center text-center bg-gradient-to-br ${cardGradients[originalIndex % cardGradients.length]} backdrop-blur-md rounded-2xl`}>
+                            <Card className={`p-8 w-full h-full shadow-2xl border-2 ${borderColors[originalIndex % borderColors.length]} flex flex-col justify-center items-center text-center bg-gradient-to-br ${cardGradients[originalIndex % cardGradients.length]} backdrop-blur-md rounded-2xl`}>
                               <div className="space-y-5 w-full">
                                 <div className="mx-auto w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
                                   {christianIcons[originalIndex % christianIcons.length]}

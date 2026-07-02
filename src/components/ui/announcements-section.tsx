@@ -47,9 +47,10 @@ export const AnnouncementsSection = ({ preview = false }: { preview?: boolean })
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           {/* Section Header */}
-          <div className="text-center space-y-4 mb-8">
-            <h2 className="text-4xl font-bold">Church Announcements</h2>
-            <p className="text-xl text-muted-foreground">
+          <div className="text-center space-y-5 mb-10">
+            <span className="section-heading">Announcements</span>
+            <h2 className="section-title">Church Announcements</h2>
+            <p className="section-subtitle">
               Stay connected with what's happening in our community
             </p>
           </div>

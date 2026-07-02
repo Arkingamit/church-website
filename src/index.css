@@ -10,7 +10,7 @@
 @layer base {
   :root {
     /* Sanctuary Modern Design Tokens */
-    --background: 210 17% 98%; /* #f8f9fa Parchment/Off-white */
+    --background: 38 30% 96%; /* #FAF7F2 Warm Cream/Parchment */
     --foreground: 195 7% 11%; /* #191c1d Charcoal Slate */
 
     --card: 0 0% 100%; /* #ffffff Pure White */
@@ -203,5 +203,65 @@
     30% { transform: rotate(5deg); }
     35% { transform: rotate(0); }
     100% { transform: rotate(0); }
+  }
+
+  .gallery-3d-card {
+    transition: transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.5s ease, flex 0.5s ease-out;
+    transform-style: preserve-3d;
+    perspective: 1000px;
+    box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.1);
+  }
+
+  .gallery-3d-card:hover {
+    transform: rotateY(-8deg) rotateX(4deg) translateZ(12px) scale(1.02);
+    box-shadow: 0 30px 60px -12px rgba(129, 0, 8, 0.22);
+  }
+
+  .gallery-3d-card-inner {
+    transform: translateZ(30px);
+    transition: transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+
+  .section-heading {
+    display: inline-block;
+    background: linear-gradient(135deg, #8B2323 0%, #5C1111 50%, #3A0A0A 100%);
+    color: #fff;
+    padding: 0.6rem 2.5rem;
+    border-radius: 9999px;
+    font-size: 1.125rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    box-shadow: 0 4px 20px -4px rgba(139, 35, 35, 0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+    position: relative;
+  }
+
+  .section-heading::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.05));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .section-title {
+    font-size: clamp(2.25rem, 4vw, 3.25rem);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+
+  .section-subtitle {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    color: hsl(var(--muted-foreground));
+    max-width: 36rem;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.6;
   }
 }

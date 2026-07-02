@@ -7,7 +7,7 @@ import { EventsSection } from "@/components/ui/events-section";
 
 export default function EventsPage() {
   return (
-    <div className="min-h-screen bg-[#FAF7F2] pb-24 md:pb-12 text-[#3A2D27]">
+    <div className="min-h-screen bg-transparent pb-24 md:pb-12 text-[#3A2D27]">
       <Navigation />
       <EventsSection variant="page" />
       <MobileBottomNav />
