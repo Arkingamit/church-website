@@ -12,24 +12,7 @@ import { useAuth } from '@/lib/auth-context';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 
-import gallery1 from '@/assets/gallery-1.jpg';
-import gallery2 from '@/assets/gallery-2.jpg';
-import gallery3 from '@/assets/gallery-3.jpg';
-import gallery4 from '@/assets/gallery-4.jpg';
-import gallery5 from '@/assets/gallery-5.jpg';
-import gallery6 from '@/assets/gallery-6.jpg';
-
 const ITEMS_PER_PAGE = 6;
-
-
-const photos = [
-  { id: 1, src: gallery1, title: "Sunday Morning Worship", category: "Worship" },
-  { id: 2, src: gallery2, title: "Community Fellowship", category: "Fellowship"  },
-  { id: 3, src: gallery3, title: "South Gujarat", category: "Group"},
-  { id: 4, src: gallery4, title: "Youth Group Fun", category: "Youth"},
-  { id: 5, src: gallery5, title: "Traditional Day Celebration", category: "Traditional Day"},
-  { id: 6, src: gallery6, title: "Cricket Match", category: "Cricket"},
-];
 
 const categoryColors = {
   Worship: "bg-worship text-worship-text",
