@@ -6,6 +6,7 @@ import { Camera as LucideCamera, X, QrCode, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Capacitor } from '@capacitor/core';
 import { Camera } from '@capacitor/camera';
+import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
 
 declare global {
   interface Window {
@@ -192,7 +193,20 @@ export function SessionQRScanner({ onClose }: SessionQRScannerProps) {
                 onClick={async () => {
                   try {
                     if (Capacitor.isNativePlatform()) {
-                      await Camera.requestPermissions({ permissions: ['camera'] });
+                      try {
+                        const status = await Camera.requestPermissions({ permissions: ['camera'] });
+                        if (status.camera === 'denied') {
+                          throw new Error('denied');
+                        }
+                      } catch (err) {
+                        // User permanently denied or plugin threw error
+                        if (Capacitor.getPlatform() === 'ios') {
+                          await NativeSettings.openIOS({ option: IOSSettings.App });
+                        } else {
+                          await NativeSettings.openAndroid({ option: AndroidSettings.ApplicationDetails });
+                        }
+                        return; // Stop trying to load
+                      }
                     } else {
                       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
                       stream.getTracks().forEach(t => t.stop());

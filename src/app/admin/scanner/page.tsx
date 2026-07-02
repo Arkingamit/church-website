@@ -9,6 +9,8 @@ import { Camera, QrCode, UserCheck, XCircle, Loader2, RefreshCw } from 'lucide-r
 import { toast } from 'sonner';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
+import { Camera } from '@capacitor/camera';
+import { NativeSettings, AndroidSettings, IOSSettings } from 'capacitor-native-settings';
 
 declare global {
   interface Window {
@@ -169,6 +171,24 @@ export default function LeaderScannerPage() {
           script.onerror = () => reject(new Error('Failed to load QR scanner library'));
           document.head.appendChild(script);
         });
+      }
+
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const status = await Camera.requestPermissions({ permissions: ['camera'] });
+          if (status.camera === 'denied') {
+            throw new Error('denied');
+          }
+        } catch (e) {
+          if (Capacitor.getPlatform() === 'ios') {
+            await NativeSettings.openIOS({ option: IOSSettings.App });
+          } else {
+            await NativeSettings.openAndroid({ option: AndroidSettings.ApplicationDetails });
+          }
+          setIsScanning(false);
+          setScannerError('Camera access denied. Please allow it in settings.');
+          return;
+        }
       }
 
       const scannerId = 'e-pass-scanner';
