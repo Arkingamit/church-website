@@ -92,8 +92,8 @@ export default function HomePage() {
 
         {/* 2. Announcements */}
         <section className="bg-background relative z-10 py-24 sm:py-32 border-b border-border/50">
-          <RevealSection delay={50}>
-            <AnnouncementsSection />
+          <RevealSection delay={300}>
+            <AnnouncementsSection preview={true} />
           </RevealSection>
         </section>
 

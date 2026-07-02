@@ -77,10 +77,40 @@ export default function LeaderScannerPage() {
     await stopScanner();
     
     try {
-      const isEvent = sessions.find(s => s._id === selectedSessionId)?.type === 'event';
+      const selectedSession = sessions.find(s => s._id === selectedSessionId);
+      const isEvent = selectedSession?.type === 'event';
+      const requireGps = isEvent ? false : (selectedSession?.checkInConfig?.scannerRequireGps ?? false);
+      
+      let lat = 0;
+      let lon = 0;
+
+      if (requireGps) {
+        if (!navigator.geolocation) {
+          toast.error("Geolocation is not supported by your browser");
+          setLastScanResult({ success: false, message: 'GPS required but not supported' });
+          setTimeout(() => { setLastScanResult(null); startScanner(); }, 3000);
+          return;
+        }
+
+        try {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { 
+              enableHighAccuracy: true, timeout: 5000, maximumAge: 0 
+            });
+          });
+          lat = position.coords.latitude;
+          lon = position.coords.longitude;
+        } catch (err) {
+          toast.error("Failed to get your location. GPS is required for this session.");
+          setLastScanResult({ success: false, message: 'Failed to get GPS location' });
+          setTimeout(() => { setLastScanResult(null); startScanner(); }, 3000);
+          return;
+        }
+      }
+
       const body = isEvent 
-        ? { eventId: selectedSessionId, qrCode: qrCodeText }
-        : { sessionId: selectedSessionId, qrCode: qrCodeText };
+        ? { eventId: selectedSessionId, qrCode: qrCodeText, latitude: lat, longitude: lon }
+        : { sessionId: selectedSessionId, qrCode: qrCodeText, latitude: lat, longitude: lon };
         
       const res = await fetch('/api/attendance/leader-scan', {
         method: 'POST',

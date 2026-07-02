@@ -6,7 +6,8 @@ import { useAuth } from '@/lib/auth-context';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Pin, Share2, Heart, Building2, Users } from 'lucide-react';
+import Link from 'next/link';
+import { Calendar, Pin, Building2, Users, ChevronRight } from 'lucide-react';
 
 const categoryColors: Record<string, string> = {
   Worship: "bg-primary/10 text-primary",
@@ -16,7 +17,7 @@ const categoryColors: Record<string, string> = {
   Urgent: "bg-destructive/10 text-destructive"
 };
 
-export const AnnouncementsSection = () => {
+export const AnnouncementsSection = ({ preview = false }: { preview?: boolean }) => {
   const { campuses, groups, getVisibleAnnouncements } = useAdminData();
   const { getSessionMember, getEffectiveGroups } = useAuth();
   const [selectedCampus] = useState('all');
@@ -54,72 +55,73 @@ export const AnnouncementsSection = () => {
           </div>
 
           {/* Announcements List */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             {visibleAnnouncements.length === 0 && (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">No announcements for your selection.</p>
                 <p className="text-sm text-muted-foreground mt-1">Try selecting a different campus or group.</p>
               </div>
             )}
-            {visibleAnnouncements.map((announcement) => (
-              <Card key={announcement.id} className="overflow-hidden hover:shadow-elevated transition-all duration-300">
-                <CardHeader className="pb-4">
+            {(preview ? visibleAnnouncements.slice(0, 3) : visibleAnnouncements).map((announcement) => (
+              <Card key={announcement.id} className="overflow-hidden hover:shadow-elevated transition-all duration-300 border-[#E5D5C5]/60 shadow-sm rounded-3xl">
+                <CardHeader className="pb-3 pt-5">
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 space-y-2">
+                    <div className="flex-1 space-y-1.5">
                       <div className="flex items-center gap-2">
                         {announcement.isPinned && (
-                          <Pin className="w-4 h-4 text-accent fill-current" />
+                          <Pin className="w-3.5 h-3.5 text-[#8B2323] fill-current" />
                         )}
 
                         {/* Show targeting info */}
                         {!announcement.targetCampuses?.includes('all') && (
-                          <Badge variant="outline" className="text-[9px] gap-1">
+                          <Badge variant="outline" className="text-[9px] gap-1 px-1.5 py-0 bg-[#F3EAE1] text-[#7A6150] border-[#E5D5C5]">
                             <Building2 className="w-2.5 h-2.5" />
                             {announcement.targetCampuses?.map(id => campuses.find(c => c.id === id)?.name || id).join(', ')}
                           </Badge>
                         )}
                         {!announcement.targetGroups?.includes('all') && (
-                          <Badge variant="outline" className="text-[9px] gap-1">
+                          <Badge variant="outline" className="text-[9px] gap-1 px-1.5 py-0 bg-[#F3EAE1] text-[#7A6150] border-[#E5D5C5]">
                             <Users className="w-2.5 h-2.5" />
                             {announcement.targetGroups?.join(', ')}
                           </Badge>
                         )}
                       </div>
-                      <h3 className="text-xl font-semibold leading-tight">
+                      <h3 className="text-xl font-bold leading-tight text-[#1A202C]">
                         {announcement.title}
                       </h3>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        {announcement.reminderDate && announcement.reminderTime && (
-                          <div className="flex items-center gap-1 text-blue-500">
-                            <Calendar className="w-3 h-3" />
-                            <span>Scheduled for {announcement.reminderDate} at {announcement.reminderTime}</span>
-                          </div>
-                        )}
-                      </div>
+                      {announcement.reminderDate && announcement.reminderTime && (
+                        <div className="flex items-center gap-1 text-xs font-semibold text-blue-500">
+                          <Calendar className="w-3 h-3" />
+                          <span>Scheduled for {announcement.reminderDate} at {announcement.reminderTime}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
                 
-                <CardContent className="pt-0">
-                  <p className="text-muted-foreground leading-relaxed mb-4">
+                <CardContent className="pt-0 pb-5">
+                  <p className="text-[#7A6150] text-sm leading-relaxed mb-4 line-clamp-3">
                     {announcement.content}
                   </p>
                   
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <Button variant="ghost" size="sm" className="gap-2">
-                        <Heart className="w-4 h-4" />
-                        <span>{announcement.reactions}</span>
+                  <div className="flex items-center justify-end">
+                    <Link href={`/announcements`}>
+                      <Button variant="outline" size="sm" className="text-xs font-bold h-8 rounded-full border-[#E5D5C5] text-[#7A6150] hover:text-[#8B2323] hover:bg-[#FBE8E8]">
+                        Read More
                       </Button>
-
-                    </div>
-                    <Button variant="outline" size="sm">
-                      Read More
-                    </Button>
+                    </Link>
                   </div>
                 </CardContent>
               </Card>
             ))}
+
+            {preview && visibleAnnouncements.length > 3 && (
+              <div className="mt-4 flex justify-center">
+                <Link href="/announcements" className="text-[#8B2323] text-sm font-bold flex items-center hover:underline">
+                  See all <ChevronRight className="w-4 h-4 ml-1" />
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>

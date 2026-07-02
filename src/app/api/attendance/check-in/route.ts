@@ -75,6 +75,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Session/Event not found' }, { status: 404 });
     }
 
+    const selfCheckInEnabled = actualType === 'session' ? (attTarget.checkInConfig?.selfCheckInEnabled ?? true) : true;
+    const selfCheckInRequireGps = actualType === 'session' ? (attTarget.checkInConfig?.selfCheckInRequireGps ?? true) : true;
+
+    if (!selfCheckInEnabled) {
+      return NextResponse.json({ 
+        error: 'Not allowed', 
+        message: 'Self check-in is not enabled for this session. Please see a leader.' 
+      }, { status: 403 });
+    }
+
     // Verify time window
     const now = new Date();
     const currentHours = String(now.getHours()).padStart(2, '0');
@@ -89,18 +99,29 @@ export async function POST(req: Request) {
     }
 
     // Calculate distance using Haversine formula
-    const distance = getDistanceFromLatLonInMeters(
-      latitude, 
-      longitude, 
-      targetLat, 
-      targetLon
-    );
+    let distance = 0;
+    
+    if (selfCheckInRequireGps) {
+      if (latitude === 0 && longitude === 0) {
+        return NextResponse.json({ 
+          error: 'GPS required', 
+          message: 'GPS location is required to check in to this session.' 
+        }, { status: 400 });
+      }
 
-    if (distance > radius) {
-      return NextResponse.json({ 
-        error: 'Out of range', 
-        message: `You are too far away. Distance: ${Math.round(distance)}m. Max allowed: ${radius}m.` 
-      }, { status: 400 });
+      distance = getDistanceFromLatLonInMeters(
+        latitude, 
+        longitude, 
+        targetLat, 
+        targetLon
+      );
+
+      if (distance > radius) {
+        return NextResponse.json({ 
+          error: 'Out of range', 
+          message: `You are too far away. Distance: ${Math.round(distance)}m. Max allowed: ${radius}m.` 
+        }, { status: 400 });
+      }
     }
 
     // Today's date string for per-day duplicate check (supports recurring sessions)

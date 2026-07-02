@@ -95,6 +95,29 @@ const CACHE_KEY = 'attendanceSessions';
 const CHECKED_KEY = 'attendanceCheckedDates';
 
 /**
+ * Send a browser push notification to remind the user to check in.
+ */
+function sendAttendanceNotification(session: any) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') {
+    return;
+  }
+  const title = `Time to Check In: ${session.title || 'Church Service'}`;
+  const options = {
+    body: 'Please tap here to turn on GPS and mark your attendance.',
+    icon: '/favicon.ico',
+    tag: `attendance-${session._id}`
+  };
+  
+  const notification = new Notification(title, options);
+  notification.onclick = () => {
+    window.focus();
+    // In a real app we might route them to a specific check-in screen,
+    // but focusing the window gives them the chance to use the quick action button.
+    notification.close();
+  };
+}
+
+/**
  * GlobalAttendancePrompt — completely invisible.
  * 
  * Flow:
@@ -165,13 +188,49 @@ export function GlobalAttendancePrompt() {
           const endTime = s.endTime;
           if (!startTime || !endTime) return false;
 
+          // Check if self check-in is allowed
+          if (s.type === 'session' && s.checkInConfig?.selfCheckInEnabled === false) return false;
+
           return isWithinTimeWindow(startTime, endTime);
         });
 
         if (!eligibleSession) return;
 
-        // --- Step 3: Silently get GPS and check if within geofence ---
-        if (!navigator.geolocation) return;
+        // If GPS is not required, check in immediately
+        const requireGps = eligibleSession.type === 'session' ? (eligibleSession.checkInConfig?.selfCheckInRequireGps ?? true) : true;
+        if (!requireGps) {
+          try {
+            const res = await fetch('/api/attendance/check-in', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: eligibleSession._id,
+                type: eligibleSession.type || 'session',
+                latitude: 0,
+                longitude: 0
+              })
+            });
+
+            if (res.ok) {
+              checkedDates[`${eligibleSession._id}::${todayKey}`] = 'checked-in';
+              localStorage.setItem(CHECKED_KEY, JSON.stringify(checkedDates));
+            }
+          } catch {
+            // Silently fail
+          }
+          return;
+        }
+
+        // --- Step 3: Request notification permission early ---
+        if ('Notification' in window && Notification.permission === 'default') {
+          Notification.requestPermission().catch(() => {});
+        }
+
+        // --- Step 4: Silently get GPS and check if within geofence ---
+        if (!navigator.geolocation) {
+          sendAttendanceNotification(eligibleSession);
+          return;
+        }
 
         navigator.geolocation.getCurrentPosition(
           async (position) => {
@@ -191,7 +250,7 @@ export function GlobalAttendancePrompt() {
               return;
             }
 
-            // --- Step 4: User IS at the location — send check-in to server ---
+            // --- Step 5: User IS at the location — send check-in to server ---
             try {
               const res = await fetch('/api/attendance/check-in', {
                 method: 'POST',
@@ -213,7 +272,13 @@ export function GlobalAttendancePrompt() {
             }
           },
           () => {
-            // Location denied — nothing we can do
+            // Location denied — send a notification to remind the user
+            const notifKey = `${eligibleSession._id}::${todayKey}`;
+            if (!checkedDates[`notif::${notifKey}`]) {
+              sendAttendanceNotification(eligibleSession);
+              checkedDates[`notif::${notifKey}`] = 'notified';
+              localStorage.setItem(CHECKED_KEY, JSON.stringify(checkedDates));
+            }
           },
           { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
         );

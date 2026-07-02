@@ -88,7 +88,7 @@ export default function ProfilePage() {
                       alt="Member ePass QR Code"
                       width={180}
                       height={180}
-                      className="rounded-lg mix-blend-multiply"
+                      className="mix-blend-multiply"
                     />
                   </div>
                   

@@ -32,11 +32,21 @@ import { toast } from 'sonner';
 
 
 export default function WorshipManagementPage() {
-  const { worshipVideos, addWorshipVideo, updateWorshipVideo, deleteWorshipVideo } = useAdminData();
+  const { worshipVideos, addWorshipVideo, updateWorshipVideo, deleteWorshipVideo, currentUser } = useAdminData();
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  if (currentUser.role !== 'admin' && currentUser.role !== 'super_admin') {
+    return (
+      <div className="text-center py-16">
+        <AlertCircle className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
+        <p className="text-lg font-semibold">Admin Access Required</p>
+        <p className="text-muted-foreground mt-1">Only Administrators can manage the carousel videos.</p>
+      </div>
+    );
+  }
 
   const initialForm = {
     title: '',
@@ -94,11 +104,11 @@ export default function WorshipManagementPage() {
   );
 
   const featuredCount = worshipVideos.filter(v => v.isFeatured).length;
-  const isMinRequirementMet = featuredCount >= 8;
+  const isMinRequirementMet = featuredCount >= 10;
 
   const handleToggleFeatured = (video: WorshipVideo) => {
-    if (!video.isFeatured && featuredCount >= 10) {
-      toast.error('Maximum 10 videos can be featured. Unfeature one first.');
+    if (!video.isFeatured && featuredCount >= 15) {
+      toast.error('Maximum 15 videos can be featured. Unfeature one first.');
       return;
     }
     updateWorshipVideo(video.id, { isFeatured: !video.isFeatured });
@@ -131,7 +141,7 @@ export default function WorshipManagementPage() {
                 {isMinRequirementMet ? 'Requirement Met' : 'Requirement Not Met'}
               </p>
               <p className="text-sm text-muted-foreground">
-                Minimum <strong>8 videos</strong> required for the home page carousel (Max 10). Current featured: <strong>{featuredCount}</strong> / 10
+                Minimum <strong>10 videos</strong> required for the home page carousel (Max 15). Current featured: <strong>{featuredCount}</strong> / 15
               </p>
             </div>
           </div>
@@ -139,7 +149,7 @@ export default function WorshipManagementPage() {
             <div className="w-48 h-2 bg-muted rounded-full overflow-hidden">
               <div 
                 className={`h-full transition-all duration-500 ${isMinRequirementMet ? 'bg-emerald-500' : 'bg-amber-500'}`}
-                style={{ width: `${Math.min((featuredCount / 10) * 100, 100)}%` }}
+                style={{ width: `${Math.min((featuredCount / 15) * 100, 100)}%` }}
               />
             </div>
           </div>

@@ -14,6 +14,12 @@ export interface IAttendanceSession extends Document {
   recurrenceDay?: string; // e.g. 'Monday', 'Sunday'
   recurrenceWeekOfMonth?: string; // e.g. '1st', '2nd', 'last'
   recurrenceEndDate?: string;
+  checkInConfig?: {
+    selfCheckInEnabled: boolean;
+    selfCheckInRequireGps: boolean;
+    scannerEnabled: boolean;
+    scannerRequireGps: boolean;
+  };
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
@@ -34,6 +40,12 @@ const AttendanceSessionSchema = new Schema<IAttendanceSession>(
     recurrenceDay: { type: String },
     recurrenceWeekOfMonth: { type: String },
     recurrenceEndDate: { type: String },
+    checkInConfig: {
+      selfCheckInEnabled: { type: Boolean, default: true },
+      selfCheckInRequireGps: { type: Boolean, default: true },
+      scannerEnabled: { type: Boolean, default: true },
+      scannerRequireGps: { type: Boolean, default: false },
+    },
     createdBy: { type: String, required: true },
   },
   { timestamps: true }

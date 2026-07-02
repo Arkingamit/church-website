@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { LogOut, User, Sun, Moon } from 'lucide-react';
+import { LogOut, User, Sun, Moon, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
 
@@ -45,6 +45,20 @@ export const Navigation = () => {
   const { session, logout } = useAuth();
   const router = useRouter();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [hasActiveSession, setHasActiveSession] = useState(false);
+
+  useEffect(() => {
+    if (session) {
+      fetch('/api/attendance/active?all=true')
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data) && data.length > 0) {
+            setHasActiveSession(true);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [session]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -111,7 +125,7 @@ export const Navigation = () => {
         <img
           src="/logo.png"
           alt="Grace Ahmedabad Logo"
-          className="w-10 h-10 sm:w-16 sm:h-16 object-contain opacity-90"
+          className="w-20 h-0 sm:w-16 sm:h-16 object-contain opacity-90"
         />
       </div>
     </Link>
@@ -151,6 +165,15 @@ export const Navigation = () => {
             <div className="px-3 py-2.5 border-b border-border bg-muted/30">
               <p className="text-xs text-muted-foreground truncate">{session.email}</p>
             </div>
+            {hasActiveSession && (
+              <Link
+                href="/profile"
+                onClick={() => setUserMenuOpen(false)}
+                className="w-full flex items-center gap-2 px-3 py-2.5 text-sm font-semibold text-[#8B2323] hover:bg-muted transition-colors border-b border-border"
+              >
+                <QrCode className="w-4 h-4" /> My ePass
+              </Link>
+            )}
             {(session.role === 'admin' || session.role === 'super_admin' || session.role === 'campus_leader') && (
               <Link
                 href="/admin"

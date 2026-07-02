@@ -19,8 +19,30 @@ export const LiveStreamSection = ({ variant = 'widget' }: { variant?: 'page' | '
 
 function LiveStreamWidgetLayout() {
   const { liveStreams, campuses, currentUser } = useAdminData();
-  const [selectedCampus, setSelectedCampus] = useState(currentUser?.campusId || 'main');
-  const [viewerCount, setViewerCount] = useState(234);
+
+  // Smart campus selection: prioritize user's live campus, then any live campus
+  const bestCampus = React.useMemo(() => {
+    const liveCampuses = liveStreams.filter((ls: any) => ls.isLive);
+    
+    if (liveCampuses.length === 0) {
+      // No campus is live — default to user's campus
+      return currentUser?.campusId || campuses[0]?.id || 'main';
+    }
+    
+    // If user's campus is live, pick that
+    const userLive = liveCampuses.find((ls: any) => ls.campusId === currentUser?.campusId);
+    if (userLive) return userLive.campusId;
+    
+    // Otherwise pick the last one in the list (most recently added/configured)
+    return liveCampuses[liveCampuses.length - 1].campusId;
+  }, [liveStreams, currentUser?.campusId, campuses]);
+
+  const [selectedCampus, setSelectedCampus] = useState(bestCampus);
+  
+  // Keep selectedCampus in sync when bestCampus changes (e.g. a campus goes live)
+  React.useEffect(() => {
+    setSelectedCampus(bestCampus);
+  }, [bestCampus]);
   
   const activeStream = liveStreams.find((ls: any) => ls.campusId === selectedCampus);
   const isLive = activeStream?.isLive || false;
@@ -88,13 +110,7 @@ function LiveStreamWidgetLayout() {
                     </div>
                   )}
                   
-                  {/* Viewer Count Overlay */}
-                  <div className="absolute top-4 right-4 z-10">
-                    <Badge variant="secondary" className="gap-2 bg-black/70 text-white border-0">
-                      <Users className="w-3 h-3" />
-                      {viewerCount} watching
-                    </Badge>
-                  </div>
+
                 </div>
                 
                 <CardContent className="p-6">
@@ -106,18 +122,7 @@ function LiveStreamWidgetLayout() {
                       </p>
                     </div>
                     
-                    {isLive && (
-                      <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
-                        <Button className="flex-1 bg-gradient-to-r from-prayer to-prayer/80">
-                          <Heart className="w-4 h-4 mr-2" />
-                          Give Online
-                        </Button>
-                        <Button variant="outline" className="flex-1">
-                          <Users className="w-4 h-4 mr-2" />
-                          Online Connection Card
-                        </Button>
-                      </div>
-                    )}
+
                   </div>
                 </CardContent>
             </Card>

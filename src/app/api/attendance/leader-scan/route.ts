@@ -4,6 +4,7 @@ import AttendanceSession from '@/models/AttendanceSession';
 import AttendanceRecord from '@/models/AttendanceRecord';
 import User from '@/models/User';
 import { verifySession } from '@/lib/auth-utils';
+import { getDistanceFromLatLonInMeters } from '@/lib/geo-utils';
 import mongoose from 'mongoose';
 
 export async function POST(req: Request) {
@@ -27,7 +28,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { sessionId, eventId, qrCode } = body;
+    const { sessionId, eventId, qrCode, latitude, longitude } = body;
 
     if (!qrCode || (!sessionId && !eventId)) {
       return NextResponse.json({ error: 'Missing required fields (qrCode and sessionId/eventId)' }, { status: 400 });
@@ -48,6 +49,11 @@ export async function POST(req: Request) {
 
     let startTime = '';
     let endTime = '';
+    let targetLat = 0;
+    let targetLon = 0;
+    let radius = 500;
+    let scannerEnabled = true;
+    let scannerRequireGps = false;
 
     if (eventId) {
       const Event = mongoose.models.Event || mongoose.model('Event');
@@ -66,6 +72,9 @@ export async function POST(req: Request) {
 
         startTime = `${String(openTime.getHours()).padStart(2, '0')}:${String(openTime.getMinutes()).padStart(2, '0')}`;
         endTime = `${String(closeTime.getHours()).padStart(2, '0')}:${String(closeTime.getMinutes()).padStart(2, '0')}`;
+        targetLat = event.attendanceConfig.latitude;
+        targetLon = event.attendanceConfig.longitude;
+        radius = event.attendanceConfig.radius;
       }
     } else {
       const attSession = await AttendanceSession.findById(sessionId);
@@ -74,6 +83,37 @@ export async function POST(req: Request) {
       }
       startTime = attSession.startTime;
       endTime = attSession.endTime;
+      targetLat = attSession.latitude;
+      targetLon = attSession.longitude;
+      radius = attSession.radius;
+      
+      if (attSession.checkInConfig) {
+        scannerEnabled = attSession.checkInConfig.scannerEnabled ?? true;
+        scannerRequireGps = attSession.checkInConfig.scannerRequireGps ?? false;
+      }
+    }
+
+    if (!scannerEnabled) {
+      return NextResponse.json({ 
+        error: 'Not allowed', 
+        message: 'Scanner check-in is not enabled for this session.' 
+      }, { status: 403 });
+    }
+
+    if (scannerRequireGps) {
+      if (latitude === undefined || longitude === undefined || (latitude === 0 && longitude === 0)) {
+        return NextResponse.json({ 
+          error: 'Leader GPS required', 
+          message: 'Leader GPS location is required to scan for this session.' 
+        }, { status: 400 });
+      }
+      const distance = getDistanceFromLatLonInMeters(latitude, longitude, targetLat, targetLon);
+      if (distance > radius) {
+        return NextResponse.json({ 
+          error: 'Leader out of range', 
+          message: `You must be at the session location to scan members. Distance: ${Math.round(distance)}m.` 
+        }, { status: 400 });
+      }
     }
 
     // Check time window

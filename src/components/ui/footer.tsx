@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Heart, MapPin, Phone, Mail, Facebook, Instagram, Youtube, Clock } from 'lucide-react';
@@ -41,12 +42,11 @@ export const Footer = () => {
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Quick Links</h3>
             <div className="space-y-2">
-              <a href="#about" className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">About Us</a>
-              <a href="#sermons" className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">Sermons</a>
-              <a href="#events" className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">Events</a>
-              <a href="#groups" className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">Small Groups</a>
-              <a href="#give" className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">Give</a>
-              <a href="#contact" className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">Contact</a>
+              <Link href="/events" className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">Events</Link>
+              <Link href="/sermons" className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">Sermons</Link>
+              <Link href="/broadcasts" className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">Notes</Link>
+              <Link href="/gallery" className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">Gallery</Link>
+              <Link href="/prayer-wall" className="block text-primary-foreground/80 hover:text-primary-foreground transition-colors">Prayer Wall</Link>
             </div>
           </div>
 

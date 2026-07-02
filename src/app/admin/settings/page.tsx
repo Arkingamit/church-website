@@ -155,7 +155,7 @@ export default function SettingsPage() {
 
       {/* Campus Management */}
       <Card className="border-border/50">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 pb-4">
           <div>
             <CardTitle className="text-xl flex items-center gap-2">
               <Building2 className="w-5 h-5 text-primary" />
@@ -163,7 +163,7 @@ export default function SettingsPage() {
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">{campuses.length} campuses</p>
           </div>
-          <Button onClick={openCreateCampus} size="sm" className="gap-2">
+          <Button onClick={openCreateCampus} size="sm" className="gap-2 w-full sm:w-auto">
             <Plus className="w-4 h-4" /> Add Campus
           </Button>
         </CardHeader>
@@ -174,23 +174,27 @@ export default function SettingsPage() {
             return (
               <div
                 key={campus.id}
-                className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors group"
+                className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors group"
               >
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                  <Church className="w-5 h-5 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold">{campus.name}</p>
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                    <span>Led by {campus.pastor}</span>
-                    <span>·</span>
-                    <span>{memberCount} users</span>
-                    <span>·</span>
-                    <span>{leaderCount} leaders</span>
+                <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <Church className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-semibold">{campus.name}</p>
+                      <Badge variant="outline" className="text-[10px] hidden md:inline-flex">{campus.id}</Badge>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground mt-1">
+                      <span>Led by {campus.pastor}</span>
+                      <span className="hidden sm:inline">·</span>
+                      <span>{memberCount} users</span>
+                      <span className="hidden sm:inline">·</span>
+                      <span>{leaderCount} leaders</span>
+                    </div>
                   </div>
                 </div>
-                <Badge variant="outline" className="text-[10px]">{campus.id}</Badge>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity self-end sm:self-auto">
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditCampus(campus)}>
                     <Pencil className="w-3.5 h-3.5" />
                   </Button>
@@ -210,7 +214,7 @@ export default function SettingsPage() {
 
       {/* Group Management */}
       <Card className="border-border/50">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 pb-4">
           <div>
             <CardTitle className="text-xl flex items-center gap-2">
               <Users className="w-5 h-5 text-primary" />
@@ -218,7 +222,7 @@ export default function SettingsPage() {
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">{groupScopes.length} groups</p>
           </div>
-          <Button onClick={() => setGroupDialogOpen(true)} size="sm" className="gap-2">
+          <Button onClick={() => setGroupDialogOpen(true)} size="sm" className="gap-2 w-full sm:w-auto">
             <Plus className="w-4 h-4" /> Add Group
           </Button>
         </CardHeader>
@@ -229,20 +233,20 @@ export default function SettingsPage() {
               return (
                 <div
                   key={group.name}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors group/item cursor-pointer"
+                  className="flex items-center flex-wrap gap-2 px-3 py-2 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors group/item cursor-pointer"
                   onClick={() => { setManagingGroup(group.name); setMemberSearch(''); }}
                 >
-                  <Tag className="w-3.5 h-3.5 text-primary" />
+                  <Tag className="w-3.5 h-3.5 text-primary shrink-0" />
                   <span className="text-sm font-medium">{group.name}</span>
-                  <Badge variant="secondary" className="text-[10px] ml-1 bg-background">
+                  <Badge variant="secondary" className="text-[10px] ml-1 bg-background truncate max-w-[100px] sm:max-w-none">
                     {group.scope === 'global' ? 'Global' : campuses.find(c => c.id === group.scope)?.name || group.scope}
                   </Badge>
-                  <Badge variant="outline" className="text-[9px] gap-1">
+                  <Badge variant="outline" className="text-[9px] gap-1 shrink-0">
                     <Users className="w-2.5 h-2.5" />{memberCount}
                   </Badge>
                   <Button
                     variant="ghost" size="icon"
-                    className="h-6 w-6 opacity-0 group-hover/item:opacity-100 transition-opacity text-destructive hover:text-destructive"
+                    className="h-6 w-6 opacity-100 sm:opacity-0 sm:group-hover/item:opacity-100 transition-opacity text-destructive hover:text-destructive ml-auto"
                     onClick={(e) => { e.stopPropagation(); setDeleteGroupConfirm(group.name); }}
                   >
                     <Trash2 className="w-3 h-3" />

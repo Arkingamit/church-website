@@ -39,6 +39,12 @@ export default function AdminAttendancePage() {
     recurrenceDay: 'Sunday',
     recurrenceWeekOfMonth: '1st',
     recurrenceEndDate: '',
+    checkInConfig: {
+      selfCheckInEnabled: true,
+      selfCheckInRequireGps: true,
+      scannerEnabled: true,
+      scannerRequireGps: false,
+    }
   });
 
   const fetchSessions = async () => {
@@ -128,12 +134,12 @@ export default function AdminAttendancePage() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-[#1A202C]">Attendance Tracking</h1>
           <p className="text-muted-foreground mt-1">Configure geolocation attendance sessions</p>
         </div>
-        <Button onClick={() => setDialogOpen(true)} className="bg-[#8B2323] hover:bg-[#721515]">
+        <Button onClick={() => setDialogOpen(true)} className="bg-[#8B2323] hover:bg-[#721515] w-full sm:w-auto">
           <Plus className="w-4 h-4 mr-2" />
           Create Session
         </Button>
@@ -177,15 +183,15 @@ export default function AdminAttendancePage() {
                   </div>
                 </div>
                 
-                <div className="flex gap-2 pt-2 border-t">
-                  <Button variant="outline" className="flex-1" onClick={() => viewRecords(s._id)}>
-                    <Users className="w-4 h-4 mr-2" /> Records
+                <div className="grid grid-cols-2 sm:flex gap-2 pt-2 border-t">
+                  <Button variant="outline" className="w-full sm:flex-1" onClick={() => viewRecords(s._id)}>
+                    <Users className="w-4 h-4 sm:mr-2 mr-1 shrink-0" /> <span className="truncate text-xs sm:text-sm">Records</span>
                   </Button>
-                  <Button variant="outline" className="flex-1" onClick={() => { setSelectedSessionForQr(s); setQrDialogOpen(true); }}>
-                    <QrCode className="w-4 h-4 mr-2" /> Show QR
+                  <Button variant="outline" className="w-full sm:flex-1" onClick={() => { setSelectedSessionForQr(s); setQrDialogOpen(true); }}>
+                    <QrCode className="w-4 h-4 sm:mr-2 mr-1 shrink-0" /> <span className="truncate text-xs sm:text-sm">Show QR</span>
                   </Button>
-                  <Button variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50 px-3" onClick={() => handleDelete(s._id)}>
-                    <Trash2 className="w-4 h-4" />
+                  <Button variant="outline" className="col-span-2 w-full sm:w-auto sm:px-3 text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(s._id)}>
+                    <Trash2 className="w-4 h-4 sm:mr-0 mr-2 shrink-0" /> <span className="sm:hidden text-xs">Delete Session</span>
                   </Button>
                 </div>
               </CardContent>
@@ -331,6 +337,43 @@ export default function AdminAttendancePage() {
               </div>
               <p className="text-xs text-muted-foreground">You can also copy/paste coordinates from Google Maps (Right-click a location to copy).</p>
             </div>
+            <div className="p-4 bg-muted/50 rounded-lg space-y-4 border">
+              <Label className="font-bold">Check-in Configuration</Label>
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm">Allow Self Check-in</Label>
+                    <p className="text-[10px] text-muted-foreground">Members can check in from their app</p>
+                  </div>
+                  <Switch checked={form.checkInConfig.selfCheckInEnabled} onCheckedChange={(c) => setForm({...form, checkInConfig: {...form.checkInConfig, selfCheckInEnabled: c}})} />
+                </div>
+                {form.checkInConfig.selfCheckInEnabled && (
+                  <div className="flex items-center justify-between pl-4 border-l-2">
+                    <div className="space-y-0.5">
+                      <Label className="text-sm">Require GPS for Self Check-in</Label>
+                      <p className="text-[10px] text-muted-foreground">User must be within radius</p>
+                    </div>
+                    <Switch checked={form.checkInConfig.selfCheckInRequireGps} onCheckedChange={(c) => setForm({...form, checkInConfig: {...form.checkInConfig, selfCheckInRequireGps: c}})} />
+                  </div>
+                )}
+                <div className="flex items-center justify-between border-t pt-3">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm">Allow Scanner</Label>
+                    <p className="text-[10px] text-muted-foreground">Leaders can scan member ePasses</p>
+                  </div>
+                  <Switch checked={form.checkInConfig.scannerEnabled} onCheckedChange={(c) => setForm({...form, checkInConfig: {...form.checkInConfig, scannerEnabled: c}})} />
+                </div>
+                {form.checkInConfig.scannerEnabled && (
+                  <div className="flex items-center justify-between pl-4 border-l-2">
+                    <div className="space-y-0.5">
+                      <Label className="text-sm">Verify Leader GPS</Label>
+                      <p className="text-[10px] text-muted-foreground">Leader must be in radius when scanning</p>
+                    </div>
+                    <Switch checked={form.checkInConfig.scannerRequireGps} onCheckedChange={(c) => setForm({...form, checkInConfig: {...form.checkInConfig, scannerRequireGps: c}})} />
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
@@ -392,21 +435,21 @@ export default function AdminAttendancePage() {
                     <div className="space-y-4">
                       {/* Top stats row */}
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div className="bg-blue-50 rounded-xl p-3 text-center">
-                          <p className="text-2xl font-bold text-blue-700">{total}</p>
-                          <p className="text-[10px] font-semibold text-blue-600 uppercase tracking-wider">Total</p>
+                        <div className="bg-[#FAF7F2] border border-[#E5D5C5] rounded-xl p-3 text-center">
+                          <p className="text-2xl font-bold text-[#3A2D27]">{total}</p>
+                          <p className="text-[10px] font-semibold text-[#7A6150] uppercase tracking-wider">Total</p>
                         </div>
-                        <div className="bg-pink-50 rounded-xl p-3 text-center">
-                          <p className="text-2xl font-bold text-pink-700">{married}</p>
-                          <p className="text-[10px] font-semibold text-pink-600 uppercase tracking-wider">Married</p>
+                        <div className="bg-[#F3EAE1] border border-[#E5D5C5] rounded-xl p-3 text-center">
+                          <p className="text-2xl font-bold text-[#5C4535]">{married}</p>
+                          <p className="text-[10px] font-semibold text-[#7A6150] uppercase tracking-wider">Married</p>
                         </div>
-                        <div className="bg-emerald-50 rounded-xl p-3 text-center">
-                          <p className="text-2xl font-bold text-emerald-700">{single}</p>
-                          <p className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider">Single</p>
+                        <div className="bg-[#E5D5C5] border border-[#D5C5B5] rounded-xl p-3 text-center">
+                          <p className="text-2xl font-bold text-[#3A2D27]">{single}</p>
+                          <p className="text-[10px] font-semibold text-[#5C4535] uppercase tracking-wider">Single</p>
                         </div>
-                        <div className="bg-amber-50 rounded-xl p-3 text-center">
-                          <p className="text-2xl font-bold text-amber-700">{uniqueFamilies}</p>
-                          <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider">Families</p>
+                        <div className="bg-[#FBE8E8] border border-[#E8D5D5] rounded-xl p-3 text-center">
+                          <p className="text-2xl font-bold text-[#8B2323]">{uniqueFamilies}</p>
+                          <p className="text-[10px] font-semibold text-[#8B2323] uppercase tracking-wider">Families</p>
                         </div>
                       </div>
 
@@ -418,11 +461,11 @@ export default function AdminAttendancePage() {
                           <div className="flex gap-4">
                             <div className="flex-1">
                               <div className="flex justify-between text-sm mb-1"><span>Male</span><span className="font-bold">{males}</span></div>
-                              <div className="w-full bg-gray-100 rounded-full h-2"><div className="bg-blue-500 h-2 rounded-full" style={{ width: `${total ? (males/total)*100 : 0}%` }} /></div>
+                              <div className="w-full bg-[#FAF7F2] rounded-full h-2"><div className="bg-[#5C4535] h-2 rounded-full" style={{ width: `${total ? (males/total)*100 : 0}%` }} /></div>
                             </div>
                             <div className="flex-1">
                               <div className="flex justify-between text-sm mb-1"><span>Female</span><span className="font-bold">{females}</span></div>
-                              <div className="w-full bg-gray-100 rounded-full h-2"><div className="bg-pink-500 h-2 rounded-full" style={{ width: `${total ? (females/total)*100 : 0}%` }} /></div>
+                              <div className="w-full bg-[#FAF7F2] rounded-full h-2"><div className="bg-[#8B2323] h-2 rounded-full" style={{ width: `${total ? (females/total)*100 : 0}%` }} /></div>
                             </div>
                           </div>
                         </div>
@@ -434,7 +477,7 @@ export default function AdminAttendancePage() {
                             {Object.entries(ageGroups).filter(([, v]) => v > 0).map(([label, count]) => (
                               <div key={label} className="flex items-center gap-2 text-xs">
                                 <span className="w-16 text-muted-foreground">{label}</span>
-                                <div className="flex-1 bg-gray-100 rounded-full h-2"><div className="bg-violet-500 h-2 rounded-full transition-all" style={{ width: `${total ? (count/total)*100 : 0}%` }} /></div>
+                                <div className="flex-1 bg-[#FAF7F2] rounded-full h-2"><div className="bg-[#7A6150] h-2 rounded-full transition-all" style={{ width: `${total ? (count/total)*100 : 0}%` }} /></div>
                                 <span className="w-6 text-right font-bold">{count}</span>
                               </div>
                             ))}
@@ -443,7 +486,7 @@ export default function AdminAttendancePage() {
                       </div>
 
                       {/* Export Buttons */}
-                      <div className="flex gap-3">
+                      <div className="flex flex-col sm:flex-row gap-3">
                         <Button variant="outline" className="flex-1" onClick={() => {
                           // Export to Excel (CSV)
                           const headers = ['Name', 'Email', 'Gender', 'Age', 'Marital Status', 'Distance (m)', 'Time'];
@@ -536,18 +579,18 @@ export default function AdminAttendancePage() {
                       <div>
                         <p className="font-bold text-sm">{r.user.name}</p>
                         <p className="text-xs text-muted-foreground">{r.user.email}</p>
-                        <div className="flex gap-2 mt-1">
-                          {r.user.gender && <span className="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full capitalize">{r.user.gender}</span>}
-                          {r.user.maritalStatus && <span className="text-[10px] bg-pink-50 text-pink-700 px-2 py-0.5 rounded-full capitalize">{r.user.maritalStatus}</span>}
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {r.user.gender && <span className="text-[10px] bg-[#FAF7F2] text-[#7A6150] border border-[#E5D5C5] px-2 py-0.5 rounded-full capitalize">{r.user.gender}</span>}
+                          {r.user.maritalStatus && <span className="text-[10px] bg-[#F3EAE1] text-[#5C4535] border border-[#E5D5C5] px-2 py-0.5 rounded-full capitalize">{r.user.maritalStatus}</span>}
                           {r.user.birthday && (() => {
                             const birth = new Date(r.user.birthday);
                             const age = Math.floor((new Date().getTime() - birth.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-                            return <span className="text-[10px] bg-violet-50 text-violet-700 px-2 py-0.5 rounded-full">Age {age}</span>;
+                            return <span className="text-[10px] bg-[#E5D5C5] text-[#3A2D27] border border-[#D5C5B5] px-2 py-0.5 rounded-full">Age {age}</span>;
                           })()}
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-sm text-green-600">{r.distance}m away</p>
+                        <p className="font-bold text-sm text-[#8B2323]">{r.distance}m away</p>
                         <p className="text-xs text-muted-foreground">{new Date(r.markedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                       </div>
                     </div>
