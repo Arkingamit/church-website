@@ -18,6 +18,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    // Protect super admin role
+    if (targetUser.role === 'super_admin' && body.role && body.role !== 'super_admin') {
+      return NextResponse.json({ error: 'Cannot change the role of a super admin' }, { status: 403 });
+    }
+
     // Enforce campus scope for campus leaders
     if (admin.role === 'campus_leader') {
       if (targetUser.campusId !== admin.campusId) {
@@ -59,6 +64,11 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     const targetUser = await User.findById(id);
     if (!targetUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Protect super admin deletion
+    if (targetUser.role === 'super_admin') {
+      return NextResponse.json({ error: 'Cannot delete a super admin account' }, { status: 403 });
     }
 
     // Enforce campus scope for campus leaders

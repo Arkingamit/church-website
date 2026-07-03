@@ -28,7 +28,17 @@ export default function LoginPage() {
         console.error("GoogleAuth init error:", e);
       }
     }
-  }, []);
+
+    // Check if super admin exists
+    fetch('/api/setup')
+      .then(res => res.json())
+      .then(data => {
+        if (!data.hasSuperAdmin) {
+          router.push('/setup');
+        }
+      })
+      .catch(console.error);
+  }, [router]);
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
     setError('');

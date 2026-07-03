@@ -4,6 +4,9 @@ import connectToDatabase from '@/lib/db';
 import Campus from '@/models/Campus';
 
 export async function GET() {
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     await connectToDatabase();
     const campuses = await Campus.find({}).sort({ createdAt: 1 });
