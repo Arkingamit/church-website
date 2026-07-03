@@ -18,6 +18,8 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  output: 'standalone',
+  serverExternalPackages: ['mongoose'], // optimization for mongoose with app router
 };
 
 export default nextConfig;

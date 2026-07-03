@@ -101,11 +101,11 @@ export const Navigation = () => {
 
   const navLinksData = [
 
-    { label: 'Events', href: '/events' },
-    { label: 'Sermons', href: '/sermons' },
-    { label: 'Notes', href: '/broadcasts' },
-    { label: 'Gallery', href: '/gallery' },
-    { label: 'Prayer Wall', href: '/prayer-wall' },
+    { label: 'Events', href: '/#events' },
+    { label: 'Sermons', href: '/#sermons' },
+    { label: 'Notes', href: '/#notes' },
+    { label: 'Gallery', href: '/#gallery' },
+    { label: 'Prayer Wall', href: '/#prayer-wall' },
   ];
 
   const handleLogout = () => {
@@ -124,7 +124,7 @@ export const Navigation = () => {
       <div className="w-8 h-8 sm:w-14 sm:h-14 flex items-center justify-center shrink-0">
         <img
           src="/logo.png"
-          alt="Grace Ahmedabad Logo"
+          alt="Grace Logo"
           className="w-20 h-0 sm:w-16 sm:h-16 object-contain opacity-90"
         />
       </div>

@@ -19,8 +19,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LiveStreamSection } from '@/components/ui/live-stream';
 import { CampusDetails } from '@/components/ui/campus-details';
 import { AnnouncementsSection } from '@/components/ui/announcements-section';
+import { NoteShareSection } from '@/components/ui/note-share-section';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
+import { AuthGate } from '@/components/ui/auth-gate';
 
 const christianIcons = [
   // Cross
@@ -76,7 +78,7 @@ function AnimatedNumber({ end, duration = 2000, delay = 0, suffix = "" }: { end:
 }
 
 export function MobileHomeView() {
-  const { events, worshipVideos, flipCardConfig, announcements, sermons, prayerRequests, getVisibleGalleryAlbums } = useAdminData();
+  const { events, worshipVideos, flipCardConfig, announcements, sermons, prayerRequests, getVisibleGalleryAlbums, systemSettings } = useAdminData();
   const { session, getSessionMember, getEffectiveGroups, logout } = useAuth();
 
   const sessionMember = getSessionMember();
@@ -282,7 +284,6 @@ export function MobileHomeView() {
               className="flex flex-col items-center gap-6"
             >
               <img src="/logo.png" alt="Grace Community Fire" className="w-40 h-40 object-contain drop-shadow-[0_0_25px_rgba(139,35,35,0.6)]" />
-              <h1 className="text-3xl font-serif font-bold text-[#8B2323] tracking-wider text-center">Ahmedabad</h1>
             </motion.div>
           </motion.div>
         )}
@@ -380,15 +381,15 @@ export function MobileHomeView() {
 
             <div className="grid grid-cols-3 border-t border-white/10 bg-black/20">
               <div className="p-5 text-center border-r border-white/10">
-                <div className="text-2xl font-bold font-sans"><AnimatedNumber end={2500} delay={2600} /></div>
+                <div className="text-2xl font-bold font-sans"><AnimatedNumber end={systemSettings?.statsMembers || 2500} delay={2600} /></div>
                 <div className="text-[9px] text-white/60 uppercase tracking-widest font-semibold mt-1">Members</div>
               </div>
               <div className="p-5 text-center border-r border-white/10">
-                <div className="text-2xl font-bold font-sans"><AnimatedNumber end={25} delay={2600} suffix="+" /></div>
+                <div className="text-2xl font-bold font-sans"><AnimatedNumber end={systemSettings?.statsGroups || 25} delay={2600} suffix="+" /></div>
                 <div className="text-[9px] text-white/60 uppercase tracking-widest font-semibold mt-1">Groups</div>
               </div>
               <div className="p-5 text-center">
-                <div className="text-2xl font-bold font-sans"><AnimatedNumber end={15} delay={2600} /></div>
+                <div className="text-2xl font-bold font-sans"><AnimatedNumber end={systemSettings?.statsYears || 15} delay={2600} /></div>
                 <div className="text-[9px] text-white/60 uppercase tracking-widest font-semibold mt-1">Yrs Serving</div>
               </div>
             </div>
@@ -573,98 +574,110 @@ export function MobileHomeView() {
             </div>
           </div>
 
-          {/* 2. Announcements */}
+          {session ? (
+            <>
+
+          {/* Note Share */}
           <div className="-mx-4 mt-8">
-            <AnnouncementsSection preview={true} />
+             <div className="px-4">
+                <NoteShareSection />
+             </div>
           </div>
 
-          {/* 3. Upcoming Events */}
-          <div>
-            <div className="flex justify-between items-end mb-4">
-              <h2 className="text-2xl font-serif font-bold text-[#1A202C] border-l-4 border-[#8B2323] pl-3 py-0.5 leading-none">Upcoming Events</h2>
-              <Link href="/events" className="text-[#8B2323] text-sm font-bold flex items-center">
-                See all <ChevronRight className="w-4 h-4 ml-1" />
-              </Link>
-            </div>
+          {/* Prayer Wall CTA */}
+          <div className="mt-8">
+              <div className="rounded-3xl bg-gradient-to-r from-[#8B2323] to-[#5C1111] p-5 text-white relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/20 rounded-full blur-xl" />
 
-            <div className="flex gap-4 overflow-x-auto pb-4 -mr-4 pr-4 snap-x no-scrollbar">
-              {upcomingEvents.map(event => {
-                const eventDate = new Date(event.date);
-                return (
-                  <Link href={`/events/${event.id}`} key={event.id} className="min-w-[260px] max-w-[280px] bg-white rounded-3xl p-4 flex gap-4 shadow-sm snap-start border border-border/50">
-                    <div className="w-16 h-16 rounded-2xl bg-[#FFF5F5] flex flex-col items-center justify-center shrink-0 border border-red-50">
-                      <span className="text-xl font-bold text-[#8B2323] leading-none">{eventDate.getDate()}</span>
-                      <span className="text-xs font-bold text-[#8B2323] mt-1">{eventDate.toLocaleDateString('en-US', { month: 'short' })}</span>
+                <div className="relative z-10 flex flex-col gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 shrink-0 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm shadow-inner">
+                      <Heart className="w-6 h-6 text-white fill-white/20" />
                     </div>
-                    <div className="flex flex-col justify-center">
-                      <h4 className="font-bold text-[#1A202C] leading-tight mb-2 line-clamp-1">{event.title}</h4>
-                      <div className="space-y-1">
-                        <div className="flex items-center text-xs text-[#7A6150] font-medium">
-                          <Clock className="w-3 h-3 mr-1.5" />
-                          {event.time}
-                        </div>
-                        <div className="flex items-center text-xs text-[#7A6150] font-medium">
-                          <MapPin className="w-3 h-3 mr-1.5" />
-                          <span className="line-clamp-1">{event.location || 'Grace Community'}</span>
-                        </div>
-                      </div>
+                    <div>
+                      <h3 className="text-xl font-serif font-bold mb-0.5">Prayer Wall</h3>
+                      <p className="text-white/80 text-xs leading-snug">
+                        Let us know how we can pray and support you this week.
+                      </p>
                     </div>
+                  </div>
+
+                  <Link href="/prayer-wall" className="w-full">
+                    <Button variant="outline" className="w-full border-white/30 text-white hover:bg-white/10 bg-white/5 rounded-xl h-11 font-semibold border-2 text-sm">
+                      Submit Prayer Request
+                    </Button>
                   </Link>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 4. Prayer Wall CTA */}
-          <div className="rounded-3xl bg-gradient-to-r from-[#8B2323] to-[#5C1111] p-5 text-white relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/20 rounded-full blur-xl" />
-
-            <div className="relative z-10 flex flex-col gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 shrink-0 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm shadow-inner">
-                  <Heart className="w-6 h-6 text-white fill-white/20" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-serif font-bold mb-0.5">Prayer Wall</h3>
-                  <p className="text-white/80 text-xs leading-snug">
-                    Let us know how we can pray and support you this week.
-                  </p>
                 </div>
               </div>
-
-              <Link href="/prayer-wall" className="w-full">
-                <Button variant="outline" className="w-full border-white/30 text-white hover:bg-white/10 bg-white/5 rounded-xl h-11 font-semibold border-2 text-sm">
-                  Submit Prayer Request <ArrowRightIcon className="w-4 h-4 ml-2" />
-                </Button>
-              </Link>
-            </div>
           </div>
 
-          {/* 4.5 Recent Prayers */}
+          {/* Recent Prayers */}
           {publicPrayers && publicPrayers.length > 0 && (
-            <div>
-              <div className="mb-4">
-                <h2 className="text-2xl font-serif font-bold text-[#1A202C] border-l-4 border-[#8B2323] pl-3 py-0.5 leading-none">Community Prayers</h2>
-              </div>
-              <div className="flex flex-col gap-4">
-                {publicPrayers
-                  .filter(p => p.status === 'approved' || p.status === undefined)
-                  .slice(0, 3)
-                  .map(prayer => (
-                    <div key={prayer.id} className="w-full">
-                      <PrayerCard prayer={prayer} session={session} />
-                    </div>
-                  ))
-                }
-              </div>
-              <div className="mt-4 flex justify-center">
-                <Link href="/prayer-wall" className="text-[#8B2323] text-sm font-bold flex items-center hover:underline">
-                  See all <ChevronRight className="w-4 h-4 ml-1" />
-                </Link>
-              </div>
+            <div className="mt-8">
+                <div className="mb-4">
+                  <h2 className="text-2xl font-serif font-bold text-[#1A202C] border-l-4 border-[#8B2323] pl-3 py-0.5 leading-none">Community Prayers</h2>
+                </div>
+                <div className="flex flex-col gap-4">
+                  {publicPrayers
+                    .filter(p => p.status === 'approved' || p.status === undefined)
+                    .slice(0, 3)
+                    .map(prayer => (
+                      <div key={prayer.id} className="w-full">
+                        <PrayerCard prayer={prayer} session={session} />
+                      </div>
+                    ))
+                  }
+                </div>
+                <div className="mt-4 flex justify-center">
+                  <Link href="/prayer-wall" className="text-[#8B2323] text-sm font-bold flex items-center hover:underline">
+                    See all
+                  </Link>
+                </div>
             </div>
           )}
+
+          {/* Announcements */}
+          <div className="-mx-4 mt-8">
+              <AnnouncementsSection preview={true} />
+          </div>
+
+          {/* Events */}
+          <div className="mt-8">
+              <div className="flex justify-between items-end mb-4">
+                <h2 className="text-2xl font-serif font-bold text-[#1A202C] border-l-4 border-[#8B2323] pl-3 py-0.5 leading-none">Upcoming Events</h2>
+                <Link href="/events" className="text-[#8B2323] text-sm font-bold flex items-center">
+                  See all
+                </Link>
+              </div>
+
+              <div className="flex gap-4 overflow-x-auto pb-4 -mr-4 pr-4 snap-x no-scrollbar">
+                {upcomingEvents.map(event => {
+                  const eventDate = new Date(event.date);
+                  return (
+                    <Link href={`/events/${event.id}`} key={event.id} className="min-w-[260px] max-w-[280px] bg-white rounded-3xl p-4 flex gap-4 shadow-sm snap-start border border-border/50">
+                      <div className="w-16 h-16 rounded-2xl bg-[#FFF5F5] flex flex-col items-center justify-center shrink-0 border border-red-50">
+                        <span className="text-xl font-bold text-[#8B2323] leading-none">{eventDate.getDate()}</span>
+                        <span className="text-xs font-bold text-[#8B2323] mt-1">{eventDate.toLocaleDateString('en-US', { month: 'short' })}</span>
+                      </div>
+                      <div className="flex flex-col justify-center">
+                        <h4 className="font-bold text-[#1A202C] leading-tight mb-2 line-clamp-1">{event.title}</h4>
+                        <div className="space-y-1">
+                          <div className="flex items-center text-xs text-[#7A6150] font-medium">
+                            <Clock className="w-3 h-3 mr-1.5" />
+                            {event.time}
+                          </div>
+                          <div className="flex items-center text-xs text-[#7A6150] font-medium">
+                            <MapPin className="w-3 h-3 mr-1.5" />
+                            <span className="line-clamp-1">{event.location || 'Grace Community'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+          </div>
 
           {/* 5. Latest Sermons */}
           {sermons && sermons.length > 0 && (
@@ -695,6 +708,8 @@ export function MobileHomeView() {
             </div>
           )}
 
+          
+          
           {/* 6. Worship Focus */}
           <div>
             <div className="flex justify-between items-end mb-4">
@@ -719,31 +734,82 @@ export function MobileHomeView() {
             </div>
           </div>
 
-          {/* 7. Photo Gallery */}
+          
+          
+          {/* Photo Gallery */}
           {galleryAlbums.length > 0 && (
+            <div className="mt-8">
+                <div className="flex justify-between items-end mb-4">
+                  <h2 className="text-2xl font-serif font-bold text-[#1A202C] border-l-4 border-[#8B2323] pl-3 py-0.5 leading-none">Photo Gallery</h2>
+                  <Link href="/gallery" className="text-[#8B2323] text-sm font-bold flex items-center">
+                    See all
+                  </Link>
+                </div>
+
+                <div className="flex gap-4 overflow-x-auto pb-4 -mr-4 pr-4 snap-x no-scrollbar">
+                  {galleryAlbums.slice(0, 5).map(album => (
+                    <Link href="/gallery" key={album.id} className="min-w-[220px] w-[220px] h-[220px] rounded-3xl overflow-hidden relative shadow-sm snap-start group block">
+                      {albumCovers[album.id] ? (
+                        <img src={albumCovers[album.id]} alt={album.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-[#E5D5C5] flex items-center justify-center">
+                          <ImageIcon className="w-10 h-10 text-[#7A6150]/30" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4">
+                        <span className="bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-full self-start mb-2">
+                          {album.category}
+                        </span>
+                        <h4 className="text-white font-bold leading-tight line-clamp-2 text-sm">{album.title}</h4>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+            </div>
+          )}
+
+          
+          {/* 8. Live Stream Widget */}
+          <div className="-mx-4 mt-8">
+            <LiveStreamSection variant="widget" />
+          </div>
+
+          
+
+
+          
+
+          {/* Campus Location Widget */}
+          <div className="-mx-4 mt-8">
+              <CampusDetails />
+          </div>
+
+            </>
+          ) : (
+            <>
+
+          {/* 5. Latest Sermons */}
+          {sermons && sermons.length > 0 && (
             <div>
               <div className="flex justify-between items-end mb-4">
-                <h2 className="text-2xl font-serif font-bold text-[#1A202C] border-l-4 border-[#8B2323] pl-3 py-0.5 leading-none">Photo Gallery</h2>
-                <Link href="/gallery" className="text-[#8B2323] text-sm font-bold flex items-center">
+                <h2 className="text-2xl font-serif font-bold text-[#1A202C] border-l-4 border-[#8B2323] pl-3 py-0.5 leading-none">Latest Sermons</h2>
+                <Link href="/sermons" className="text-[#8B2323] text-sm font-bold flex items-center">
                   See all <ChevronRight className="w-4 h-4 ml-1" />
                 </Link>
               </div>
 
               <div className="flex gap-4 overflow-x-auto pb-4 -mr-4 pr-4 snap-x no-scrollbar">
-                {galleryAlbums.slice(0, 5).map(album => (
-                  <Link href="/gallery" key={album.id} className="min-w-[220px] w-[220px] h-[220px] rounded-3xl overflow-hidden relative shadow-sm snap-start group block">
-                    {albumCovers[album.id] ? (
-                      <img src={albumCovers[album.id]} alt={album.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full bg-[#E5D5C5] flex items-center justify-center">
-                        <ImageIcon className="w-10 h-10 text-[#7A6150]/30" />
+                {sermons.slice(0, 5).map(sermon => (
+                  <Link href={`/sermons/series/${sermon.seriesId}`} key={sermon.id} className="min-w-[280px] w-[280px] h-[160px] rounded-3xl overflow-hidden relative shadow-sm snap-start group block">
+                    <img src={`https://img.youtube.com/vi/${sermon.videoId}/mqdefault.jpg`} alt={sermon.title} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-4">
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-red-600/90 backdrop-blur-sm text-white flex items-center justify-center pl-1 shadow-lg">
+                        <Play className="w-5 h-5 fill-current" />
                       </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4">
                       <span className="bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-full self-start mb-2">
-                        {album.category}
+                        {sermon.pastor}
                       </span>
-                      <h4 className="text-white font-bold leading-tight line-clamp-2 text-sm">{album.title}</h4>
+                      <h4 className="text-white font-bold leading-tight line-clamp-1 text-sm">{sermon.title}</h4>
                     </div>
                   </Link>
                 ))}
@@ -751,17 +817,207 @@ export function MobileHomeView() {
             </div>
           )}
 
+          
+          
+          {/* 6. Worship Focus */}
+          <div>
+            <div className="flex justify-between items-end mb-4">
+              <h2 className="text-2xl font-serif font-bold text-[#1A202C] border-l-4 border-[#8B2323] pl-3 py-0.5 leading-none">Worship Focus</h2>
+              <Link href="/music" className="text-[#8B2323] text-sm font-bold flex items-center">
+                See all <ChevronRight className="w-4 h-4 ml-1" />
+              </Link>
+            </div>
+
+            <div className="flex gap-4 overflow-x-auto pb-4 -mr-4 pr-4 snap-x no-scrollbar">
+              {recentWorship.map(video => (
+                <a href={`https://youtube.com/watch?v=${video.videoId}`} target="_blank" rel="noopener noreferrer" key={video.id} className="min-w-[280px] w-[280px] h-[160px] rounded-3xl overflow-hidden relative shadow-sm snap-start group block">
+                  <img src={`https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg`} alt={video.title} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-4">
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center pl-1 shadow-lg">
+                      <Play className="w-5 h-5 fill-current" />
+                    </div>
+                    <h4 className="text-white font-bold leading-tight line-clamp-1 text-sm">{video.title}</h4>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+
+          
+          
           {/* 8. Live Stream Widget */}
           <div className="-mx-4 mt-8">
             <LiveStreamSection variant="widget" />
           </div>
 
-          {/* 9. Campus Location Widget */}
+          
+
+
+          
+          {/* Restricted Community Features */}
+          <div className="mt-8">
+            <AuthGate 
+              title="Community Features" 
+              description="Features like Announcements, Events, Prayer Wall, and Photo Gallery are exclusive to Grace Community members. Please sign in or register to access this content."
+            >
+              <div className="flex flex-col space-y-8">
+                {/* 2. Announcements */}
           <div className="-mx-4 mt-8">
-            <CampusDetails />
+            
+              <AnnouncementsSection preview={true} />
+            
           </div>
 
-        </div>
+          
+                {/* 3. Upcoming Events */}
+          <div>
+            
+              <div className="flex justify-between items-end mb-4">
+                <h2 className="text-2xl font-serif font-bold text-[#1A202C] border-l-4 border-[#8B2323] pl-3 py-0.5 leading-none">Upcoming Events</h2>
+                <Link href="/events" className="text-[#8B2323] text-sm font-bold flex items-center">
+                  See all <ChevronRight className="w-4 h-4 ml-1" />
+                </Link>
+              </div>
+
+              <div className="flex gap-4 overflow-x-auto pb-4 -mr-4 pr-4 snap-x no-scrollbar">
+                {upcomingEvents.map(event => {
+                  const eventDate = new Date(event.date);
+                  return (
+                    <Link href={`/events/${event.id}`} key={event.id} className="min-w-[260px] max-w-[280px] bg-white rounded-3xl p-4 flex gap-4 shadow-sm snap-start border border-border/50">
+                      <div className="w-16 h-16 rounded-2xl bg-[#FFF5F5] flex flex-col items-center justify-center shrink-0 border border-red-50">
+                        <span className="text-xl font-bold text-[#8B2323] leading-none">{eventDate.getDate()}</span>
+                        <span className="text-xs font-bold text-[#8B2323] mt-1">{eventDate.toLocaleDateString('en-US', { month: 'short' })}</span>
+                      </div>
+                      <div className="flex flex-col justify-center">
+                        <h4 className="font-bold text-[#1A202C] leading-tight mb-2 line-clamp-1">{event.title}</h4>
+                        <div className="space-y-1">
+                          <div className="flex items-center text-xs text-[#7A6150] font-medium">
+                            <Clock className="w-3 h-3 mr-1.5" />
+                            {event.time}
+                          </div>
+                          <div className="flex items-center text-xs text-[#7A6150] font-medium">
+                            <MapPin className="w-3 h-3 mr-1.5" />
+                            <span className="line-clamp-1">{event.location || 'Grace Community'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            
+          </div>
+
+          
+                {/* 4. Prayer Wall CTA */}
+          <div className="mt-8">
+            
+              <div className="rounded-3xl bg-gradient-to-r from-[#8B2323] to-[#5C1111] p-5 text-white relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-black/20 rounded-full blur-xl" />
+
+                <div className="relative z-10 flex flex-col gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 shrink-0 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm shadow-inner">
+                      <Heart className="w-6 h-6 text-white fill-white/20" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-serif font-bold mb-0.5">Prayer Wall</h3>
+                      <p className="text-white/80 text-xs leading-snug">
+                        Let us know how we can pray and support you this week.
+                      </p>
+                    </div>
+                  </div>
+
+                  <Link href="/prayer-wall" className="w-full">
+                    <Button variant="outline" className="w-full border-white/30 text-white hover:bg-white/10 bg-white/5 rounded-xl h-11 font-semibold border-2 text-sm">
+                      Submit Prayer Request <ArrowRightIcon className="w-4 h-4 ml-2" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            
+          </div>
+
+          
+                {/* 4.5 Recent Prayers */}
+          {publicPrayers && publicPrayers.length > 0 && (
+            <div className="mt-8">
+              
+                <div className="mb-4">
+                  <h2 className="text-2xl font-serif font-bold text-[#1A202C] border-l-4 border-[#8B2323] pl-3 py-0.5 leading-none">Community Prayers</h2>
+                </div>
+                <div className="flex flex-col gap-4">
+                  {publicPrayers
+                    .filter(p => p.status === 'approved' || p.status === undefined)
+                    .slice(0, 3)
+                    .map(prayer => (
+                      <div key={prayer.id} className="w-full">
+                        <PrayerCard prayer={prayer} session={session} />
+                      </div>
+                    ))
+                  }
+                </div>
+                <div className="mt-4 flex justify-center">
+                  <Link href="/prayer-wall" className="text-[#8B2323] text-sm font-bold flex items-center hover:underline">
+                    See all <ChevronRight className="w-4 h-4 ml-1" />
+                  </Link>
+                </div>
+              
+            </div>
+          )}
+
+          
+                {/* 7. Photo Gallery */}
+          {galleryAlbums.length > 0 && (
+            <div className="mt-8">
+              
+                <div className="flex justify-between items-end mb-4">
+                  <h2 className="text-2xl font-serif font-bold text-[#1A202C] border-l-4 border-[#8B2323] pl-3 py-0.5 leading-none">Photo Gallery</h2>
+                  <Link href="/gallery" className="text-[#8B2323] text-sm font-bold flex items-center">
+                    See all <ChevronRight className="w-4 h-4 ml-1" />
+                  </Link>
+                </div>
+
+                <div className="flex gap-4 overflow-x-auto pb-4 -mr-4 pr-4 snap-x no-scrollbar">
+                  {galleryAlbums.slice(0, 5).map(album => (
+                    <Link href="/gallery" key={album.id} className="min-w-[220px] w-[220px] h-[220px] rounded-3xl overflow-hidden relative shadow-sm snap-start group block">
+                      {albumCovers[album.id] ? (
+                        <img src={albumCovers[album.id]} alt={album.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-[#E5D5C5] flex items-center justify-center">
+                          <ImageIcon className="w-10 h-10 text-[#7A6150]/30" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4">
+                        <span className="bg-white/20 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-full self-start mb-2">
+                          {album.category}
+                        </span>
+                        <h4 className="text-white font-bold leading-tight line-clamp-2 text-sm">{album.title}</h4>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              
+            </div>
+          )}
+
+          
+                {/* 9. Campus Location Widget */}
+          <div className="-mx-4 mt-8">
+            
+              <CampusDetails />
+            
+          </div>
+
+        
+              </div>
+            </AuthGate>
+          </div>
+        
+
+            </>
+          )}</div>
       </div>
     </React.Fragment>
   );

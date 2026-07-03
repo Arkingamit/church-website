@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 
 export default function SettingsPage() {
-  const { campuses, groupScopes, groups, currentUser, addCampus, updateCampus, deleteCampus, addGroup, deleteGroup, users, updateUser } = useAdminData();
+  const { campuses, groupScopes, groups, currentUser, addCampus, updateCampus, deleteCampus, addGroup, deleteGroup, users, updateUser, systemSettings, updateSystemSettings } = useAdminData();
 
   // Campus form state
   const [campusDialogOpen, setCampusDialogOpen] = useState(false);
@@ -54,6 +54,20 @@ export default function SettingsPage() {
   const [managingGroup, setManagingGroup] = useState<string | null>(null);
   const [memberSearch, setMemberSearch] = useState('');
   const [savingMembers, setSavingMembers] = useState(false);
+  const [minAppVersion, setMinAppVersion] = useState(systemSettings?.minAppVersion || '0.1.0');
+  const [statsMembers, setStatsMembers] = useState(systemSettings?.statsMembers || 2500);
+  const [statsGroups, setStatsGroups] = useState(systemSettings?.statsGroups || 25);
+  const [statsYears, setStatsYears] = useState(systemSettings?.statsYears || 15);
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  React.useEffect(() => {
+    if (systemSettings) {
+      setMinAppVersion(systemSettings.minAppVersion || '0.1.0');
+      setStatsMembers(systemSettings.statsMembers || 2500);
+      setStatsGroups(systemSettings.statsGroups || 25);
+      setStatsYears(systemSettings.statsYears || 15);
+    }
+  }, [systemSettings]);
 
   if (!canManageCampusesAndGroups(currentUser.role)) {
     return (
@@ -104,7 +118,7 @@ export default function SettingsPage() {
   };
 
   const handleDeleteGroup = (name: string) => {
-    deleteGroup(name);
+    deleteGroup(name, managingGroupScope);
     setDeleteGroupConfirm(null);
   };
 
@@ -145,6 +159,12 @@ export default function SettingsPage() {
     setSavingMembers(false);
   };
 
+  const handleSaveSettings = async () => {
+    setSavingSettings(true);
+    await updateSystemSettings({ minAppVersion });
+    setSavingSettings(false);
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -152,6 +172,66 @@ export default function SettingsPage() {
         <h1 className="text-3xl font-bold">Settings</h1>
         <p className="text-muted-foreground mt-1">Manage campuses and groups</p>
       </div>
+
+      
+      {/* System Settings (Super Admin Only) */}
+      <Card className="border-border/50">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl flex items-center gap-2">
+            <Shield className="w-5 h-5 text-primary" />
+            System Configuration
+          </CardTitle>
+          <p className="text-sm text-muted-foreground mt-1">Manage global application settings</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid sm:grid-cols-2 gap-6">
+            
+            <div className="space-y-2">
+              <Label>Minimum Required App Version</Label>
+              <Input 
+                value={minAppVersion} 
+                onChange={(e) => setMinAppVersion(e.target.value)} 
+                placeholder="e.g. 1.0.0" 
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Users with an app version lower than this will be forced to update.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Hero Stats - Members</Label>
+              <Input 
+                type="number"
+                value={statsMembers} 
+                onChange={(e) => setStatsMembers(Number(e.target.value))} 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Hero Stats - Groups</Label>
+              <Input 
+                type="number"
+                value={statsGroups} 
+                onChange={(e) => setStatsGroups(Number(e.target.value))} 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Hero Stats - Years Serving</Label>
+              <Input 
+                type="number"
+                value={statsYears} 
+                onChange={(e) => setStatsYears(Number(e.target.value))} 
+              />
+            </div>
+
+          </div>
+          <Button 
+            onClick={handleSaveSettings} 
+            disabled={savingSettings || (minAppVersion === (systemSettings?.minAppVersion || '0.1.0') && statsMembers === (systemSettings?.statsMembers || 2500) && statsGroups === (systemSettings?.statsGroups || 25) && statsYears === (systemSettings?.statsYears || 15))}
+            className="w-full sm:w-auto"
+          >
+            {savingSettings ? 'Saving...' : 'Save Settings'}
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Campus Management */}
       <Card className="border-border/50">

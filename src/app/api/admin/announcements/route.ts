@@ -1,14 +1,16 @@
-import { NextResponse } from 'next/server';
 import { requireAdminWithScope, enforceCampusScope, enforceGroupScope } from '@/lib/api-auth';
 import connectToDatabase from '@/lib/db';
 import Announcement from '@/models/Announcement';
 import { calculateNextOccurrence } from '@/lib/recurrence';
+import { apiSuccess, apiError, withErrorHandler } from '@/lib/api-helpers';
+import Notification from '@/models/Notification';
+import { sendPushToTargeted } from '@/lib/push-utils';
 
 export async function GET() {
-  const admin = await requireAdminWithScope();
-  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  return withErrorHandler(async () => {
+    const admin = await requireAdminWithScope();
+    if (!admin) return apiError('Unauthorized', 401);
 
-  try {
     await connectToDatabase();
 
     let query: any = {};
@@ -31,17 +33,15 @@ export async function GET() {
     const announcements = await Announcement.find(query)
       .sort({ isPinned: -1, createdAt: -1 })
       .lean();
-    return NextResponse.json(announcements);
-  } catch (error: any) {
-    return NextResponse.json({ error: 'Failed to fetch announcements' }, { status: 500 });
-  }
+    return apiSuccess(announcements);
+  });
 }
 
 export async function POST(req: Request) {
-  const admin = await requireAdminWithScope();
-  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  return withErrorHandler(async () => {
+    const admin = await requireAdminWithScope();
+    if (!admin) return apiError('Unauthorized', 401);
 
-  try {
     await connectToDatabase();
     const body = await req.json();
 
@@ -60,8 +60,22 @@ export async function POST(req: Request) {
     }
 
     const announcement = await Announcement.create(body);
-    return NextResponse.json(announcement, { status: 201 });
-  } catch (error: any) {
-    return NextResponse.json({ error: 'Failed to create announcement' }, { status: 500 });
-  }
+
+    await Notification.create({
+      title: `New Announcement: ${announcement.title}`,
+      message: announcement.content.substring(0, 100) + (announcement.content.length > 100 ? '...' : ''),
+      type: 'new_announcement',
+      sourceId: announcement._id.toString(),
+      targetCampuses: announcement.targetCampuses || ['all'],
+      targetGroups: announcement.targetGroups || [],
+    });
+
+    await sendPushToTargeted({
+      title: `New Announcement: ${announcement.title}`,
+      body: announcement.content.substring(0, 100) + (announcement.content.length > 100 ? '...' : ''),
+      type: 'new_announcement'
+    }, announcement.targetCampuses || ['all'], announcement.targetGroups || []);
+
+    return apiSuccess(announcement, 201);
+  });
 }

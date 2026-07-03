@@ -31,7 +31,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ type: st
     if (!existingItem) {
       return NextResponse.json({ error: 'Item not found' }, { status: 404 });
     }
-    if (type === 'gallery' && admin.role === 'campus_leader') {
+    if ((type === 'gallery' || type === 'sermons') && admin.role === 'campus_leader') {
        if (!existingItem.targetCampuses.includes(admin.campusId) && !existingItem.targetCampuses.includes('all')) {
          return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
        }
@@ -42,7 +42,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ type: st
     }
 
     // Enforce scope for models that support it
-    if (type === 'gallery') {
+    if (type === 'gallery' || type === 'sermons') {
       body.targetCampuses = enforceCampusScope(admin.role, admin.campusId, body.targetCampuses);
       body.targetGroups = enforceGroupScope(admin.role, admin.groups, body.targetGroups);
     } else if (type === 'livestreams') {
@@ -75,7 +75,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ type:
     if (!existingItem) {
       return NextResponse.json({ error: 'Item not found' }, { status: 404 });
     }
-    if (type === 'gallery' && admin.role === 'campus_leader') {
+    if ((type === 'gallery' || type === 'sermons') && admin.role === 'campus_leader') {
        if (!existingItem.targetCampuses.includes(admin.campusId) && !existingItem.targetCampuses.includes('all')) {
          return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
        }

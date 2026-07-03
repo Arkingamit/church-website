@@ -24,10 +24,17 @@ import {
 
 export default function SeriesDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { sermonSeries, sermons } = useAdminData();
+  const { sermonSeries, sermons, getVisibleSermons, currentUser } = useAdminData();
+  const [activeCampusId, setActiveCampusId] = useState('global');
+
+  React.useEffect(() => {
+    setActiveCampusId(localStorage.getItem('grace_activeCampus') || 'global');
+  }, []);
+
+  const visibleSermons = getVisibleSermons(activeCampusId, currentUser?.groups || [], currentUser?.role);
   
   const series = sermonSeries.find(s => s.id === id);
-  const seriesSermons = sermons.filter(s => s.seriesId === id);
+  const seriesSermons = visibleSermons.filter(s => s.seriesId === id);
   
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(
     seriesSermons[0]?.videoId || null

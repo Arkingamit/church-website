@@ -1,13 +1,15 @@
-import { NextResponse } from 'next/server';
+import { requireAdminWithScope, enforceCampusScope, enforceGroupScope } from '@/lib/api-auth';
 import connectToDatabase from '@/lib/db';
 import Broadcast from '@/models/Broadcast';
-import { requireAdminWithScope, enforceCampusScope, enforceGroupScope } from '@/lib/api-auth';
+import { apiSuccess, apiError, withErrorHandler } from '@/lib/api-helpers';
+import Notification from '@/models/Notification';
+import { sendPushToTargeted } from '@/lib/push-utils';
 
 export async function GET() {
-  try {
+  return withErrorHandler(async () => {
     await connectToDatabase();
     const admin = await requireAdminWithScope();
-    if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!admin) return apiError('Unauthorized', 401);
 
     let query: any = {};
 
@@ -25,24 +27,21 @@ export async function GET() {
     // admin/super_admin: no filter — see everything
 
     const broadcasts = await Broadcast.find(query).sort({ createdAt: -1 }).lean();
-    return NextResponse.json(broadcasts);
-  } catch (error) {
-    console.error('Error fetching broadcasts:', error);
-    return NextResponse.json({ error: 'Failed to fetch' }, { status: 500 });
-  }
+    return apiSuccess(broadcasts);
+  });
 }
 
 export async function POST(req: Request) {
-  try {
+  return withErrorHandler(async () => {
     await connectToDatabase();
     const admin = await requireAdminWithScope();
-    if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!admin) return apiError('Unauthorized', 401);
 
     const body = await req.json();
     const { title, description, materialLinks } = body;
 
     if (!title || !description) {
-      return NextResponse.json({ error: 'Title and description are required' }, { status: 400 });
+      return apiError('Title and description are required', 400);
     }
 
     // Enforce scope restrictions
@@ -59,9 +58,21 @@ export async function POST(req: Request) {
       createdByName: admin.name || '',
     });
 
-    return NextResponse.json(broadcast, { status: 201 });
-  } catch (error) {
-    console.error('Error creating broadcast:', error);
-    return NextResponse.json({ error: 'Failed to create' }, { status: 500 });
-  }
+    await Notification.create({
+      title: `New Note: ${broadcast.title}`,
+      message: broadcast.description.substring(0, 100) + (broadcast.description.length > 100 ? '...' : ''),
+      type: 'new_note',
+      sourceId: broadcast._id.toString(),
+      targetCampuses: broadcast.targetCampuses || ['all'],
+      targetGroups: broadcast.targetGroups || [],
+    });
+
+    await sendPushToTargeted({
+      title: `New Note: ${broadcast.title}`,
+      body: broadcast.description.substring(0, 100) + (broadcast.description.length > 100 ? '...' : ''),
+      type: 'new_note'
+    }, broadcast.targetCampuses || ['all'], broadcast.targetGroups || []);
+
+    return apiSuccess(broadcast, 201);
+  });
 }

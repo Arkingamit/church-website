@@ -426,11 +426,11 @@ export default function GalleryManagementPage() {
                         return visibleGroups.map(g => (
                           <label key={`ex-${g}`} className="flex items-center gap-2 text-sm cursor-pointer">
                             <Checkbox 
-                              checked={(form.excludeGroups || []).includes(g)} 
-                              onCheckedChange={() => toggleExcludeGroup(g)} 
-                              disabled={isGroupLeader && !currentUser.groups.includes(g)}
+                              checked={(form.excludeGroups || []).includes(g as string)} 
+                              onCheckedChange={() => toggleExcludeGroup(g as string)} 
+                              disabled={isGroupLeader && !currentUser.groups.includes(g as string)}
                             />
-                            {g}
+                            {g as string}
                           </label>
                         ));
                       })()}

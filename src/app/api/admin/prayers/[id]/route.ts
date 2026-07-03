@@ -3,6 +3,8 @@ import connectToDatabase from '@/lib/db';
 import PrayerRequest from '@/models/PrayerRequest';
 import { verifySession } from '@/lib/auth-utils';
 import User from '@/models/User';
+import Notification from '@/models/Notification';
+import { sendPushToTargeted } from '@/lib/push-utils';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -32,7 +34,25 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
 
     if (body.status) {
+      const wasApproved = prayer.status === 'approved';
       prayer.status = body.status;
+
+      if (body.status === 'approved' && !wasApproved) {
+        await Notification.create({
+          title: `New Prayer Request`,
+          message: prayer.title,
+          type: 'new_prayer',
+          sourceId: prayer._id.toString(),
+          targetCampuses: prayer.campusId ? [prayer.campusId] : ['all'],
+          targetGroups: [],
+        });
+
+        await sendPushToTargeted({
+          title: `New Prayer Request`,
+          body: prayer.title,
+          type: 'new_prayer'
+        }, prayer.campusId ? [prayer.campusId] : ['all'], []);
+      }
     }
 
     await prayer.save();

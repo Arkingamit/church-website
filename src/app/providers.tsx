@@ -9,7 +9,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { AdminDataProvider } from "@/lib/admin-data-context";
 import { AuthProvider } from "@/lib/auth-context";
 import { GoogleOAuthProvider } from "@react-oauth/google";
-import "@/index.css";
+import { VersionGate } from "@/components/ui/version-gate";
+import { NotificationProvider } from "@/components/ui/notification-provider";
 
 // QueryClient created OUTSIDE the component to prevent recreation on re-render
 const queryClient = new QueryClient({
@@ -43,7 +44,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
               <TooltipProvider>
                 <Toaster />
                 <Sonner />
-                {children}
+                <NotificationProvider>
+                  <VersionGate>
+                    {children}
+                  </VersionGate>
+                </NotificationProvider>
               </TooltipProvider>
             </AuthProvider>
           </AdminDataProvider>

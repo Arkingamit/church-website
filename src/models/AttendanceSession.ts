@@ -34,7 +34,7 @@ const AttendanceSessionSchema = new Schema<IAttendanceSession>(
     endTime: { type: String, required: true },
     latitude: { type: Number, required: true },
     longitude: { type: Number, required: true },
-    radius: { type: Number, required: true, default: 500 }, // Default 500m radius
+    radius: { type: Number, required: true, default: 300, min: 10, max: 300 }, // Default 300m radius
     recurring: { type: Boolean, default: false },
     recurrencePattern: { type: String },
     recurrenceDay: { type: String },

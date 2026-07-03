@@ -27,6 +27,10 @@ export interface ISermon extends Document {
   likes: number;
   isFeatured: boolean;
   sortOrder: number;
+  targetCampuses: string[];
+  targetGroups: string[];
+  excludeCampuses?: string[];
+  excludeGroups?: string[];
 }
 
 const SermonSchema = new Schema<ISermon>({
@@ -46,6 +50,10 @@ const SermonSchema = new Schema<ISermon>({
   likes: { type: Number, default: 0 },
   isFeatured: { type: Boolean, default: false },
   sortOrder: { type: Number, default: 0 },
+  targetCampuses: [{ type: String }],
+  targetGroups: [{ type: String }],
+  excludeCampuses: [{ type: String }],
+  excludeGroups: [{ type: String }],
 }, { timestamps: true });
 
 export const Sermon: Model<ISermon> = mongoose.models.Sermon || mongoose.model<ISermon>('Sermon', SermonSchema);

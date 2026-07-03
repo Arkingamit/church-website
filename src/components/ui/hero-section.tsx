@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { BookOpen, Calendar, Clock, Heart, MapPin, Sparkles, Users, ArrowRight, Bell } from 'lucide-react';
 import { useAdminData, type FlipCardItem } from '@/lib/admin-data-context';
+import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
 
 const christianIcons = [
@@ -30,6 +31,7 @@ const cardGradients = [
 
 export const HeroSection = () => {
   const { flipCardConfig, events, announcements, sermons, worshipVideos, prayerRequests } = useAdminData();
+  const { session } = useAuth();
 
   const getDisplayDetails = (item: FlipCardItem) => {
     let displayTitle = item.title || '';
@@ -100,7 +102,7 @@ export const HeroSection = () => {
   }, []);
 
   useEffect(() => {
-    if (flipCardConfig.isActive) {
+    if (session && flipCardConfig.isActive) {
       const timer = setTimeout(() => {
         setIsFlipped(true);
       }, 3000);
@@ -108,17 +110,17 @@ export const HeroSection = () => {
     } else {
       setIsFlipped(false);
     }
-  }, [flipCardConfig.isActive]);
+  }, [flipCardConfig.isActive, session]);
 
   // Auto-rotate fanned card stack
   const flipItems = flipCardConfig.items || [];
   useEffect(() => {
-    if (!flipCardConfig.isActive || flipItems.length <= 1) return;
+    if (!session || !flipCardConfig.isActive || flipItems.length <= 1) return;
     const interval = setInterval(() => {
       setActiveIdx(prev => (prev + 1) % flipItems.length);
     }, 4000);
     return () => clearInterval(interval);
-  }, [flipCardConfig.isActive, flipItems.length]);
+  }, [flipCardConfig.isActive, flipItems.length, session]);
 
   return (
     <section className="relative py-20 sm:py-32 overflow-hidden">
@@ -205,7 +207,7 @@ export const HeroSection = () => {
               </Card>
 
               {/* BACK: Admin Custom Flip Content — Fanned Stack */}
-              {flipCardConfig.isActive && flipItems.length > 0 && (() => {
+              {session && flipCardConfig.isActive && flipItems.length > 0 && (() => {
                 // Build visible stack (up to 3 cards)
                 const stackRotations = ['rotate-0', '-rotate-6', 'rotate-6'];
                 const stackScales = ['scale-100', 'scale-95', 'scale-90'];

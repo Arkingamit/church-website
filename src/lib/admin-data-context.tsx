@@ -3,247 +3,62 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 
-// ── Types ──────────────────────────────────────────────────────────────
-export type UserRole = 'member' | 'group_leader' | 'campus_leader' | 'admin' | 'super_admin';
+import {
+  UserRole,
+  Group,
+  Campus,
+  FormFieldType,
+  FormFieldOption,
+  FormField,
+  EventScheduleDay,
+  Event,
+  EventRegistration,
+  Announcement,
+  WorshipVideo,
+  Sermon,
+  SystemSettings,
+  SermonSeries,
+  FlipCardItem,
+  FlipCardConfig,
+  GalleryAlbum,
+  PrayerRequest,
+  LiveStream,
+  UserProfile,
+} from '@/lib/types';
 
-// Group scope: 'global' means visible everywhere; a campusId means campus-specific
-export interface Group {
-  name: string;
-  scope: 'global' | string; // 'global' or a campusId
-}
+export type {
+  UserRole,
+  Group,
+  Campus,
+  FormFieldType,
+  FormFieldOption,
+  FormField,
+  EventScheduleDay,
+  Event,
+  EventRegistration,
+  Announcement,
+  WorshipVideo,
+  Sermon,
+  SystemSettings,
+  SermonSeries,
+  FlipCardItem,
+  FlipCardConfig,
+  GalleryAlbum,
+  PrayerRequest,
+  LiveStream,
+  UserProfile,
+};
 
-export interface Campus {
-  id: string;
-  _id?: string;
-  name: string;
-  pastor: string;
-  address?: string;
-  city?: string;
-  zipCode?: string;
-  phone?: string;
-  email?: string;
-  serviceTimes?: { day: string; times: string[] }[];
-  latitude?: number;
-  longitude?: number;
-}
-
-export type FormFieldType = 'text' | 'textarea' | 'radio' | 'checkbox' | 'select' | 'date';
-
-export interface FormFieldOption {
-  id: string;
-  label: string;
-}
-
-export interface FormField {
-  id: string;
-  type: FormFieldType;
-  label: string;
-  required: boolean;
-  options?: FormFieldOption[];
-}
-
-export interface EventScheduleDay {
-  date: string;
-  startTime: string;
-  endTime: string;
-  label?: string; // e.g. "Day 1 - Opening Ceremony"
-}
-
-export interface Event {
-  id: string;
-  _id?: string;
-  title: string;
-  description: string;
-  date: string;
-  time: string;
-  endTime: string;
-  location: string;
-  category: string;
-  capacity: number;
-  registered: number;
-  image: string | null;
-  recurring: boolean;
-  recurrencePattern?: 'weekly' | 'biweekly' | 'monthly' | 'custom' | 'custom_monthly';
-  recurrenceDay?: string;
-  recurrenceWeekOfMonth?: string; // '1st', '2nd', '3rd', '4th', 'last'
-  recurrenceEndDate?: string;
-  recurrenceNote?: string;
-  seriesId?: string;
-  isSeriesTemplate?: boolean;
-  nextOccurrence?: string;
-  lastTriggered?: string;
-  mapUrl?: string;
-  host: string;
-  targetCampuses: string[];
-  targetGroups: string[];
-  excludeCampuses?: string[];
-  excludeGroups?: string[];
-  createdAt: string;
-  googlePhotosUrl?: string;
-  formFields?: FormField[];
-  isMultiDay?: boolean;
-  endDate?: string;
-  schedule?: EventScheduleDay[];
-  reminders?: string[]; // Deprecated
-  customReminders?: { daysBefore: number; hoursBefore: number; minutesBefore: number; }[];
-  attendanceConfig?: {
-    enabled: boolean;
-    radius: number;
-    latitude: number;
-    longitude: number;
-    openMinutesBefore: number;
-    closeMinutesAfter: number;
-  };
-}
-
-export interface EventRegistration {
-  id: string;
-  _id?: string;
-  eventId: string;
-  userId?: string;
-  userName: string;
-  userEmail: string;
-  registeredAt: string;
-  responses: Record<string, string | string[]>;
-}
-
-export interface Announcement {
-  id: string;
-  _id?: string;
-  title: string;
-  content: string;
-  isPinned: boolean;
-  reminderDate?: string;
-  reminderTime?: string;
-  image?: string;
-  reactions: number;
-  targetCampuses: string[];
-  targetGroups: string[];
-  excludeCampuses?: string[];
-  excludeGroups?: string[];
-  createdAt: string;
-  isRecurring?: boolean;
-  recurrencePattern?: 'weekly' | 'biweekly' | 'monthly' | 'custom' | 'custom_monthly';
-  recurrenceDay?: string; // e.g. 'Sunday', 'Monday', or '1st Sunday'
-  recurrenceWeekOfMonth?: string;
-  recurrenceEndDate?: string; // optional end date for recurring
-  recurrenceNote?: string; // e.g. 'Every Sunday at 10 AM'
-  nextOccurrence?: string;
-  lastTriggered?: string;
-  endDate?: string;
-  endTime?: string;
-  customReminders?: { daysBefore: number; hoursBefore: number; minutesBefore: number; }[];
-}
-
-export interface WorshipVideo {
-  id: string;
-  _id?: string;
-  title: string;
-  videoId: string;
-  isFeatured?: boolean;
-  categories?: string[];
-  artist?: string;
-  album?: string;
-  duration?: string;
-}
-
-export interface Sermon {
-  id: string;
-  _id?: string;
-  seriesId: string;
-  title: string;
-  pastor: string;
-  date: string;
-  duration: string;
-  videoId: string;
-  description: string;
-  materials?: { title: string; url: string; type?: string }[];
-  views: number;
-  likes: number;
-  isFeatured?: boolean;
-  sortOrder?: number;
-  category?: string;
-}
-
-export interface SermonSeries {
-  id: string;
-  _id?: string;
-  title: string;
-  description: string;
-  category: string;
-}
-
-export interface FlipCardItem {
-  id: string;
-  type: 'event' | 'announcement' | 'prayer' | 'sermon' | 'worship_video' | 'custom';
-  itemId?: string;
-  title?: string;
-  description?: string;
-  buttonText?: string;
-  buttonLink?: string;
-}
-
-export interface FlipCardConfig {
-  isActive: boolean;
-  items: FlipCardItem[];
-}
-
-export interface GalleryAlbum {
-  id: string;
-  _id?: string;
-  title: string;
-  description: string;
-  url: string;
-  category: string;
-  coverImage?: string;
-  sortOrder?: number;
-  targetCampuses?: string[];
-  targetGroups?: string[];
-  excludeCampuses?: string[];
-  excludeGroups?: string[];
-}
-
-export interface PrayerRequest {
-  id: string;
-  _id?: string;
-  title: string;
-  content: string;
-  authorName: string;
-  campusId: string;
-  isAnonymous: boolean;
-  privacy: 'public' | 'members' | 'staff';
-  category: string;
-  prayedCount: number;
-  comments: number;
-  status: 'pending' | 'approved' | 'rejected';
-  createdAt: string;
-}
-
-export interface LiveStream {
-  id?: string;
-  _id?: string;
-  campusId: string;
-  videoId: string;
-  isLive: boolean;
-  title: string;
-  description: string;
-  isAutoEnabled?: boolean;
-  youtubeChannelId?: string;
-  recurrencePattern?: 'weekly' | 'custom' | 'custom_monthly';
-  recurrenceDay?: string;
-  recurrenceWeekOfMonth?: string;
-  time?: string;
-}
-
-export interface UserProfile {
-  id: string;
-  _id?: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  campusId: string;
-  groups: string[];
-}
+import { useEvents } from './hooks/use-events';
+import { useAnnouncements } from './hooks/use-announcements';
+import { useGallery } from './hooks/use-gallery';
+import { useSermons } from './hooks/use-sermons';
+import { usePrayers } from './hooks/use-prayers';
+import { useCampuses } from './hooks/use-campuses';
+import { useUsers } from './hooks/use-users';
+import { useMedia } from './hooks/use-media';
+import { useSystem } from './hooks/use-system';
+import { mapId } from './hooks/utils';
 
 // ── Permissions ────────────────────────────────────────────────────────
 export const ROLE_LABELS: Record<UserRole, string> = {
@@ -360,15 +175,6 @@ const defaultCurrentUser: UserProfile = {
   role: 'super_admin', campusId: 'main', groups: [],
 };
 
-// ── Helper: map _id to id ──────────────────────────────────────────────
-function mapId<T extends { _id?: string }>(item: T): T & { id: string } {
-  return { ...item, id: item._id || (item as any).id || '' };
-}
-
-function mapIds<T extends { _id?: string }>(items: T[]): (T & { id: string })[] {
-  return items.map(mapId);
-}
-
 // ── Context ────────────────────────────────────────────────────────────
 interface AdminDataContextType {
   // Data
@@ -387,7 +193,9 @@ interface AdminDataContextType {
   galleryAlbums: GalleryAlbum[];
   liveStreams: LiveStream[];
   prayerRequests: PrayerRequest[];
+  broadcasts: any[];
   flipCardConfig: FlipCardConfig;
+  systemSettings: SystemSettings | null;
 
   // Setters
   setCurrentUser: (user: UserProfile) => void;
@@ -440,7 +248,7 @@ interface AdminDataContextType {
   updateCampus: (id: string, updates: Partial<Campus>) => void;
   deleteCampus: (id: string) => void;
   addGroup: (name: string, scope?: string) => void;
-  deleteGroup: (name: string) => void;
+  deleteGroup: (name: string, scope: string) => void;
   updateGroupScope: (name: string, scope: string) => void;
   updateFlipCardConfig: (config: FlipCardConfig) => void;
 
@@ -450,144 +258,85 @@ interface AdminDataContextType {
   getPendingPrayerRequests: (campusId?: string) => PrayerRequest[];
 
   // Filtering
-  getVisibleAnnouncements: (campusId: string, groups: string[]) => Announcement[];
-  getVisibleEvents: (campusId: string, groups: string[]) => Event[];
-  getVisibleGalleryAlbums: (campusId: string, groups: string[]) => GalleryAlbum[];
+  getVisibleAnnouncements: (campusId: string, groups: string[], role?: string) => Announcement[];
+  getVisibleEvents: (campusId: string, groups: string[], role?: string) => Event[];
+  getVisibleGalleryAlbums: (campusId: string, groups: string[], role?: string) => GalleryAlbum[];
+  getVisibleSermons: (campusId: string, groups: string[], role?: string) => Sermon[];
+
+  // System Settings
+  updateSystemSettings: (settings: Partial<SystemSettings>) => Promise<void>;
 }
 
 const AdminDataContext = createContext<AdminDataContextType | null>(null);
 
 export function AdminDataProvider({ children }: { children: React.ReactNode }) {
-  const [campuses, setCampuses] = useState<Campus[]>([]);
-  const [groups, setGroups] = useState<string[]>(defaultGroups);
-  const [groupScopes, setGroupScopes] = useState<Group[]>(defaultGroupScopes);
-  const [events, setEvents] = useState<Event[]>([]);
-  const [eventRegistrations, setEventRegistrations] = useState<EventRegistration[]>([]);
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [users, setUsers] = useState<UserProfile[]>([]);
-  const [worshipVideos, setWorshipVideos] = useState<WorshipVideo[]>([]);
-  const [sermons, setSermons] = useState<Sermon[]>([]);
-  const [sermonSeries, setSermonSeriesState] = useState<SermonSeries[]>([]);
-  const [galleryAlbums, setGalleryAlbums] = useState<GalleryAlbum[]>([]);
-  const [liveStreams, setLiveStreams] = useState<LiveStream[]>([]);
-  const [prayerRequests, setPrayerRequests] = useState<PrayerRequest[]>([]);
   const [currentUser, setCurrentUserState] = useState<UserProfile>(defaultCurrentUser);
-  const [galleryAlbumUrl, setGalleryAlbumUrlState] = useState<string>('');
-  const [flipCardConfig, setFlipCardConfig] = useState<FlipCardConfig>({
-    isActive: false,
-    items: [
-      {
-        id: '1',
-        type: 'custom',
-        title: 'Special Event',
-        description: 'Join us for our upcoming special event.',
-        buttonText: 'Read More',
-        buttonLink: '/events'
-      },
-      {
-        id: '2',
-        type: 'custom',
-        title: 'Join a Connect Group',
-        description: 'Find community and grow together in one of our weekly connect groups.',
-        buttonText: 'Find a Group',
-        buttonLink: '/groups'
-      },
-      {
-        id: '3',
-        type: 'custom',
-        title: 'Submit a Prayer Request',
-        description: 'We would love to pray with you. Let us know how we can support you this week.',
-        buttonText: 'Pray With Us',
-        buttonLink: '/prayer-wall'
-      }
-    ]
-  });
+  const [broadcasts, setBroadcasts] = useState<any[]>([]);
 
-  // Load flip card config from localStorage on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedConfig = localStorage.getItem('grace_flipCardConfig');
-      if (storedConfig) {
-        try {
-          const parsed = JSON.parse(storedConfig);
-          // Migrate old config that doesn't have an items array or only has 1 default item
-          if (!parsed.items || parsed.items.length === 1) {
-            parsed.items = [
-              {
-                id: parsed.items ? parsed.items[0].id : 'migrated-1',
-                type: parsed.items ? parsed.items[0].type : (parsed.type || 'custom'),
-                itemId: parsed.items ? parsed.items[0].itemId : parsed.itemId,
-                title: (parsed.items ? parsed.items[0].title : parsed.title) || 'Special Event',
-                description: (parsed.items ? parsed.items[0].description : parsed.description) || 'Join us for our upcoming special event.',
-                buttonText: (parsed.items ? parsed.items[0].buttonText : parsed.buttonText) || 'Read More',
-                buttonLink: (parsed.items ? parsed.items[0].buttonLink : parsed.buttonLink) || '/events'
-              },
-              {
-                id: 'migrated-2',
-                type: 'custom',
-                title: 'Join a Connect Group',
-                description: 'Find community and grow together in one of our weekly connect groups.',
-                buttonText: 'Find a Group',
-                buttonLink: '/groups'
-              },
-              {
-                id: 'migrated-3',
-                type: 'custom',
-                title: 'Submit a Prayer Request',
-                description: 'We would love to pray with you. Let us know how we can support you this week.',
-                buttonText: 'Pray With Us',
-                buttonLink: '/prayer-wall'
-              }
-            ];
-          }
-          setFlipCardConfig(parsed);
-        } catch (e) {
-          console.error("Failed to parse flip card config", e);
-        }
-      }
-    }
-  }, []);
+  // Use the extracted hooks
+  const { events, setEvents, eventRegistrations, setEventRegistrations, addEvent, updateEvent, deleteEvent, addEventRegistration, getEventRegistrations } = useEvents();
+  const { announcements, setAnnouncements, addAnnouncement, updateAnnouncement, deleteAnnouncement } = useAnnouncements();
+  const { galleryAlbums, setGalleryAlbums, galleryAlbumUrl, setGalleryAlbumUrl, addGalleryAlbum, updateGalleryAlbum, deleteGalleryAlbum, reorderGalleryAlbums } = useGallery();
+  const { sermons, setSermons, sermonSeries, setSermonSeries, addSermon, updateSermon, deleteSermon, reorderSermons, addSermonSeries, updateSermonSeries, deleteSermonSeries } = useSermons();
+  const { prayerRequests, setPrayerRequests, updatePrayerStatus, deletePrayerRequest } = usePrayers();
+  const { campuses, setCampuses, groups, setGroups, groupScopes, setGroupScopes, addCampus, updateCampus, deleteCampus, addGroup, deleteGroup } = useCampuses();
+  const { users, setUsers, addUser, updateUser, deleteUser } = useUsers();
+  const { worshipVideos, setWorshipVideos, liveStreams, setLiveStreams, addWorshipVideo, updateWorshipVideo, deleteWorshipVideo, updateLiveStream } = useMedia();
+  const { systemSettings, setSystemSettings, flipCardConfig, updateFlipCardConfig } = useSystem();
 
   const pathname = usePathname();
-  const isAdminRoute = pathname?.startsWith('/admin') ?? false;
+  const isAdminRoute = pathname?.startsWith('/admin');
 
-  // ── Fetch public data on every mount (needed by homepage components) ──
+  // ── Fetch Initial Data ────────────────────────────────────────────────
   useEffect(() => {
     const fetchPublicData = async () => {
       try {
         const [
-          campusesRes, eventsRes, announcementsRes,
-          sermonsRes, seriesRes, worshipRes, galleryRes, livestreamRes,
+          eventsRes,
+          announcementsRes,
+          campusesRes,
+          galleryRes,
+          sermonsRes,
+          sermonSeriesRes,
+          worshipVideosRes,
+          liveStreamsRes,
+          settingsRes,
         ] = await Promise.all([
-          fetch('/api/admin/campuses').catch(() => null),
           fetch('/api/admin/events').catch(() => null),
           fetch('/api/admin/announcements').catch(() => null),
+          fetch('/api/admin/campuses').catch(() => null),
+          fetch('/api/admin/media/gallery').catch(() => null),
           fetch('/api/admin/media/sermons').catch(() => null),
           fetch('/api/admin/media/sermon-series').catch(() => null),
           fetch('/api/admin/media/worship-videos').catch(() => null),
-          fetch('/api/admin/media/gallery').catch(() => null),
           fetch('/api/admin/media/livestreams').catch(() => null),
+          fetch('/api/admin/settings').catch(() => null),
         ]);
 
-        if (campusesRes?.ok) setCampuses(mapIds(await campusesRes.json()));
-        if (eventsRes?.ok) setEvents(mapIds(await eventsRes.json()));
-        if (announcementsRes?.ok) setAnnouncements(mapIds(await announcementsRes.json()));
-        if (sermonsRes?.ok) setSermons(mapIds(await sermonsRes.json()));
-        if (seriesRes?.ok) setSermonSeriesState(mapIds(await seriesRes.json()));
-        if (worshipRes?.ok) setWorshipVideos(mapIds(await worshipRes.json()));
-        if (galleryRes?.ok) setGalleryAlbums(mapIds(await galleryRes.json()));
-        if (livestreamRes?.ok) setLiveStreams(mapIds(await livestreamRes.json()));
+        if (eventsRes?.ok) {
+          const rawEvents = await eventsRes.json();
+          setEvents(rawEvents.map((e: any) => ({
+            ...mapId(e),
+            date: e.date || e.startTime?.split('T')[0] || '',
+            time: e.time || e.startTime?.split('T')[1]?.substring(0, 5) || '',
+            endTime: e.endTime || e.endTime?.split('T')[1]?.substring(0, 5) || '',
+          })));
+        }
+        if (announcementsRes?.ok) setAnnouncements(rawToMapped(await announcementsRes.json()));
+        if (campusesRes?.ok) setCampuses(rawToMapped(await campusesRes.json()));
+        if (galleryRes?.ok) setGalleryAlbums(rawToMapped(await galleryRes.json()));
+        if (sermonsRes?.ok) setSermons(rawToMapped(await sermonsRes.json()));
+        if (sermonSeriesRes?.ok) setSermonSeries(rawToMapped(await sermonSeriesRes.json()));
+        if (worshipVideosRes?.ok) setWorshipVideos(rawToMapped(await worshipVideosRes.json()));
+        if (liveStreamsRes?.ok) setLiveStreams(rawToMapped(await liveStreamsRes.json()));
+        if (settingsRes?.ok) setSystemSettings(await settingsRes.json());
       } catch (err) {
         console.error('Failed to fetch public data:', err);
       }
     };
     fetchPublicData();
-  }, []); // runs once on mount
+  }, []);
 
-  // ── Fetch admin-only data — only when on /admin routes ────────────────
-  // Users, event registrations, groups, and prayer requests are heavy and
-  // not needed by any public-facing component. Skipping them for public
-  // visitors saves 4 API calls + 4 DB queries per page load.
   useEffect(() => {
     if (!isAdminRoute) return;
     const fetchAdminData = async () => {
@@ -606,11 +355,11 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
             email: u.email, role: u.role, campusId: u.campusId, groups: u.groups || [],
           })));
         }
-        if (eventRegistrationsRes?.ok) setEventRegistrations(mapIds(await eventRegistrationsRes.json()));
-        if (prayersRes?.ok) setPrayerRequests(mapIds(await prayersRes.json()));
+        if (eventRegistrationsRes?.ok) setEventRegistrations(rawToMapped(await eventRegistrationsRes.json()));
+        if (prayersRes?.ok) setPrayerRequests(rawToMapped(await prayersRes.json()));
         if (groupsRes?.ok) {
           const rawGroups = await groupsRes.json();
-          const mappedGroups = mapIds(rawGroups);
+          const mappedGroups = rawToMapped(rawGroups);
           setGroupScopes(mappedGroups.map((g: any) => ({ name: g.name, scope: g.scope, id: g.id || g._id })));
           setGroups(mappedGroups.map((g: any) => g.name));
         }
@@ -619,473 +368,88 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
       }
     };
     fetchAdminData();
-  }, [isAdminRoute]); // runs when navigating to/from admin routes
+  }, [isAdminRoute]);
+
+  const rawToMapped = (arr: any[]) => arr.map(mapId);
 
   const setCurrentUser = useCallback((u: UserProfile) => setCurrentUserState(u), []);
-  const setGalleryAlbumUrl = useCallback((url: string) => setGalleryAlbumUrlState(url), []);
 
-  const updateFlipCardConfig = (config: FlipCardConfig) => {
-    setFlipCardConfig(config);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('grace_flipCardConfig', JSON.stringify(config));
-    }
-  };
-
-  // ── Live Streams ──────────────────────────────────────────────────────
-  const updateLiveStream = useCallback(async (campusId: string, updates: Partial<LiveStream>) => {
-    const ls = liveStreams.find(l => l.campusId === campusId);
-    if (ls && (ls._id || ls.id)) {
-      const id = ls._id || ls.id;
-      const res = await fetch(`/api/admin/media/livestreams/${id}`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-      if (res.ok) {
-        const updated = await res.json();
-        setLiveStreams(prev => prev.map(l => l.campusId === campusId ? mapId(updated) : l));
-      }
-    }
-  }, [liveStreams]);
-
-  // ── Gallery CRUD ──────────────────────────────────────────────────────
-  const addGalleryAlbum = useCallback(async (a: Omit<GalleryAlbum, 'id'>) => {
-    const res = await fetch('/api/admin/media/gallery', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(a),
-    });
-    if (res.ok) {
-      const created = await res.json();
-      setGalleryAlbums(prev => [...prev, mapId(created)]);
-    }
-  }, []);
-
-  const updateGalleryAlbum = useCallback(async (id: string, a: Partial<GalleryAlbum>) => {
-    const res = await fetch(`/api/admin/media/gallery/${id}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(a),
-    });
-    if (res.ok) {
-      const updated = await res.json();
-      setGalleryAlbums(prev => prev.map(album => album.id === id ? mapId(updated) : album));
-    }
-  }, []);
-
-  const deleteGalleryAlbum = useCallback(async (id: string) => {
-    const res = await fetch(`/api/admin/media/gallery/${id}`, { method: 'DELETE' });
-    if (res.ok) setGalleryAlbums(prev => prev.filter(a => a.id !== id));
-  }, []);
-
-  const reorderGalleryAlbums = useCallback((albums: GalleryAlbum[]) => {
-    const reordered = albums.map((a, i) => ({ ...a, sortOrder: i }));
-    setGalleryAlbums(reordered);
-    // Single batch request instead of N individual PUTs
-    fetch('/api/admin/media/gallery/reorder', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items: reordered.map(a => ({ id: a.id, sortOrder: a.sortOrder })) }),
-    });
-  }, []);
-
-  // ── Events CRUD ───────────────────────────────────────────────────────
-  const addEvent = useCallback(async (e: Omit<Event, 'id' | 'createdAt'>) => {
-    const res = await fetch('/api/admin/events', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(e),
-    });
-    if (res.ok) {
-      const created = await res.json();
-      setEvents(prev => [...prev, mapId(created)]);
-    }
-  }, []);
-
-  const updateEvent = useCallback(async (id: string, u: Partial<Event>, updateSeries?: boolean) => {
-    const url = updateSeries ? `/api/admin/events/${id}?updateSeries=true` : `/api/admin/events/${id}`;
-    const res = await fetch(url, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(u),
-    });
-    if (res.ok) {
-      if (updateSeries) {
-        // Reload page to fetch the newly generated events
-        window.location.reload();
-      } else {
-        const updated = await res.json();
-        setEvents(prev => prev.map(e => e.id === id ? mapId(updated) : e));
-      }
-    }
-  }, []);
-
-  const deleteEvent = useCallback(async (id: string, deleteSeries?: boolean) => {
-    const url = deleteSeries ? `/api/admin/events/${id}?deleteSeries=true` : `/api/admin/events/${id}`;
-    const res = await fetch(url, { method: 'DELETE' });
-    if (res.ok) {
-      if (deleteSeries) {
-        window.location.reload();
-      } else {
-        setEvents(prev => prev.filter(e => e.id !== id));
-        setEventRegistrations(prev => prev.filter(r => r.eventId !== id));
-      }
-    }
-  }, []);
-
-  const addEventRegistration = useCallback(async (reg: Omit<EventRegistration, 'id' | 'registeredAt'>) => {
-    const res = await fetch('/api/admin/event-registrations', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(reg),
-    });
-    if (res.ok) {
-      const created = await res.json();
-      setEventRegistrations(prev => [...prev, mapId(created)]);
-      setEvents(prev => prev.map(e => e.id === reg.eventId ? { ...e, registered: e.registered + 1 } : e));
-    }
-  }, []);
-
-  const getEventRegistrations = useCallback((eventId: string) => {
-    return eventRegistrations.filter(r => r.eventId === eventId);
-  }, [eventRegistrations]);
-
-  // ── Announcements CRUD ────────────────────────────────────────────────
-  const addAnnouncement = useCallback(async (a: Omit<Announcement, 'id' | 'createdAt'>) => {
-    const res = await fetch('/api/admin/announcements', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(a),
-    });
-    if (res.ok) {
-      const created = await res.json();
-      setAnnouncements(prev => [...prev, mapId(created)]);
-    }
-  }, []);
-
-  const updateAnnouncement = useCallback(async (id: string, u: Partial<Announcement>) => {
-    const res = await fetch(`/api/admin/announcements/${id}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(u),
-    });
-    if (res.ok) {
-      const updated = await res.json();
-      setAnnouncements(prev => prev.map(a => a.id === id ? mapId(updated) : a));
-    }
-  }, []);
-
-  const deleteAnnouncement = useCallback(async (id: string) => {
-    const res = await fetch(`/api/admin/announcements/${id}`, { method: 'DELETE' });
-    if (res.ok) setAnnouncements(prev => prev.filter(a => a.id !== id));
-  }, []);
-
-  // ── Users CRUD ────────────────────────────────────────────────────────
-  const addUser = useCallback(async (u: Omit<UserProfile, 'id'>) => {
-    const res = await fetch('/api/admin/users', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(u),
-    });
-    if (res.ok) {
-      const created = await res.json();
-      setUsers(prev => [...prev, { ...created, id: created._id }]);
-    }
-  }, []);
-
-  const updateUser = useCallback(async (id: string, u: Partial<UserProfile>) => {
-    const res = await fetch(`/api/admin/users/${id}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(u),
-    });
-    if (res.ok) {
-      const updated = await res.json();
-      setUsers(prev => prev.map(user => user.id === id ? { ...user, ...updated, id: updated._id } : user));
-    }
-  }, []);
-
-  const deleteUser = useCallback(async (id: string) => {
-    const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' });
-    if (res.ok) setUsers(prev => prev.filter(u => u.id !== id));
-  }, []);
-
-  // ── Worship Videos CRUD ───────────────────────────────────────────────
-  const addWorshipVideo = useCallback(async (v: Omit<WorshipVideo, 'id'>) => {
-    const res = await fetch('/api/admin/media/worship-videos', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(v),
-    });
-    if (res.ok) {
-      const created = await res.json();
-      setWorshipVideos(prev => [...prev, mapId(created)]);
-    }
-  }, []);
-
-  const updateWorshipVideo = useCallback(async (id: string, v: Partial<WorshipVideo>) => {
-    const res = await fetch(`/api/admin/media/worship-videos/${id}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(v),
-    });
-    if (res.ok) {
-      const updated = await res.json();
-      setWorshipVideos(prev => prev.map(video => video.id === id ? mapId(updated) : video));
-    }
-  }, []);
-
-  const deleteWorshipVideo = useCallback(async (id: string) => {
-    const res = await fetch(`/api/admin/media/worship-videos/${id}`, { method: 'DELETE' });
-    if (res.ok) setWorshipVideos(prev => prev.filter(v => v.id !== id));
-  }, []);
-
-  // ── Sermons CRUD ──────────────────────────────────────────────────────
-  const addSermon = useCallback(async (s: Omit<Sermon, 'id' | 'views' | 'likes'>) => {
-    const res = await fetch('/api/admin/media/sermons', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...s, views: 0, likes: 0 }),
-    });
-    if (res.ok) {
-      const created = await res.json();
-      setSermons(prev => [...prev, mapId(created)]);
-    }
-  }, []);
-
-  const updateSermon = useCallback(async (id: string, s: Partial<Sermon>) => {
-    const res = await fetch(`/api/admin/media/sermons/${id}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(s),
-    });
-    if (res.ok) {
-      const updated = await res.json();
-      setSermons(prev => prev.map(sermon => sermon.id === id ? mapId(updated) : sermon));
-    }
-  }, []);
-
-  const deleteSermon = useCallback(async (id: string) => {
-    const res = await fetch(`/api/admin/media/sermons/${id}`, { method: 'DELETE' });
-    if (res.ok) setSermons(prev => prev.filter(s => s.id !== id));
-  }, []);
-
-  const reorderSermons = useCallback((sermons: Sermon[]) => {
-    const reordered = sermons.map((s, i) => ({ ...s, sortOrder: i }));
-    setSermons(reordered);
-    // Single batch request instead of N individual PUTs
-    fetch('/api/admin/media/sermons/reorder', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items: reordered.map(s => ({ id: s.id, sortOrder: s.sortOrder })) }),
-    });
-  }, []);
-
-  // ── Sermon Series CRUD ────────────────────────────────────────────────
-  const addSermonSeries = useCallback(async (s: Omit<SermonSeries, 'id'>) => {
-    const res = await fetch('/api/admin/media/sermon-series', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(s),
-    });
-    if (res.ok) {
-      const created = await res.json();
-      setSermonSeriesState(prev => [...prev, mapId(created)]);
-    }
-  }, []);
-
-  const updateSermonSeries = useCallback(async (id: string, s: Partial<SermonSeries>) => {
-    const res = await fetch(`/api/admin/media/sermon-series/${id}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(s),
-    });
-    if (res.ok) {
-      const updated = await res.json();
-      setSermonSeriesState(prev => prev.map(series => series.id === id ? mapId(updated) : series));
-    }
-  }, []);
-
-  const deleteSermonSeries = useCallback(async (id: string) => {
-    const res = await fetch(`/api/admin/media/sermon-series/${id}`, { method: 'DELETE' });
-    if (res.ok) setSermonSeriesState(prev => prev.filter(s => s.id !== id));
-  }, []);
-
-  // ── Campuses CRUD ─────────────────────────────────────────────────────
-  const addCampus = useCallback(async (c: Omit<Campus, 'id'>) => {
-    const res = await fetch('/api/admin/campuses', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(c),
-    });
-    if (res.ok) {
-      const created = await res.json();
-      setCampuses(prev => [...prev, mapId(created)]);
-    }
-  }, []);
-
-  const updateCampus = useCallback(async (id: string, u: Partial<Campus>) => {
-    const res = await fetch(`/api/admin/campuses/${id}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(u),
-    });
-    if (res.ok) {
-      const updated = await res.json();
-      setCampuses(prev => prev.map(c => c.id === id ? mapId(updated) : c));
-    }
-  }, []);
-
-  const deleteCampus = useCallback(async (id: string) => {
-    const res = await fetch(`/api/admin/campuses/${id}`, { method: 'DELETE' });
-    if (res.ok) setCampuses(prev => prev.filter(c => c.id !== id));
-  }, []);
-
-  // ── Groups CRUD (persisted to backend) ─────────────────────────────────
-  const addGroup = useCallback(async (name: string, scope: string = 'global') => {
-    try {
-      const res = await fetch('/api/admin/groups', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, scope }),
-      });
-      if (res.ok) {
-        const created = await res.json();
-        const id = created._id || created.id;
-        setGroups(prev => prev.includes(name) ? prev : [...prev, name]);
-        setGroupScopes(prev => prev.some(g => g.name === name) ? prev : [...prev, { name, scope, id } as any]);
-      }
-    } catch (err) {
-      console.error('Failed to add group:', err);
-    }
-  }, []);
-
-  const deleteGroup = useCallback(async (name: string) => {
-    try {
-      // Find the group's ID from groupScopes
-      const group = groupScopes.find(g => g.name === name) as any;
-      const id = group?.id || group?._id;
-      if (id) {
-        const res = await fetch(`/api/admin/groups/${id}`, { method: 'DELETE' });
-        if (res.ok) {
-          setGroups(prev => prev.filter(g => g !== name));
-          setGroupScopes(prev => prev.filter(g => g.name !== name));
-        }
-      }
-    } catch (err) {
-      console.error('Failed to delete group:', err);
-    }
-  }, [groupScopes]);
-
-  const updateGroupScope = useCallback(async (name: string, scope: string) => {
-    try {
-      const group = groupScopes.find(g => g.name === name) as any;
-      const id = group?.id || group?._id;
-      if (id) {
-        const res = await fetch(`/api/admin/groups/${id}`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ scope }),
-        });
-        if (res.ok) {
-          setGroupScopes(prev => prev.map(g => g.name === name ? { ...g, scope } : g));
-        }
-      }
-    } catch (err) {
-      console.error('Failed to update group scope:', err);
-    }
-  }, [groupScopes]);
-
-  // ── Prayers CRUD ────────────────────────────────────────────────────────
-  const approvePrayerRequest = useCallback(async (id: string) => {
-    const res = await fetch(`/api/admin/prayers/${id}`, {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'approved' }),
-    });
-    if (res.ok) {
-      const updated = await res.json();
-      setPrayerRequests(prev => prev.map(p => p.id === id ? mapId(updated) : p));
-    }
-  }, []);
-
-  const deletePrayerRequest = useCallback(async (id: string) => {
-    const res = await fetch(`/api/admin/prayers/${id}`, { method: 'DELETE' });
-    if (res.ok) setPrayerRequests(prev => prev.filter(p => p.id !== id));
-  }, []);
+  const approvePrayerRequest = useCallback((id: string) => updatePrayerStatus(id, 'approved'), [updatePrayerStatus]);
 
   const getPendingPrayerRequests = useCallback((campusId?: string) => {
-    return prayerRequests.filter(p => p.status === 'pending' && (!campusId || p.campusId === campusId));
+    return prayerRequests.filter(p => p.status === 'pending' && (!campusId || campusId === 'all' || p.campusId === campusId));
   }, [prayerRequests]);
 
-  // ── Filtering ─────────────────────────────────────────────────────────
-  const getVisibleAnnouncements = useCallback((campusId: string, userGroups: string[], role?: string) => {
-    return announcements.filter(a => {
-      if (role === 'admin' || role === 'super_admin') return true;
-      const tc = a.targetCampuses ?? ['all'];
-      const tg = a.targetGroups ?? ['all'];
-      const ec = a.excludeCampuses ?? [];
-      const eg = a.excludeGroups ?? [];
-
-      if (campusId !== 'all' && ec.includes(campusId)) return false;
-      if (userGroups.some(g => eg.includes(g))) return false;
-
-      if (a.endDate) {
-        let expirationDateObj;
-        if (a.endTime) {
-          expirationDateObj = new Date(`${a.endDate}T${a.endTime}`);
-        } else {
-          expirationDateObj = new Date(`${a.endDate}T23:59:59`);
-        }
-        if (expirationDateObj < new Date()) {
-          return false;
-        }
+  const updateGroupScope = useCallback(async (name: string, scope: string) => {
+    const group = groupScopes.find(g => g.name === name);
+    if (group && (group as any).id) {
+      const id = (group as any).id;
+      const res = await fetch(`/api/admin/groups/${id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scope }),
+      });
+      if (res.ok) {
+        setGroupScopes(prev => prev.map(g => g.name === name ? { ...g, scope } : g));
       }
+    }
+  }, [groupScopes]);
 
-      const campusMatch = campusId === 'all' || tc.includes('all') || tc.includes(campusId);
-      const groupMatch = tg.includes('all') || tg.some(g => userGroups.includes(g));
-      return campusMatch && groupMatch;
+  const updateSystemSettings = useCallback(async (s: Partial<SystemSettings>) => {
+    const res = await fetch('/api/admin/settings', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(s),
     });
-  }, [announcements]);
+    if (res.ok) {
+      setSystemSettings(await res.json());
+    }
+  }, []);
 
-  const getVisibleEvents = useCallback((campusId: string, userGroups: string[], role?: string) => {
-    return events.filter(e => {
-      if (role === 'admin' || role === 'super_admin') return true;
-      const tc = e.targetCampuses ?? ['all'];
-      const tg = e.targetGroups ?? ['all'];
-      const ec = e.excludeCampuses ?? [];
-      const eg = e.excludeGroups ?? [];
+  const checkVisibility = (item: any, campusId: string, userGroups: string[], role?: string) => {
+    if (role === 'super_admin' || role === 'admin') return true;
+    const campusMatch = !item.targetCampuses || item.targetCampuses.length === 0 || item.targetCampuses.includes('all') || item.targetCampuses.includes(campusId);
+    if (!campusMatch) return false;
+    if (item.excludeCampuses && item.excludeCampuses.includes(campusId)) return false;
+    const groupMatch = !item.targetGroups || item.targetGroups.length === 0 || item.targetGroups.includes('all') || item.targetGroups.some((g: string) => userGroups.includes(g));
+    if (!groupMatch) return false;
+    if (item.excludeGroups && item.excludeGroups.some((g: string) => userGroups.includes(g))) return false;
+    return true;
+  };
 
-      if (campusId !== 'all' && ec.includes(campusId)) return false;
-      if (userGroups.some(g => eg.includes(g))) return false;
-
-      const campusMatch = campusId === 'all' || tc.includes('all') || tc.includes(campusId);
-      const groupMatch = tg.includes('all') || tg.some(g => userGroups.includes(g));
-      return campusMatch && groupMatch;
-    });
-  }, [events]);
-
-  const getVisibleGalleryAlbums = useCallback((campusId: string, userGroups: string[], role?: string) => {
-    return galleryAlbums.filter(a => {
-      if (role === 'admin' || role === 'super_admin') return true;
-      const tc = a.targetCampuses ?? ['all'];
-      const tg = a.targetGroups ?? ['all'];
-      const ec = a.excludeCampuses ?? [];
-      const eg = a.excludeGroups ?? [];
-
-      if (campusId !== 'all' && ec.includes(campusId)) return false;
-      if (userGroups.some(g => eg.includes(g))) return false;
-
-      const campusMatch = campusId === 'all' || tc.includes('all') || tc.includes(campusId);
-      const groupMatch = tg.includes('all') || tg.some(g => userGroups.includes(g));
-      return campusMatch && groupMatch;
-    });
-  }, [galleryAlbums]);
+  const getVisibleAnnouncements = useCallback((cId: string, grps: string[], r?: string) => announcements.filter(a => checkVisibility(a, cId, grps, r)), [announcements]);
+  const getVisibleEvents = useCallback((cId: string, grps: string[], r?: string) => events.filter(e => checkVisibility(e, cId, grps, r)), [events]);
+  const getVisibleGalleryAlbums = useCallback((cId: string, grps: string[], r?: string) => galleryAlbums.filter(a => checkVisibility(a, cId, grps, r)), [galleryAlbums]);
+  const getVisibleSermons = useCallback((cId: string, grps: string[], r?: string) => sermons.filter(s => checkVisibility(s, cId, grps, r)), [sermons]);
 
   return (
-    <AdminDataContext.Provider value={{
-      flipCardConfig,
-      campuses, groups, groupScopes, events, eventRegistrations, announcements, users, currentUser, setCurrentUser,
-      addEvent, updateEvent, deleteEvent, addEventRegistration, getEventRegistrations,
-      addAnnouncement, updateAnnouncement, deleteAnnouncement,
-      addUser, updateUser, deleteUser,
-      addCampus, updateCampus, deleteCampus, addGroup, deleteGroup, updateGroupScope,
-      updateFlipCardConfig,
-      getVisibleAnnouncements, getVisibleEvents, getVisibleGalleryAlbums,
-      galleryAlbumUrl, setGalleryAlbumUrl,
-      worshipVideos, addWorshipVideo, updateWorshipVideo, deleteWorshipVideo,
-      sermons, addSermon, updateSermon, deleteSermon, reorderSermons,
-      sermonSeries: sermonSeries, addSermonSeries, updateSermonSeries, deleteSermonSeries,
-      galleryAlbums, addGalleryAlbum, updateGalleryAlbum, deleteGalleryAlbum, reorderGalleryAlbums,
-      liveStreams, updateLiveStream,
-      prayerRequests, approvePrayerRequest, deletePrayerRequest, getPendingPrayerRequests,
-    }}>
+    <AdminDataContext.Provider
+      value={{
+        campuses, groups, groupScopes, events, eventRegistrations, announcements, users, worshipVideos,
+        sermons, sermonSeries, currentUser, galleryAlbumUrl, galleryAlbums, liveStreams, prayerRequests, broadcasts,
+        flipCardConfig, systemSettings,
+        setCurrentUser, setGalleryAlbumUrl,
+        updateLiveStream,
+        addGalleryAlbum, updateGalleryAlbum, deleteGalleryAlbum, reorderGalleryAlbums,
+        addEvent, updateEvent, deleteEvent, addEventRegistration, getEventRegistrations,
+        addAnnouncement, updateAnnouncement, deleteAnnouncement,
+        addUser, updateUser, deleteUser,
+        addWorshipVideo, updateWorshipVideo, deleteWorshipVideo,
+        addSermon, updateSermon, deleteSermon, reorderSermons,
+        addSermonSeries, updateSermonSeries, deleteSermonSeries,
+        addCampus, updateCampus, deleteCampus, addGroup, deleteGroup, updateGroupScope, updateFlipCardConfig,
+        approvePrayerRequest, deletePrayerRequest, getPendingPrayerRequests,
+        getVisibleAnnouncements, getVisibleEvents, getVisibleGalleryAlbums, getVisibleSermons,
+        updateSystemSettings,
+      }}
+    >
       {children}
     </AdminDataContext.Provider>
   );
 }
 
 export function useAdminData() {
-  const ctx = useContext(AdminDataContext);
-  if (!ctx) throw new Error('useAdminData must be used within AdminDataProvider');
-  return ctx;
+  const context = useContext(AdminDataContext);
+  if (!context) {
+    throw new Error('useAdminData must be used within an AdminDataProvider');
+  }
+  return context;
 }

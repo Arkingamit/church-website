@@ -9,11 +9,14 @@ import { Badge } from '@/components/ui/badge';
 import { Play, Calendar, Clock, ArrowRight, Heart, Eye } from 'lucide-react';
 
 export function SermonsPreview() {
-  const { sermons, sermonSeries } = useAdminData();
+  const { sermons, sermonSeries, getVisibleSermons, currentUser } = useAdminData();
 
   const sortedSermons = React.useMemo(() => {
-    return [...sermons].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-  }, [sermons]);
+    // Pass 'global' or current campus id if we have one (usually guests are 'global' unless a campus is selected)
+    const activeCampusId = typeof window !== 'undefined' ? localStorage.getItem('grace_activeCampus') || 'global' : 'global';
+    const visibleSermons = getVisibleSermons(activeCampusId, currentUser?.groups || [], currentUser?.role);
+    return [...visibleSermons].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+  }, [sermons, currentUser, getVisibleSermons]);
 
   // Get featured sermon or fallback to first in sorted list
   const featuredSermon = sortedSermons.find(s => s.isFeatured) || sortedSermons[0];

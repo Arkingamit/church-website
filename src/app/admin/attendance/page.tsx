@@ -35,7 +35,7 @@ export default function AdminAttendancePage() {
     endTime: '11:00',
     latitude: 0,
     longitude: 0,
-    radius: 500,
+    radius: 300,
     recurring: false,
     recurrencePattern: 'weekly',
     recurrenceDay: 'Sunday',
@@ -211,11 +211,11 @@ export default function AdminAttendancePage() {
 
       {/* Create Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Create Attendance Session</DialogTitle>
+        <DialogContent className="max-w-md w-[95vw] h-auto max-h-[90vh] p-0 flex flex-col bg-[#FAF7F2] border-[#E5D5C5] rounded-[24px] overflow-hidden">
+          <DialogHeader className="px-6 py-4 border-b border-[#E5D5C5]/60 shrink-0 bg-[#FAF7F2]">
+            <DialogTitle className="font-serif text-2xl text-[#1A202C]">Create Attendance Session</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 bg-[#FAF7F2]">
             <div className="space-y-2">
               <Label>Session Title</Label>
               <Input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="e.g. Sunday Service - Main Campus" />
@@ -239,7 +239,7 @@ export default function AdminAttendancePage() {
               </div>
               <div className="space-y-2">
                 <Label>Radius (meters)</Label>
-                <Input type="number" value={form.radius} onChange={e => setForm({...form, radius: parseInt(e.target.value) || 500})} />
+                <Input type="number" min={10} max={300} value={form.radius} onChange={e => setForm({...form, radius: parseInt(e.target.value) || 0})} onBlur={() => setForm({...form, radius: Math.min(300, Math.max(10, form.radius))})} />
               </div>
             </div>
 
@@ -384,9 +384,9 @@ export default function AdminAttendancePage() {
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave} className="bg-[#8B2323] hover:bg-[#721515]">Create</Button>
+          <DialogFooter className="px-6 py-4 border-t border-[#E5D5C5]/60 shrink-0 bg-[#FAF7F2]">
+            <Button variant="outline" onClick={() => setDialogOpen(false)} className="rounded-xl">Cancel</Button>
+            <Button onClick={handleSave} className="bg-[#8B2323] hover:bg-[#721515] rounded-xl text-white">Create</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

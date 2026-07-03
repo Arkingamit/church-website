@@ -19,11 +19,14 @@ export async function middleware(request: NextRequest) {
         algorithms: ['HS256'],
       });
       
-      // If we want to check roles, we would need role in the JWT payload.
-      // Assuming role is not in JWT currently, we at least know they are authenticated.
-      // Better yet, we should add role to JWT later, but for now just being logged in is checked here.
       if (!payload.userId) {
         return NextResponse.redirect(new URL('/login', request.url));
+      }
+
+      // Enforce role-based access for /admin routes
+      const allowedRoles = ['group_leader', 'campus_leader', 'admin', 'super_admin'];
+      if (!payload.role || !allowedRoles.includes(payload.role as string)) {
+        return NextResponse.redirect(new URL('/', request.url)); // Redirect unauthorized to home
       }
     } catch (error) {
       return NextResponse.redirect(new URL('/login', request.url));

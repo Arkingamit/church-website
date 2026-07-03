@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useAdminData, type Sermon, type SermonSeries } from '@/lib/admin-data-context';
+import { useAdminData, type Sermon, type SermonSeries, hasGlobalScope, getAllowedCampuses, getAllowedGroups, getGroupsForCampus } from '@/lib/admin-data-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Play,
   Plus,
@@ -35,13 +36,16 @@ import {
   Link,
   FileText,
   MonitorPlay,
-  X
+  X,
+  Megaphone,
+  AlertCircle
 } from 'lucide-react';
 
 export default function SermonManagementPage() {
   const { 
     sermons, addSermon, updateSermon, deleteSermon, reorderSermons,
-    sermonSeries, addSermonSeries, updateSermonSeries, deleteSermonSeries
+    sermonSeries, addSermonSeries, updateSermonSeries, deleteSermonSeries,
+    campuses, groups, groupScopes, users, currentUser
   } = useAdminData();
 
   const [search, setSearch] = useState('');
@@ -63,6 +67,10 @@ export default function SermonManagementPage() {
     description: '',
     isFeatured: false,
     materials: [] as {title: string; url: string; type: string}[],
+    targetCampuses: ['all'] as string[],
+    targetGroups: ['all'] as string[],
+    excludeCampuses: [] as string[],
+    excludeGroups: [] as string[],
   });
 
   // Series Dialog State
@@ -75,6 +83,45 @@ export default function SermonManagementPage() {
   });
 
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'sermon' | 'series', id: string } | null>(null);
+  const [campusMode, setCampusMode] = useState<'all'|'specific'>('all');
+  const [groupMode, setGroupMode] = useState<'all'|'specific'>('all');
+  const isCampusLeader = currentUser?.role === 'campus_leader';
+  const isGroupLeader = currentUser?.role === 'group_leader';
+
+  const toggleCampus = (id: string) => {
+    setSermonForm(f => {
+      const tc = f.targetCampuses || [];
+      const has = tc.includes(id);
+      const next = has ? tc.filter(c => c !== id) : [...tc.filter(c => c !== 'all'), id];
+      return { ...f, targetCampuses: next.length === 0 ? ['all'] : next };
+    });
+  };
+
+  const toggleExcludeCampus = (id: string) => {
+    setSermonForm(f => {
+      const ec = f.excludeCampuses || [];
+      const has = ec.includes(id);
+      return { ...f, excludeCampuses: has ? ec.filter(c => c !== id) : [...ec, id] };
+    });
+  };
+
+  const toggleGroup = (id: string) => {
+    setSermonForm(f => {
+      const tg = f.targetGroups || [];
+      const has = tg.includes(id);
+      const next = has ? tg.filter(c => c !== id) : [...tg.filter(c => c !== 'all'), id];
+      return { ...f, targetGroups: next.length === 0 ? ['all'] : next };
+    });
+  };
+
+  const toggleExcludeGroup = (id: string) => {
+    setSermonForm(f => {
+      const eg = f.excludeGroups || [];
+      const has = eg.includes(id);
+      return { ...f, excludeGroups: has ? eg.filter(c => c !== id) : [...eg, id] };
+    });
+  };
+
 
   const extractVideoId = (url: string) => {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
@@ -130,7 +177,13 @@ export default function SermonManagementPage() {
       description: '',
       isFeatured: false,
       materials: [],
+      targetCampuses: (isCampusLeader || isGroupLeader) ? [currentUser.campusId] : ['all'],
+      targetGroups: isGroupLeader ? currentUser.groups : ['all'],
+      excludeCampuses: [],
+      excludeGroups: [],
     });
+    setCampusMode(isCampusLeader || isGroupLeader ? 'specific' : 'all');
+    setGroupMode(isGroupLeader ? 'specific' : 'all');
     setSermonDialogOpen(true);
   };
 
@@ -145,7 +198,13 @@ export default function SermonManagementPage() {
         url: m.url,
         type: m.type || 'other'
       })),
+      targetCampuses: sermon.targetCampuses || ['all'],
+      targetGroups: sermon.targetGroups || ['all'],
+      excludeCampuses: sermon.excludeCampuses || [],
+      excludeGroups: sermon.excludeGroups || [],
     });
+    setCampusMode((sermon.targetCampuses || []).includes('all') ? 'all' : 'specific');
+    setGroupMode((sermon.targetGroups || []).includes('all') ? 'all' : 'specific');
     setSermonDialogOpen(true);
   };
 
@@ -357,7 +416,14 @@ export default function SermonManagementPage() {
           <DialogHeader>
             <DialogTitle>{editingSermonId ? 'Edit Sermon' : 'Add New Sermon'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSermonSubmit} className="grid grid-cols-2 gap-4 py-4">
+          <form onSubmit={handleSermonSubmit}>
+            <Tabs defaultValue="general" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="general">General Info</TabsTrigger>
+                <TabsTrigger value="audience" className="gap-2"><Megaphone className="w-4 h-4" /> Target Audience</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="general" className="grid grid-cols-2 gap-4 mt-0">
             <div className="col-span-2 space-y-2">
               <Label htmlFor="youtubeUrl">YouTube URL *</Label>
               <Input 
@@ -520,12 +586,124 @@ export default function SermonManagementPage() {
               />
               <Label htmlFor="featured" className="text-sm font-medium">Highlight as Featured Sermon</Label>
             </div>
-            <div className="col-span-2 pt-4">
+            </TabsContent>
+
+            <TabsContent value="audience" className="space-y-4 py-4 mt-0">
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Broadcast to Campuses</Label>
+                  {isCampusLeader && (
+                    <p className="text-[10px] text-amber-500">Campus Leader: restricted to {campuses.find(c => c.id === currentUser.campusId)?.name}</p>
+                  )}
+                  {isGroupLeader && (
+                    <p className="text-[10px] text-emerald-500">Group Leader: restricted to {campuses.find(c => c.id === currentUser.campusId)?.name}</p>
+                  )}
+                  {hasGlobalScope(currentUser.role) && (
+                    <div className="flex items-center gap-4">
+                      <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <Checkbox checked={campusMode === 'all'} onCheckedChange={() => setCampusMode('all')} disabled={isCampusLeader || isGroupLeader} /> All
+                      </label>
+                      <label className="flex items-center gap-2 text-sm cursor-pointer">
+                        <Checkbox checked={campusMode === 'specific'} onCheckedChange={() => setCampusMode('specific')} disabled={isCampusLeader || isGroupLeader} /> Specific
+                      </label>
+                    </div>
+                  )}
+                  {(campusMode !== 'all' || !hasGlobalScope(currentUser.role)) && (
+                    <div className="grid grid-cols-1 gap-1.5 pl-2 mt-2">
+                      {getAllowedCampuses(currentUser.role, currentUser.campusId, campuses).map(c => (
+                        <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={(sermonForm.targetCampuses || []).includes(c.id)}
+                            onCheckedChange={() => toggleCampus(c.id)}
+                          />
+                          {c.name}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="pt-2">
+                    <Label className="text-xs text-muted-foreground">Exclude Campuses (Optional)</Label>
+                    <div className="grid grid-cols-1 gap-1.5 pl-2 mt-2">
+                      {campuses.map(c => (
+                        <label key={"ex-" + c.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={(sermonForm.excludeCampuses || []).includes(c.id)}
+                            onCheckedChange={() => toggleExcludeCampus(c.id)}
+                            disabled={(isCampusLeader || isGroupLeader) && c.id !== currentUser.campusId}
+                          />
+                          {c.name}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-2 border-t border-border/50">
+                  <Label className="text-xs text-muted-foreground">Visible to Groups</Label>
+                  {isGroupLeader && (
+                    <p className="text-[10px] text-emerald-500">Group Leader: restricted to your assigned groups</p>
+                  )}
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox checked={groupMode === 'all'} onCheckedChange={() => setGroupMode('all')} /> All
+                    </label>
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox checked={groupMode === 'specific'} onCheckedChange={() => setGroupMode('specific')} /> Specific
+                    </label>
+                  </div>
+                  {groupMode !== 'all' && (
+                    <div className="grid grid-cols-2 gap-1.5 pl-2 mt-2">
+                      {(() => {
+                        const selectedCampusIds = campusMode === 'all' ? ['global'] : (sermonForm.targetCampuses || []);
+                        const visibleGroups = campusMode === 'all'
+                          ? groups
+                          : [...new Set(selectedCampusIds.flatMap(cid => getGroupsForCampus(groupScopes, cid)))];
+                        return getAllowedGroups(currentUser.role, currentUser.groups, groupScopes, currentUser.campusId)
+                          .filter(g => visibleGroups.includes(g))
+                          .map(g => (
+                          <label key={g} className="flex items-center gap-2 text-sm cursor-pointer">
+                            <Checkbox 
+                              checked={(sermonForm.targetGroups || []).includes(g)} 
+                              onCheckedChange={() => toggleGroup(g)} 
+                            />
+                            {g}
+                          </label>
+                        ));
+                      })()}
+                    </div>
+                  )}
+
+                  <div className="pt-2">
+                    <Label className="text-xs text-muted-foreground">Exclude Groups (Optional)</Label>
+                    <div className="grid grid-cols-2 gap-1.5 pl-2 mt-2">
+                      {(() => {
+                        const selectedCampusIds = campusMode === 'all' ? ['global'] : (sermonForm.targetCampuses || []);
+                        const visibleGroups = campusMode === 'all'
+                          ? groups
+                          : [...new Set(selectedCampusIds.flatMap(cid => getGroupsForCampus(groupScopes, cid)))];
+                        return visibleGroups.map(g => (
+                          <label key={"ex-" + g} className="flex items-center gap-2 text-sm cursor-pointer">
+                            <Checkbox 
+                              checked={(sermonForm.excludeGroups || []).includes(g)} 
+                              onCheckedChange={() => toggleExcludeGroup(g)} 
+                              disabled={isGroupLeader && !currentUser.groups.includes(g)}
+                            />
+                            {g}
+                          </label>
+                        ));
+                      })()}
+                    </div>
+                  </div>
+                </div>
+            </TabsContent>
+
+            <div className="col-span-2 pt-4 mt-4 border-t">
               <DialogFooter>
                 <Button type="button" variant="ghost" onClick={() => setSermonDialogOpen(false)}>Cancel</Button>
                 <Button type="submit">{editingSermonId ? 'Save Changes' : 'Add Sermon'}</Button>
               </DialogFooter>
             </div>
+            </Tabs>
           </form>
         </DialogContent>
       </Dialog>

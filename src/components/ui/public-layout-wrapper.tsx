@@ -4,7 +4,7 @@ import React from "react";
 import { usePathname } from "next/navigation";
 import { Navigation } from "@/components/ui/navigation";
 import { MobileBottomNav } from "@/components/ui/mobile-bottom-nav";
-import { Footer } from "@/components/ui/footer";
+
 import { GlobalAttendancePrompt } from "@/components/ui/global-attendance-prompt";
 
 export function PublicLayoutWrapper({ children }: { children: React.ReactNode }) {
@@ -25,9 +25,6 @@ export function PublicLayoutWrapper({ children }: { children: React.ReactNode })
         <Navigation />
       </div>
       <main key={pathname} className="flex-1 pb-20 md:pb-0 animate-page-enter">{children}</main>
-      <div className="hidden md:block">
-        <Footer />
-      </div>
       <GlobalAttendancePrompt />
       <MobileBottomNav />
     </div>

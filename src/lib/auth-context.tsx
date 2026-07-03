@@ -2,38 +2,9 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
-export type MemberStatus = 'pending' | 'approved' | 'rejected';
+import { ChurchMember, AuthSession, MemberStatus } from '@/lib/types';
 
-export interface ChurchMember {
-  id: string;
-  _id?: string;
-  firstName: string;
-  middleName?: string;
-  lastName: string;
-  gender: 'male' | 'female';
-  birthday?: string;
-  maritalStatus?: 'single' | 'married';
-  marriageDate?: string;
-  campusId: string;
-  email: string;
-  phone?: string;
-  whatsapp?: string;
-  password?: string;
-  createdAt: string;
-  status: MemberStatus;
-  groups: string[];
-  qrCode?: string;
-  familyMemberId?: string;
-  role?: string;
-  createdBy?: string;
-}
-
-export interface AuthSession {
-  memberId: string;
-  email: string;
-  name: string;
-  role: string;
-}
+export type { ChurchMember, AuthSession, MemberStatus };
 
 interface AuthContextType {
   session: AuthSession | null;

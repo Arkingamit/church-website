@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { requireAdmin, requireAdminWithScope, requireAuth, enforceCampusScope, enforceGroupScope } from '@/lib/api-auth';
 import connectToDatabase from '@/lib/db';
 import { Sermon, SermonSeries, WorshipVideo, GalleryAlbum, LiveStream } from '@/models/Media';
+import Notification from '@/models/Notification';
+import { sendPushToTargeted } from '@/lib/push-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,7 +52,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
     const body = await req.json();
 
     // Enforce scope for models that support it
-    if (type === 'gallery') {
+    if (type === 'gallery' || type === 'sermons') {
       body.targetCampuses = enforceCampusScope(admin.role, admin.campusId, body.targetCampuses);
       body.targetGroups = enforceGroupScope(admin.role, admin.groups, body.targetGroups);
     } else if (type === 'livestreams') {
@@ -60,6 +62,37 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
     }
 
     const item = await Model.create(body);
+
+    if (type === 'sermons') {
+      await Notification.create({
+        title: `New Sermon: ${item.title}`,
+        message: `A new sermon by ${item.pastor || 'our pastor'} is available.`,
+        type: 'new_sermon',
+        sourceId: item._id.toString(),
+        targetCampuses: item.targetCampuses || ['all'],
+        targetGroups: item.targetGroups || [],
+      });
+      await sendPushToTargeted({
+        title: `New Sermon: ${item.title}`,
+        body: `A new sermon by ${item.pastor || 'our pastor'} is available.`,
+        type: 'new_sermon'
+      }, item.targetCampuses || ['all'], item.targetGroups || []);
+    } else if (type === 'worship-videos') {
+      await Notification.create({
+        title: `New Worship Video: ${item.title}`,
+        message: `A new worship video has been added.`,
+        type: 'new_worship_video',
+        sourceId: item._id.toString(),
+        targetCampuses: ['all'],
+        targetGroups: [],
+      });
+      await sendPushToTargeted({
+        title: `New Worship Video: ${item.title}`,
+        body: `A new worship video has been added.`,
+        type: 'new_worship_video'
+      }, ['all'], []);
+    }
+
     return NextResponse.json(item, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to create item' }, { status: 500 });

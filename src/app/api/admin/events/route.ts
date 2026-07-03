@@ -5,6 +5,8 @@ import EventModel from '@/models/Event';
 import { eventSchema } from '@/lib/validations';
 import { generateOccurrences } from '@/lib/recurrence';
 import mongoose from 'mongoose';
+import Notification from '@/models/Notification';
+import { sendPushToTargeted } from '@/lib/push-utils';
 
 // Projection for list view — omits heavy nested arrays (formFields, schedule)
 // that are only needed when editing a specific event. Reduces payload ~40-70%.
@@ -93,9 +95,37 @@ export async function POST(req: Request) {
       }));
 
       const createdEvents = await EventModel.insertMany(eventsToCreate);
+      await Notification.create({
+        title: `New Event: ${eventData.title}`,
+        message: `A new event series has been scheduled. Check it out!`,
+        type: 'new_event',
+        sourceId: createdEvents[0]._id.toString(),
+        targetCampuses: eventData.targetCampuses || ['all'],
+        targetGroups: eventData.targetGroups || [],
+      });
+      await sendPushToTargeted({
+        title: `New Event: ${eventData.title}`,
+        body: `A new event series has been scheduled. Check it out!`,
+        type: 'new_event'
+      }, eventData.targetCampuses || ['all'], eventData.targetGroups || []);
+
       return NextResponse.json(createdEvents[0], { status: 201 });
     } else {
       const event = await EventModel.create(eventData);
+      await Notification.create({
+        title: `New Event: ${event.title}`,
+        message: `A new event has been scheduled. Check it out!`,
+        type: 'new_event',
+        sourceId: event._id.toString(),
+        targetCampuses: event.targetCampuses || ['all'],
+        targetGroups: event.targetGroups || [],
+      });
+      await sendPushToTargeted({
+        title: `New Event: ${event.title}`,
+        body: `A new event has been scheduled. Check it out!`,
+        type: 'new_event'
+      }, event.targetCampuses || ['all'], event.targetGroups || []);
+
       return NextResponse.json(event, { status: 201 });
     }
   } catch (error: any) {

@@ -1,14 +1,14 @@
-import { NextResponse } from 'next/server';
 import { requireAdminWithScope, enforceCampusScope, enforceGroupScope } from '@/lib/api-auth';
 import connectToDatabase from '@/lib/db';
 import Announcement from '@/models/Announcement';
 import { calculateNextOccurrence } from '@/lib/recurrence';
+import { apiSuccess, apiError, withErrorHandler } from '@/lib/api-helpers';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await requireAdminWithScope();
-  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  return withErrorHandler(async () => {
+    const admin = await requireAdminWithScope();
+    if (!admin) return apiError('Unauthorized', 401);
 
-  try {
     await connectToDatabase();
     const { id } = await params;
     const body = await req.json();
@@ -33,45 +33,41 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const announcement = await Announcement.findByIdAndUpdate(id, body, { new: true });
     
     if (!announcement) {
-      return NextResponse.json({ error: 'Announcement not found' }, { status: 404 });
+      return apiError('Announcement not found', 404);
     }
     
-    return NextResponse.json(announcement);
-  } catch (error: any) {
-    return NextResponse.json({ error: 'Failed to update announcement' }, { status: 500 });
-  }
+    return apiSuccess(announcement);
+  });
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await requireAdminWithScope();
-  if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  return withErrorHandler(async () => {
+    const admin = await requireAdminWithScope();
+    if (!admin) return apiError('Unauthorized', 401);
 
-  try {
     await connectToDatabase();
     const { id } = await params;
 
     // Verify the announcement is within the user's scope before deleting
     const announcement = await Announcement.findById(id);
     if (!announcement) {
-      return NextResponse.json({ error: 'Announcement not found' }, { status: 404 });
+      return apiError('Announcement not found', 404);
     }
 
     // campus_leader can only delete announcements targeting their campus
     if (admin.role === 'campus_leader') {
       const targets = announcement.targetCampuses || [];
       if (!targets.includes(admin.campusId) && !targets.includes('all')) {
-        return NextResponse.json({ error: 'You can only delete announcements within your campus' }, { status: 403 });
+        return apiError('You can only delete announcements within your campus', 403);
       }
     } else if (admin.role === 'group_leader') {
       const targets = announcement.targetCampuses || [];
       if (!targets.includes(admin.campusId) && !targets.includes('all')) {
-        return NextResponse.json({ error: 'You can only delete announcements within your scope' }, { status: 403 });
+        return apiError('You can only delete announcements within your scope', 403);
       }
     }
 
     await Announcement.findByIdAndDelete(id);
-    return NextResponse.json({ message: 'Announcement deleted successfully' });
-  } catch (error: any) {
-    return NextResponse.json({ error: 'Failed to delete announcement' }, { status: 500 });
-  }
+    return apiSuccess({ message: 'Announcement deleted successfully' });
+  });
 }

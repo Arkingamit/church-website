@@ -19,9 +19,16 @@ import {
 } from 'lucide-react';
 
 export default function SermonsPage() {
-  const { sermonSeries, sermons } = useAdminData();
+  const { sermonSeries, sermons, getVisibleSermons, currentUser } = useAdminData();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
+  const [activeCampusId, setActiveCampusId] = useState('global');
+
+  React.useEffect(() => {
+    setActiveCampusId(localStorage.getItem('grace_activeCampus') || 'global');
+  }, []);
+
+  const visibleSermons = getVisibleSermons(activeCampusId, currentUser?.groups || [], currentUser?.role);
 
   const categories = ['All', ...Array.from(new Set(sermonSeries.map(s => s.category)))];
 
@@ -83,7 +90,7 @@ export default function SermonsPage() {
       <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredSeries.map((series) => {
-            const seriesSermons = sermons.filter(s => s.seriesId === series.id);
+            const seriesSermons = visibleSermons.filter(s => s.seriesId === series.id);
             const latestSermon = seriesSermons[0];
 
             return (
