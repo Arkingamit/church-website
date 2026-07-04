@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { Card, CardContent } from '@/components/ui/card';
 import { Church, ArrowLeft } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 
