@@ -2,12 +2,14 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
-const secretKey = process.env.JWT_SECRET || (process.env.NODE_ENV === 'production'
-  ? (() => { throw new Error('FATAL: JWT_SECRET is not set in production environment'); })()
-  : 'fallback_secret_key_for_dev_only');
+const secretKey = process.env.JWT_SECRET || 'fallback_secret_key_for_dev_only';
 const encodedKey = new TextEncoder().encode(secretKey);
 
 export async function middleware(request: NextRequest) {
+  if (process.env.NODE_ENV === 'production' && secretKey === 'fallback_secret_key_for_dev_only') {
+    throw new Error('FATAL: JWT_SECRET is not set in production environment');
+  }
+
   const session = request.cookies.get('session')?.value;
 
   // Protect /admin routes

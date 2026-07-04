@@ -1,12 +1,17 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 
-const secretKey = process.env.JWT_SECRET || (process.env.NODE_ENV === 'production'
-  ? (() => { throw new Error('FATAL: JWT_SECRET is not set in production environment'); })()
-  : 'fallback_secret_key_for_dev_only');
+const secretKey = process.env.JWT_SECRET || 'fallback_secret_key_for_dev_only';
 const encodedKey = new TextEncoder().encode(secretKey);
 
+function validateSecret() {
+  if (process.env.NODE_ENV === 'production' && secretKey === 'fallback_secret_key_for_dev_only') {
+    throw new Error('FATAL: JWT_SECRET is not set in production environment');
+  }
+}
+
 export async function encrypt(payload: any) {
+  validateSecret();
   return new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -15,6 +20,7 @@ export async function encrypt(payload: any) {
 }
 
 export async function decrypt(session: string | undefined = '') {
+  validateSecret();
   try {
     const { payload } = await jwtVerify(session, encodedKey, {
       algorithms: ['HS256'],
