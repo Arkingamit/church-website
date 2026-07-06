@@ -14,7 +14,9 @@ import { useParallax, useScrollReveal } from "@/lib/use-parallax";
 import { MobileHomeView } from "@/components/home/mobile-home-view";
 import { AuthGate } from "@/components/ui/auth-gate";
 import { useAuth } from "@/lib/auth-context";
+import { useAdminData } from "@/lib/admin-data-context";
 import { NoteShareSection } from "@/components/ui/note-share-section";
+import { MobileHomeSkeleton, DesktopHomeSkeleton } from "@/components/home/home-skeleton";
 
 // Wrapper for parallax background sections
 function ParallaxSection({
@@ -82,6 +84,18 @@ function RevealSection({
 
 export default function HomePage() {
   const { session } = useAuth();
+  const { isLoading } = useAdminData();
+
+  // Show skeleton loaders while data is being fetched
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-transparent selection:bg-primary/10 flex flex-col">
+        <MobileHomeSkeleton />
+        <DesktopHomeSkeleton />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-transparent selection:bg-primary/10 flex flex-col">
       
@@ -142,7 +156,7 @@ export default function HomePage() {
           </RevealSection>
         </section>
 
-        {/* Photo Gallery (not in user list but keeps it below if needed) */}
+        {/* Photo Gallery */}
         <ParallaxSection id="gallery" speed={0.2} className="bg-transparent py-24 sm:py-32 border-b border-border/50 relative">
           <RevealSection delay={100}>
             <GallerySection />

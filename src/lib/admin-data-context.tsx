@@ -177,6 +177,9 @@ const defaultCurrentUser: UserProfile = {
 
 // ── Context ────────────────────────────────────────────────────────────
 interface AdminDataContextType {
+  // Loading
+  isLoading: boolean;
+
   // Data
   campuses: Campus[];
   groups: string[];
@@ -272,6 +275,7 @@ const AdminDataContext = createContext<AdminDataContextType | null>(null);
 export function AdminDataProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUserState] = useState<UserProfile>(defaultCurrentUser);
   const [broadcasts, setBroadcasts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Use the extracted hooks
   const { events, setEvents, eventRegistrations, setEventRegistrations, addEvent, updateEvent, deleteEvent, addEventRegistration, getEventRegistrations } = useEvents();
@@ -310,7 +314,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
           fetch('/api/admin/media/sermon-series').catch(() => null),
           fetch('/api/admin/media/worship-videos').catch(() => null),
           fetch('/api/admin/media/livestreams').catch(() => null),
-          fetch('/api/admin/settings').catch(() => null),
+          fetch('/api/system/settings').catch(() => null),
         ]);
 
         if (eventsRes?.ok) {
@@ -332,6 +336,8 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
         if (settingsRes?.ok) setSystemSettings(await settingsRes.json());
       } catch (err) {
         console.error('Failed to fetch public data:', err);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchPublicData();
@@ -423,6 +429,7 @@ export function AdminDataProvider({ children }: { children: React.ReactNode }) {
   return (
     <AdminDataContext.Provider
       value={{
+        isLoading,
         campuses, groups, groupScopes, events, eventRegistrations, announcements, users, worshipVideos,
         sermons, sermonSeries, currentUser, galleryAlbumUrl, galleryAlbums, liveStreams, prayerRequests, broadcasts,
         flipCardConfig, systemSettings,

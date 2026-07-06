@@ -656,7 +656,7 @@ export function MobileHomeView() {
                 {upcomingEvents.map(event => {
                   const eventDate = new Date(event.date);
                   return (
-                    <Link href={`/events/${event.id}`} key={event.id} className="min-w-[260px] max-w-[280px] bg-white rounded-3xl p-4 flex gap-4 shadow-sm snap-start border border-border/50">
+                    <Link href={`/events`} key={event.id} className="min-w-[260px] max-w-[280px] bg-white rounded-3xl p-4 flex gap-4 shadow-sm snap-start border border-border/50">
                       <div className="w-16 h-16 rounded-2xl bg-[#FFF5F5] flex flex-col items-center justify-center shrink-0 border border-red-50">
                         <span className="text-xl font-bold text-[#8B2323] leading-none">{eventDate.getDate()}</span>
                         <span className="text-xs font-bold text-[#8B2323] mt-1">{eventDate.toLocaleDateString('en-US', { month: 'short' })}</span>
@@ -884,7 +884,7 @@ export function MobileHomeView() {
                 {upcomingEvents.map(event => {
                   const eventDate = new Date(event.date);
                   return (
-                    <Link href={`/events/${event.id}`} key={event.id} className="min-w-[260px] max-w-[280px] bg-white rounded-3xl p-4 flex gap-4 shadow-sm snap-start border border-border/50">
+                    <Link href={`/events`} key={event.id} className="min-w-[260px] max-w-[280px] bg-white rounded-3xl p-4 flex gap-4 shadow-sm snap-start border border-border/50">
                       <div className="w-16 h-16 rounded-2xl bg-[#FFF5F5] flex flex-col items-center justify-center shrink-0 border border-red-50">
                         <span className="text-xl font-bold text-[#8B2323] leading-none">{eventDate.getDate()}</span>
                         <span className="text-xs font-bold text-[#8B2323] mt-1">{eventDate.toLocaleDateString('en-US', { month: 'short' })}</span>

@@ -603,7 +603,7 @@ function EventsPageLayout() {
     const isAdminOrLeader = sessionMember.role === 'admin' || sessionMember.role === 'super_admin' || sessionMember.role === 'campus_leader';
     const userGroups = isAdminOrLeader ? ['all'] : Array.from(new Set([...effectiveGroups, 'all']));
     
-    return getVisibleEvents(sessionMember.campusId || 'all', userGroups);
+    return getVisibleEvents(sessionMember.campusId || 'all', userGroups, sessionMember.role);
   }, [getSessionMember, getEffectiveGroups, getVisibleEvents]);
 
   const upcomingEvents = useMemo(() => {
@@ -685,24 +685,24 @@ function EventsPageLayout() {
               </div>
 
               {/* Status & Actions */}
-              <div className="mt-auto pt-4 flex items-center justify-between border-t border-border/40">
-                <span className={`text-xs font-medium ${isPast ? 'text-muted-foreground' : availability.color}`}>
+              <div className="mt-auto pt-4 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-border/40">
+                <span className={`text-xs font-medium self-start sm:self-auto ${isPast ? 'text-muted-foreground' : availability.color}`}>
                   {isPast ? 'Event Ended' : availability.text}
                 </span>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                   {event.googlePhotosUrl && (
-                    <Button variant="outline" size="icon" className="h-9 w-9 text-primary hover:bg-primary/10 rounded-xl" onClick={() => setAlbumEvent(event)} title="View Event Photos">
+                    <Button variant="outline" size="icon" className="h-10 w-10 shrink-0 text-primary hover:bg-primary/10 rounded-xl" onClick={() => setAlbumEvent(event)} title="View Event Photos">
                       <Images className="w-4 h-4" />
                     </Button>
                   )}
                   <Button 
                     disabled={isPast || event.registered >= event.capacity}
                     onClick={() => setRsvpEvent(event)}
-                    className="h-9 text-xs rounded-xl px-4"
+                    className="h-10 w-full sm:w-auto text-sm font-semibold rounded-xl px-6"
                   >
                     {isPast ? 'Ended' : event.registered >= event.capacity ? 'Full' : 'RSVP'}
-                    {!isPast && event.registered < event.capacity && <ArrowRight className="w-3.5 h-3.5 ml-1.5" />}
+                    {!isPast && event.registered < event.capacity && <ArrowRight className="w-4 h-4 ml-2" />}
                   </Button>
                 </div>
               </div>
@@ -714,14 +714,14 @@ function EventsPageLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-transparent pt-24 pb-12">
+    <div className="w-full pb-12">
       <main className="flex-1">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 md:px-0">
           <div className="max-w-6xl mx-auto space-y-8">
             {/* Header */}
             <div>
               <Link href="/#events">
-                <Button variant="ghost" size="sm" className="mb-6 gap-2 text-muted-foreground hover:text-foreground">
+                <Button variant="ghost" size="sm" className="mb-6 -ml-3 gap-2 text-muted-foreground hover:text-foreground">
                   <ChevronLeft className="w-4 h-4" /> Back to Home
                 </Button>
               </Link>

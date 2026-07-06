@@ -102,7 +102,7 @@ export default function SearchPage() {
                   <Calendar className="w-4 h-4 text-[#8B2323]" /> Events
                 </h3>
                 {results.events.map(event => (
-                  <Link key={`event-${event.id}`} href={`/events/${event.id}`}>
+                  <Link key={`event-${event.id}`} href={`/events`}>
                     <Card className="p-4 border-0 shadow-sm bg-white/80 backdrop-blur-sm rounded-2xl flex items-center gap-4 hover:bg-white transition-colors active:scale-95 duration-150">
                       <div className="w-12 h-12 rounded-xl bg-[#FFF5F5] flex flex-col items-center justify-center shrink-0 border border-red-50">
                         <span className="text-sm font-bold text-[#8B2323] leading-none">{new Date(event.date).getDate()}</span>
