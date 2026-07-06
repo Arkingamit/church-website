@@ -29,7 +29,7 @@ export const eventSchema = z.object({
   endTime: z.string().optional(),
   location: z.string().min(2, 'Location is required'),
   category: z.string(),
-  capacity: z.number().int().positive(),
+  capacity: z.number().int().min(0),
   recurring: z.boolean().optional(),
   recurrencePattern: z.string().optional(),
   recurrenceDay: z.string().optional(),

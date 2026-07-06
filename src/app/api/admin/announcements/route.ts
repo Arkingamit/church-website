@@ -5,11 +5,17 @@ import { calculateNextOccurrence } from '@/lib/recurrence';
 import { apiSuccess, apiError, withErrorHandler } from '@/lib/api-helpers';
 import Notification from '@/models/Notification';
 import { sendPushToTargeted } from '@/lib/push-utils';
+import { serverCache, CACHE_TTL } from '@/lib/cache';
 
 export async function GET() {
   return withErrorHandler(async () => {
     const admin = await requireAdminWithScope();
     if (!admin) return apiError('Unauthorized', 401);
+
+    // Cache key includes role+campus to avoid data leaks between scopes
+    const cacheKey = `announcements:${admin.role}:${admin.campusId}`;
+    const cached = serverCache.get(cacheKey);
+    if (cached) return apiSuccess(cached);
 
     await connectToDatabase();
 
@@ -33,6 +39,8 @@ export async function GET() {
     const announcements = await Announcement.find(query)
       .sort({ isPinned: -1, createdAt: -1 })
       .lean();
+
+    serverCache.set(cacheKey, announcements, CACHE_TTL.ANNOUNCEMENTS, ['announcements']);
     return apiSuccess(announcements);
   });
 }
@@ -75,6 +83,9 @@ export async function POST(req: Request) {
       body: announcement.content.substring(0, 100) + (announcement.content.length > 100 ? '...' : ''),
       type: 'new_announcement'
     }, announcement.targetCampuses || ['all'], announcement.targetGroups || []);
+
+    // Invalidate all announcement caches (any role/campus combo)
+    serverCache.invalidateByTag('announcements');
 
     return apiSuccess(announcement, 201);
   });

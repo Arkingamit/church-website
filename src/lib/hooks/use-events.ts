@@ -14,6 +14,10 @@ export function useEvents() {
     if (res.ok) {
       const created = await res.json();
       setEvents(prev => [...prev, mapId(created)]);
+      import('sonner').then(({ toast }) => toast.success('Event created successfully'));
+    } else {
+      const errorData = await res.json().catch(() => ({}));
+      import('sonner').then(({ toast }) => toast.error(errorData.error || 'Failed to create event'));
     }
   }, []);
 
@@ -29,7 +33,11 @@ export function useEvents() {
       } else {
         const updated = await res.json();
         setEvents(prev => prev.map(e => e.id === id ? mapId(updated) : e));
+        import('sonner').then(({ toast }) => toast.success('Event updated successfully'));
       }
+    } else {
+      const errorData = await res.json().catch(() => ({}));
+      import('sonner').then(({ toast }) => toast.error(errorData.error || 'Failed to update event'));
     }
   }, []);
 

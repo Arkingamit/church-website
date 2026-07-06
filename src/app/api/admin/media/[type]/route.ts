@@ -4,6 +4,7 @@ import connectToDatabase from '@/lib/db';
 import { Sermon, SermonSeries, WorshipVideo, GalleryAlbum, LiveStream } from '@/models/Media';
 import Notification from '@/models/Notification';
 import { sendPushToTargeted } from '@/lib/push-utils';
+import { serverCache, CACHE_TTL } from '@/lib/cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,8 +21,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ type: st
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    await connectToDatabase();
     const { type } = await params;
+
+    // Check in-memory cache first
+    const cacheKey = `media:${type}`;
+    const cached = serverCache.get(cacheKey);
+    if (cached) return NextResponse.json(cached);
+
+    await connectToDatabase();
     const Model = models[type];
 
     if (!Model) {
@@ -30,6 +37,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ type: st
 
     // .lean() returns plain JS objects — 30-50% faster than full Mongoose documents
     const items = await Model.find({}).sort({ sortOrder: 1, createdAt: -1 }).lean();
+
+    // Use shorter TTL for livestreams since they're real-time
+    const ttl = type === 'livestreams' ? CACHE_TTL.LIVESTREAMS : CACHE_TTL.SERMONS;
+    serverCache.set(cacheKey, items, ttl, ['media']);
+
     return NextResponse.json(items);
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch items' }, { status: 500 });
@@ -92,6 +104,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ type: s
         type: 'new_worship_video'
       }, ['all'], []);
     }
+
+    // Invalidate media cache for this type
+    serverCache.invalidate(`media:${type}`);
 
     return NextResponse.json(item, { status: 201 });
   } catch (error) {

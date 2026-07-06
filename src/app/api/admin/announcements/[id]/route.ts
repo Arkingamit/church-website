@@ -3,6 +3,7 @@ import connectToDatabase from '@/lib/db';
 import Announcement from '@/models/Announcement';
 import { calculateNextOccurrence } from '@/lib/recurrence';
 import { apiSuccess, apiError, withErrorHandler } from '@/lib/api-helpers';
+import { serverCache } from '@/lib/cache';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   return withErrorHandler(async () => {
@@ -35,6 +36,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     if (!announcement) {
       return apiError('Announcement not found', 404);
     }
+
+    // Invalidate all announcement caches
+    serverCache.invalidateByTag('announcements');
     
     return apiSuccess(announcement);
   });
@@ -68,6 +72,10 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     }
 
     await Announcement.findByIdAndDelete(id);
+
+    // Invalidate all announcement caches
+    serverCache.invalidateByTag('announcements');
+
     return apiSuccess({ message: 'Announcement deleted successfully' });
   });
 }

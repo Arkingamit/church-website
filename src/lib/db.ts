@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { ensureIndexes } from './ensure-indexes';
 
 const MONGODB_URI = process.env.MONGODB_URI!;
 
@@ -35,7 +36,9 @@ async function connectToDatabase() {
       maxIdleTimeMS: 10000,         // close idle connections (good for serverless)
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then(async (mongoose) => {
+      // Ensure compound indexes on first connection (non-blocking)
+      await ensureIndexes().catch(() => {});
       return mongoose;
     });
   }

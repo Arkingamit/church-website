@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/db';
 import { DailyVerse } from '@/models/DailyVerse';
+import { serverCache, CACHE_TTL } from '@/lib/cache';
 
 // Helper to get current day of year (1-366)
 function getDayOfYear(date: Date) {
@@ -12,6 +13,10 @@ function getDayOfYear(date: Date) {
 
 export async function GET() {
   try {
+    // Check in-memory cache first (1 hour TTL)
+    const cached = serverCache.get('daily-verse');
+    if (cached) return NextResponse.json(cached);
+
     await connectToDatabase();
     
     // Get total count of verses
@@ -19,10 +24,12 @@ export async function GET() {
     
     if (totalVerses === 0) {
       // Fallback if no verses uploaded
-      return NextResponse.json({
+      const fallback = {
         text: "The Lord is my shepherd; I shall not want.",
         reference: "Psalm 23:1"
-      });
+      };
+      serverCache.set('daily-verse', fallback, CACHE_TTL.DAILY_VERSE);
+      return NextResponse.json(fallback);
     }
 
     const currentDayOfYear = getDayOfYear(new Date());
@@ -32,21 +39,26 @@ export async function GET() {
     let targetDay = currentDayOfYear % totalVerses;
     if (targetDay === 0) targetDay = totalVerses; // 1-indexed
 
-    const verse = await DailyVerse.findOne({ dayOfYear: targetDay });
+    const verse = await DailyVerse.findOne({ dayOfYear: targetDay }).lean();
 
     if (!verse) {
       // Fallback to the first verse just in case
-      const firstVerse = await DailyVerse.findOne({ dayOfYear: 1 });
+      const firstVerse = await DailyVerse.findOne({ dayOfYear: 1 }).lean();
       if (firstVerse) {
+        serverCache.set('daily-verse', firstVerse, CACHE_TTL.DAILY_VERSE);
         return NextResponse.json(firstVerse);
       }
       
-      return NextResponse.json({
+      const fallback = {
         text: "The Lord is my shepherd; I shall not want.",
         reference: "Psalm 23:1"
-      });
+      };
+      serverCache.set('daily-verse', fallback, CACHE_TTL.DAILY_VERSE);
+      return NextResponse.json(fallback);
     }
 
+    // Cache for 1 hour
+    serverCache.set('daily-verse', verse, CACHE_TTL.DAILY_VERSE);
     return NextResponse.json(verse);
   } catch (error) {
     console.error('Error fetching daily verse:', error);

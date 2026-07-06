@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/api-auth';
 import connectToDatabase from '@/lib/db';
 import { GalleryAlbum, Sermon } from '@/models/Media';
+import { serverCache } from '@/lib/cache';
 
 const models: any = {
   gallery: GalleryAlbum,
@@ -41,6 +42,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ type: st
     }));
 
     await Model.bulkWrite(bulkOps, { ordered: false });
+
+    // Invalidate media cache for this type
+    serverCache.invalidate(`media:${type}`);
+
     return NextResponse.json({ success: true, updated: items.length });
   } catch (error) {
     console.error('Reorder error:', error);

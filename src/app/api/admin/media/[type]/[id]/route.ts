@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAdmin, requireAdminWithScope, enforceCampusScope, enforceGroupScope } from '@/lib/api-auth';
 import connectToDatabase from '@/lib/db';
 import { Sermon, SermonSeries, WorshipVideo, GalleryAlbum, LiveStream } from '@/models/Media';
+import { serverCache } from '@/lib/cache';
 
 const models: any = {
   sermons: Sermon,
@@ -52,6 +53,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ type: st
     }
 
     const item = await Model.findByIdAndUpdate(id, body, { new: true });
+
+    // Invalidate media cache for this type
+    serverCache.invalidate(`media:${type}`);
+
     return NextResponse.json(item);
   } catch (error) {
     return NextResponse.json({ error: 'Failed to update item' }, { status: 500 });
@@ -86,6 +91,10 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ type:
     }
 
     await Model.findByIdAndDelete(id);
+
+    // Invalidate media cache for this type
+    serverCache.invalidate(`media:${type}`);
+
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to delete item' }, { status: 500 });

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/db';
 import AttendanceSession from '@/models/AttendanceSession';
 import User from '@/models/User';
+import EventModel from '@/models/Event';
 import { verifySession } from '@/lib/auth-utils';
 
 import mongoose from 'mongoose';
@@ -77,8 +78,7 @@ export async function GET(req: Request) {
       : sessionsRaw.filter(isRecurringActiveToday);
 
     // 2. Find Events with attendance enabled
-    const Event = mongoose.models.Event || mongoose.model('Event');
-    const eventsRaw = await Event.find({
+    const eventsRaw = await EventModel.find({
       'attendanceConfig.enabled': true,
       $or: [
         { targetCampuses: { $in: [user.campusId, 'all'] } },

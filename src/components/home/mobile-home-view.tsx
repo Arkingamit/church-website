@@ -247,6 +247,7 @@ export function MobileHomeView() {
   };
 
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const upcomingEvents = events
     .filter(e => new Date(e.date) >= today)
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())

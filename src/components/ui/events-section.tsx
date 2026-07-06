@@ -459,83 +459,80 @@ function EventsWidgetLayout() {
           {/* Events Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {visibleEvents.map((event) => {
+              const availability = getAvailabilityStatus(event.registered, event.capacity);
+              const isPast = new Date(event.date) < new Date(new Date().setHours(0,0,0,0));
+
               return (
-                <div key={event.id} className="relative bg-card shadow-lg rounded-2xl overflow-hidden hover:shadow-elevated transition-all duration-300 group border border-border/50">
-                  <div className="flex flex-row">
-                    {/* Left side: Date Block (Solid Color) */}
-                    <div className={`w-24 shrink-0 flex flex-col items-center justify-center p-3 text-center relative ${ticketColors[event.category] || 'bg-primary text-primary-foreground'}`}>
-                      <div className="flex flex-col items-center">
-                        <span className="text-sm font-bold uppercase tracking-wider opacity-90">
-                          {new Date(event.date).toLocaleDateString('en-US', { month: 'short' })}
-                        </span>
-                        <span className="text-3xl font-black leading-none my-1">
-                          {new Date(event.date).toLocaleDateString('en-US', { day: '2-digit' })}
-                        </span>
-                      </div>
-                      <span className="text-xs font-medium opacity-90 text-center">
-                        {formatTime(event.time)}
+                <div key={event.id} className="relative bg-card shadow-sm rounded-[2rem] overflow-hidden hover:shadow-md transition-all duration-300 group border border-border/50 p-5 flex flex-col gap-4">
+                  <div className="flex gap-4">
+                    {/* Date Bubble */}
+                    <div className={`w-16 h-16 shrink-0 rounded-2xl flex flex-col items-center justify-center border ${isPast ? 'bg-muted border-border/50 opacity-50 grayscale' : 'bg-[#FFF5F5] border-red-50/50'}`}>
+                      <span className={`text-xl font-bold leading-none ${isPast ? 'text-muted-foreground' : 'text-[#8B2323]'}`}>
+                        {new Date(event.date).getDate()}
                       </span>
-
-                      {/* Right border dashed effect to simulate ticket stub */}
-                      <div className="absolute right-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-white/30 to-transparent border-r-2 border-dashed border-white/20"></div>
+                      <span className={`text-xs font-bold mt-1 ${isPast ? 'text-muted-foreground' : 'text-[#8B2323]'}`}>
+                        {new Date(event.date).toLocaleDateString('en-US', { month: 'short' })}
+                      </span>
                     </div>
-
-                    {/* Event Details */}
-                    <div className="flex-1 p-4 sm:p-5 flex flex-col justify-between relative bg-card">
-                      {/* Ticket Cutouts */}
-                      <div className="absolute top-0 bottom-0 left-0 w-4 flex flex-col justify-between -translate-x-1/2 pointer-events-none z-10">
-                        <div className="w-4 h-2 bg-muted/30 rounded-b-full border-b border-border/50"></div>
-                        <div className="w-4 h-2 bg-muted/30 rounded-t-full border-t border-border/50"></div>
+                    
+                    {/* Title & Badges */}
+                    <div className="flex-1 flex flex-col justify-center">
+                      <h3 className={`text-lg font-bold leading-tight line-clamp-2 mb-1 ${isPast ? 'text-muted-foreground' : 'text-[#1A202C] group-hover:text-primary transition-colors'}`}>
+                        {event.title}
+                      </h3>
+                      <div className="flex flex-wrap gap-1">
+                        <Badge variant="outline" className={`${categoryColors[event.category] || ''} border-current opacity-90 text-[10px] px-2 py-0`}>
+                          {event.category}
+                        </Badge>
+                        {event.recurring && <Badge variant="outline" className="text-[10px] px-2 py-0 border-border">Recurring</Badge>}
+                        {isPast && <Badge variant="secondary" className="text-[10px] px-2 py-0">Ended</Badge>}
                       </div>
+                    </div>
+                  </div>
 
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Badge variant="outline" className={`${categoryColors[event.category]} border-current opacity-90 text-[10px] px-2 py-0.5`}>
-                            {event.category}
-                          </Badge>
-                          {event.recurring && (
-                            <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-border">Recurring</Badge>
-                          )}
-                        </div>
-                        <h3 className="text-lg font-bold leading-tight group-hover:text-primary transition-colors line-clamp-2">
-                          {event.title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground line-clamp-2">
-                          {event.description}
-                        </p>
-                      </div>
+                  {/* Details */}
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    <div className="flex items-start gap-2">
+                      <Clock className="w-4 h-4 shrink-0 mt-0.5 text-primary/70" />
+                      <span>{formatTime(event.time)}</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-primary/70" />
+                      <span className="line-clamp-1">{event.location}</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Users className="w-4 h-4 shrink-0 mt-0.5 text-primary/70" />
+                      <span>
+                        {event.capacity === 0 
+                          ? (event.registered > 0 ? `${event.registered} registered (Unlimited)` : "Unlimited spots")
+                          : (event.capacity - event.registered > 0 
+                              ? `${event.capacity - event.registered} spots remaining (out of ${event.capacity})` 
+                              : "Event full")
+                        }
+                      </span>
+                    </div>
+                  </div>
 
-                      <div className="space-y-1.5 mt-4 mb-4">
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <MapPin className="w-3.5 h-3.5 shrink-0 text-primary/70" />
-                          <span className="truncate">{event.location}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Users className="w-3.5 h-3.5 shrink-0 text-primary/70" />
-                          <span>{event.registered} registered</span>
-                        </div>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex flex-row items-center gap-2 mt-auto">
-                        <Button
-                          onClick={() => setRsvpEvent(event)}
-                          className="flex-1 h-9 text-xs group-hover:bg-primary group-hover:text-primary-foreground transition-all"
-                        >
-                          RSVP <ArrowRight className="w-3.5 h-3.5 ml-1.5 group-hover:translate-x-1 transition-transform" />
+                  {/* Status & Actions */}
+                  <div className="mt-auto pt-4 flex items-center justify-between border-t border-border/40">
+                    <span className={`text-xs font-medium ${isPast ? 'text-muted-foreground' : availability.color}`}>
+                      {isPast ? 'Event Ended' : availability.text}
+                    </span>
+                    
+                    <div className="flex items-center gap-2">
+                      {event.googlePhotosUrl && (
+                        <Button variant="outline" size="icon" className="h-9 w-9 text-primary hover:bg-primary/10 rounded-xl" onClick={() => setAlbumEvent(event)} title="View Event Photos">
+                          <Images className="w-4 h-4" />
                         </Button>
-                        {event.googlePhotosUrl && (
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="w-9 h-9 flex-none text-primary hover:bg-primary/10"
-                            onClick={() => setAlbumEvent(event)}
-                            title="View Event Photos"
-                          >
-                            <Images className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
+                      )}
+                      <Button 
+                        disabled={isPast || event.registered >= event.capacity}
+                        onClick={() => setRsvpEvent(event)}
+                        className="h-9 text-xs rounded-xl px-4"
+                      >
+                        {isPast ? 'Ended' : event.registered >= event.capacity ? 'Full' : 'RSVP'}
+                        {!isPast && event.registered < event.capacity && <ArrowRight className="w-3.5 h-3.5 ml-1.5" />}
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -637,97 +634,76 @@ function EventsPageLayout() {
           const isPast = new Date(event.date) < today;
 
           return (
-            <div key={event.id} className="relative flex bg-card shadow-lg rounded-2xl overflow-hidden hover:shadow-elevated transition-all duration-300 group border border-border/50">
-              
-              {/* Left side: Date Block (Solid Color) */}
-              <div className={`w-24 sm:w-28 shrink-0 flex flex-col items-center justify-center p-3 text-center relative ${ticketColors[event.category] || 'bg-primary text-primary-foreground'} ${isPast ? 'opacity-50 grayscale' : ''}`}>
-                <span className="text-sm font-bold uppercase tracking-wider opacity-90">
-                  {new Date(event.date).toLocaleDateString('en-US', { month: 'short' })}
-                </span>
-                <span className="text-3xl sm:text-4xl font-black leading-none my-1">
-                  {new Date(event.date).toLocaleDateString('en-US', { day: '2-digit' })}
-                </span>
-                <span className="text-[10px] sm:text-xs font-medium opacity-90">
-                  {formatTime(event.time)}
-                </span>
-                
-                {/* Right border dashed effect to simulate ticket stub */}
-                <div className="absolute right-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-transparent via-white/30 to-transparent border-r-2 border-dashed border-white/20"></div>
-              </div>
-
-              {/* Right side: Event Details */}
-              <div className="flex-1 p-4 sm:p-5 flex flex-col justify-between relative bg-card">
-                {/* Ticket Cutouts */}
-                <div className="absolute top-0 bottom-0 left-0 w-4 flex flex-col justify-between -translate-x-1/2 pointer-events-none z-10">
-                  <div className="w-4 h-2 bg-muted/30 rounded-b-full border-b border-border/50"></div>
-                  <div className="w-4 h-2 bg-muted/30 rounded-t-full border-t border-border/50"></div>
+            <div key={event.id} className="relative bg-card shadow-sm rounded-[2rem] overflow-hidden hover:shadow-md transition-all duration-300 group border border-border/50 p-5 flex flex-col gap-4">
+              <div className="flex gap-4">
+                {/* Date Bubble */}
+                <div className={`w-16 h-16 shrink-0 rounded-2xl flex flex-col items-center justify-center border ${isPast ? 'bg-muted border-border/50 opacity-50 grayscale' : 'bg-[#FFF5F5] border-red-50/50'}`}>
+                  <span className={`text-xl font-bold leading-none ${isPast ? 'text-muted-foreground' : 'text-[#8B2323]'}`}>
+                    {new Date(event.date).getDate()}
+                  </span>
+                  <span className={`text-xs font-bold mt-1 ${isPast ? 'text-muted-foreground' : 'text-[#8B2323]'}`}>
+                    {new Date(event.date).toLocaleDateString('en-US', { month: 'short' })}
+                  </span>
                 </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Badge variant="outline" className={`${categoryColors[event.category]} border-current opacity-90 text-[10px] px-2 py-0.5`}>
-                      {event.category}
-                    </Badge>
-                    {event.recurring && (
-                      <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-border">Recurring</Badge>
-                    )}
-                    {isPast && (
-                      <Badge variant="secondary" className="text-[10px] px-2 py-0.5">Ended</Badge>
-                    )}
-                  </div>
-                  <h3 className={`text-lg font-bold leading-tight transition-colors line-clamp-2 ${isPast ? 'text-muted-foreground' : 'group-hover:text-primary'}`}>
+                
+                {/* Title & Badges */}
+                <div className="flex-1 flex flex-col justify-center">
+                  <h3 className={`text-lg font-bold leading-tight line-clamp-2 mb-1 ${isPast ? 'text-muted-foreground' : 'text-[#1A202C] group-hover:text-primary transition-colors'}`}>
                     {event.title}
                   </h3>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {event.description}
-                  </p>
-                </div>
-
-                <div className="space-y-1.5 mt-4 mb-2">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <MapPin className={`w-3.5 h-3.5 shrink-0 ${isPast ? '' : 'text-primary/70'}`} />
-                    <span className="truncate">{event.location}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Users className={`w-3.5 h-3.5 shrink-0 ${isPast ? '' : 'text-primary/70'}`} />
-                    <span>
-                      {event.registered > 0
-                        ? `${event.registered}/${event.capacity} registered`
-                        : `Up to ${event.capacity} attendees`
-                      }
-                    </span>
+                  <div className="flex flex-wrap gap-1">
+                    <Badge variant="outline" className={`${categoryColors[event.category] || ''} border-current opacity-90 text-[10px] px-2 py-0`}>
+                      {event.category}
+                    </Badge>
+                    {event.recurring && <Badge variant="outline" className="text-[10px] px-2 py-0 border-border">Recurring</Badge>}
+                    {isPast && <Badge variant="secondary" className="text-[10px] px-2 py-0">Ended</Badge>}
                   </div>
                 </div>
+              </div>
 
-                <div className="flex items-center justify-between py-2 border-t border-border/40 mt-2 mb-2">
-                  <span className={`text-xs font-medium ${isPast ? 'text-muted-foreground' : availability.color}`}>
-                    {isPast ? 'Event Ended' : availability.text}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    Host: {event.host}
+              {/* Details */}
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <div className="flex items-start gap-2">
+                  <Clock className="w-4 h-4 shrink-0 mt-0.5 text-primary/70" />
+                  <span>{formatTime(event.time)}</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-primary/70" />
+                  <span className="line-clamp-1">{event.location}</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Users className="w-4 h-4 shrink-0 mt-0.5 text-primary/70" />
+                  <span>
+                    {event.capacity === 0 
+                      ? (event.registered > 0 ? `${event.registered} registered (Unlimited)` : "Unlimited spots")
+                      : (event.capacity - event.registered > 0 
+                          ? `${event.capacity - event.registered} spots remaining (out of ${event.capacity})` 
+                          : "Event full")
+                    }
                   </span>
                 </div>
+              </div>
 
-                <div className="flex items-center gap-2 mt-auto">
-                  <Button 
-                    disabled={isPast || event.registered >= event.capacity}
-                    onClick={() => setRsvpEvent(event)}
-                    className="flex-1 h-9 text-xs group-hover:bg-primary group-hover:text-primary-foreground transition-all"
-                  >
-                    {isPast ? 'Ended' : event.registered >= event.capacity ? 'Full' : 'RSVP'}
-                    {!isPast && event.registered < event.capacity && <ArrowRight className="w-3.5 h-3.5 ml-1.5 group-hover:translate-x-1 transition-transform" />}
-                  </Button>
+              {/* Status & Actions */}
+              <div className="mt-auto pt-4 flex items-center justify-between border-t border-border/40">
+                <span className={`text-xs font-medium ${isPast ? 'text-muted-foreground' : availability.color}`}>
+                  {isPast ? 'Event Ended' : availability.text}
+                </span>
+                
+                <div className="flex items-center gap-2">
                   {event.googlePhotosUrl && (
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-9 w-9 shrink-0 text-primary hover:bg-primary/10"
-                      onClick={() => setAlbumEvent(event)}
-                      title="View Event Photos"
-                    >
+                    <Button variant="outline" size="icon" className="h-9 w-9 text-primary hover:bg-primary/10 rounded-xl" onClick={() => setAlbumEvent(event)} title="View Event Photos">
                       <Images className="w-4 h-4" />
                     </Button>
                   )}
+                  <Button 
+                    disabled={isPast || event.registered >= event.capacity}
+                    onClick={() => setRsvpEvent(event)}
+                    className="h-9 text-xs rounded-xl px-4"
+                  >
+                    {isPast ? 'Ended' : event.registered >= event.capacity ? 'Full' : 'RSVP'}
+                    {!isPast && event.registered < event.capacity && <ArrowRight className="w-3.5 h-3.5 ml-1.5" />}
+                  </Button>
                 </div>
               </div>
             </div>

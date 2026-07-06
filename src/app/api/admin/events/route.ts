@@ -7,6 +7,9 @@ import { generateOccurrences } from '@/lib/recurrence';
 import mongoose from 'mongoose';
 import Notification from '@/models/Notification';
 import { sendPushToTargeted } from '@/lib/push-utils';
+import { serverCache, CACHE_TTL } from '@/lib/cache';
+
+import AttendanceRecord from '@/models/AttendanceRecord';
 
 // Projection for list view — omits heavy nested arrays (formFields, schedule)
 // that are only needed when editing a specific event. Reduces payload ~40-70%.
@@ -18,7 +21,7 @@ const LIST_PROJECTION = {
   nextOccurrence: 1, lastTriggered: 1, mapUrl: 1, host: 1,
   targetCampuses: 1, targetGroups: 1, excludeCampuses: 1, excludeGroups: 1,
   googlePhotosUrl: 1, isMultiDay: 1, endDate: 1, description: 1,
-  customReminders: 1, reminders: 1, createdAt: 1,
+  customReminders: 1, reminders: 1, attendanceConfig: 1, createdAt: 1,
 };
 
 export async function GET() {
@@ -26,11 +29,13 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
+    // Check in-memory cache first
+    const cached = serverCache.get('events');
+    if (cached) return NextResponse.json(cached);
+
     await connectToDatabase();
     // .lean() returns plain JS objects — 30-50% faster than full Mongoose documents
     const events = await EventModel.find({}, LIST_PROJECTION).sort({ date: 1, time: 1 }).lean();
-    
-    const AttendanceRecord = mongoose.models.AttendanceRecord || mongoose.model('AttendanceRecord');
     
     // Group attendance counts by eventId
     const attendanceCounts = await AttendanceRecord.aggregate([
@@ -44,6 +49,9 @@ export async function GET() {
       ...ev,
       attended: attendanceMap.get(ev._id.toString()) || 0
     }));
+
+    // Cache for 1 minute
+    serverCache.set('events', eventsWithAttendance, CACHE_TTL.EVENTS);
 
     return NextResponse.json(eventsWithAttendance);
   } catch (error: any) {
@@ -60,6 +68,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const parseResult = eventSchema.safeParse(body);
     if (!parseResult.success) {
+      console.error('Event Validation Error:', parseResult.error.errors);
       return NextResponse.json({ error: parseResult.error.errors[0].message }, { status: 400 });
     }
 
@@ -109,6 +118,9 @@ export async function POST(req: Request) {
         type: 'new_event'
       }, eventData.targetCampuses || ['all'], eventData.targetGroups || []);
 
+      // Invalidate events cache
+      serverCache.invalidate('events');
+
       return NextResponse.json(createdEvents[0], { status: 201 });
     } else {
       const event = await EventModel.create(eventData);
@@ -126,9 +138,13 @@ export async function POST(req: Request) {
         type: 'new_event'
       }, event.targetCampuses || ['all'], event.targetGroups || []);
 
+      // Invalidate events cache
+      serverCache.invalidate('events');
+
       return NextResponse.json(event, { status: 201 });
     }
   } catch (error: any) {
-    return NextResponse.json({ error: 'Failed to create event' }, { status: 500 });
+    console.error('Event Creation 500 Error:', error);
+    return NextResponse.json({ error: error?.message || 'Failed to create event' }, { status: 500 });
   }
 }

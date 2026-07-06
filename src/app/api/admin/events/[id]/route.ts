@@ -3,6 +3,7 @@ import { requireAdminWithScope, enforceCampusScope, enforceGroupScope } from '@/
 import connectToDatabase from '@/lib/db';
 import EventModel from '@/models/Event';
 import { calculateNextOccurrence, generateOccurrences } from '@/lib/recurrence';
+import { serverCache } from '@/lib/cache';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const admin = await requireAdminWithScope();
@@ -59,10 +60,17 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         await EventModel.insertMany(eventsToCreate);
       }
 
+      // Invalidate events cache
+      serverCache.invalidate('events');
+
       return NextResponse.json(event);
     } else {
       const event = await EventModel.findByIdAndUpdate(id, body, { new: true });
       if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+
+      // Invalidate events cache
+      serverCache.invalidate('events');
+
       return NextResponse.json(event);
     }
   } catch (error: any) {
@@ -91,6 +99,9 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     } else {
       await EventModel.findByIdAndDelete(id);
     }
+    
+    // Invalidate events cache
+    serverCache.invalidate('events');
     
     return NextResponse.json({ message: 'Event(s) deleted successfully' });
   } catch (error: any) {

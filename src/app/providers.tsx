@@ -16,9 +16,11 @@ import { NotificationProvider } from "@/components/ui/notification-provider";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 30_000,      // treat data as fresh for 30s
-      gcTime: 5 * 60_000,     // keep unused data in cache for 5 min
+      staleTime: 60_000,           // treat data as fresh for 60s (reduced refetches)
+      gcTime: 10 * 60_000,         // keep unused data in cache for 10 min
       retry: 1,
+      refetchOnWindowFocus: false,  // don't refetch on tab switch (church app users tab-switch often)
+      refetchOnReconnect: 'always', // always refetch after offline period
     },
   },
 });

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/api-auth';
 import connectToDatabase from '@/lib/db';
 import Campus from '@/models/Campus';
+import { serverCache } from '@/lib/cache';
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const admin = await requireAdmin();
@@ -20,6 +21,9 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: 'Campus not found' }, { status: 404 });
     }
     
+    // Invalidate campuses cache
+    serverCache.invalidate('campuses');
+
     return NextResponse.json(campus);
   } catch (error: any) {
     return NextResponse.json({ error: 'Failed to update campus' }, { status: 500 });
@@ -42,6 +46,9 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
       return NextResponse.json({ error: 'Campus not found' }, { status: 404 });
     }
     
+    // Invalidate campuses cache
+    serverCache.invalidate('campuses');
+
     return NextResponse.json({ message: 'Campus deleted successfully' });
   } catch (error: any) {
     return NextResponse.json({ error: 'Failed to delete campus' }, { status: 500 });

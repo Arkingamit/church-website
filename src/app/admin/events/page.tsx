@@ -41,7 +41,7 @@ const categoryColors: Record<string, string> = {
 const emptyForm = {
   title: '', description: '', date: '', time: '', endTime: '',
   location: '', category: 'Worship', capacity: 100, registered: 0,
-  image: null as string | null, recurring: false, host: '',
+  image: null as string | null, recurring: false, host: 'Grace Church',
   targetCampuses: ['all'] as string[],
   targetGroups: ['all'] as string[],
   excludeCampuses: [] as string[],
@@ -191,8 +191,26 @@ export default function EventsPage() {
   };
 
   const handleSubmit = () => {
-    if (!form.title || !form.date) return;
-    if (!form.isMultiDay && !form.time) return;
+    if (!form.title || form.title.trim().length < 3) {
+      import('sonner').then(({ toast }) => toast.warning('Title is required (at least 3 characters).'));
+      return;
+    }
+    if (!form.date) {
+      import('sonner').then(({ toast }) => toast.warning('Date is required.'));
+      return;
+    }
+    if (!form.isMultiDay && !form.time) {
+      import('sonner').then(({ toast }) => toast.warning('Start Time is required for single-day events.'));
+      return;
+    }
+    if (!form.location || form.location.trim().length < 2) {
+      import('sonner').then(({ toast }) => toast.warning('Location is required (at least 2 characters).'));
+      return;
+    }
+    if (!form.host || form.host.trim().length < 2) {
+      import('sonner').then(({ toast }) => toast.warning('Host is required (e.g. Grace Church).'));
+      return;
+    }
     
     if (editingId !== null) {
       if (form.recurring && form.seriesId) {
@@ -664,9 +682,15 @@ export default function EventsPage() {
               )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Location</Label>
+                  <Label>Location *</Label>
                   <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="e.g. Grace Central" />
                 </div>
+                <div className="space-y-2">
+                  <Label>Host *</Label>
+                  <Input value={form.host} onChange={(e) => setForm({ ...form, host: e.target.value })} placeholder="e.g. Grace Youth" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Location Google Map URL (optional)</Label>
                   <Input value={form.mapUrl || ''} onChange={(e) => setForm({ ...form, mapUrl: e.target.value })} placeholder="e.g. https://maps.app.goo.gl/..." />
@@ -1398,7 +1422,7 @@ export default function EventsPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSubmit} disabled={!form.title || !form.date || !form.time}>
+            <Button onClick={handleSubmit}>
               {editingId ? 'Save Changes' : 'Create Event'}
             </Button>
           </DialogFooter>
